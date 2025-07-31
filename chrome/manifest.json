@@ -1,7 +1,7 @@
 {
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
-  "author": "refix by Cursor ",// 原作者Tumuyan
+  "author": "refix by Cursor ",// 原作者Tumuyan,AI适配MV3
   "version": "3.2.0",
   "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
   "manifest_version": 3,
