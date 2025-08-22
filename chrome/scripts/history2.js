@@ -35,6 +35,35 @@ document.addEvent('domready', function () {
             $('note-save').getParent().insertBefore(btn, $('note-save'));
         }
         $('note-modal').setStyle('display', 'flex');
+        // drafts block
+        $('note-drafts').setStyle('display','block');
+        $('note-drafts').set('html','');
+        var selBtn = $('note-create-draft');
+        var mergeBtn = $('note-merge-drafts');
+        var selectedIds = {};
+        selBtn.onclick = function(){
+            var sel = window.getSelection ? (window.getSelection().toString()||$('note-text').getSelectedText&&$('note-text').getSelectedText()) : '';
+            if (!sel || sel.trim()==='') sel = $('note-text').getSelectedText ? $('note-text').getSelectedText() : '';
+            createDraftFromSelection(visitId, url, sel, function(){ renderDrafts(); });
+        };
+        mergeBtn.onclick = function(){
+            listDrafts(visitId, function(list){ var picks = list.filter(d=>selectedIds[d.id]); mergeDraftsToNewNote(visitId, url, picks.length? picks:list, function(){ renderDrafts(); }, true); });
+        };
+        function renderDrafts(){
+            listDrafts(visitId, function(list){
+                if (!list || list.length===0){ $('note-drafts').set('html',''); return; }
+                var html = '<div style="font-weight:600; margin-bottom:6px;">Drafts</div>';
+                list.sort(function(a,b){ return (b.updatedAt||0)-(a.updatedAt||0); });
+                list.forEach(function(d){
+                    var id = d.id; var first = (d.body||'').split(/\r?\n/)[0]; if (first.length>80) first=first.slice(0,80)+'…';
+                    var chk = selectedIds[id]?'checked="checked"':'';
+                    html += '<label style="display:block; font-weight:normal;"><input type="checkbox" data-id="'+id+'" '+chk+'> '+first+'</label>';
+                });
+                $('note-drafts').set('html', html);
+                $$('\#note-drafts input[type="checkbox"]').addEvent('change', function(){ var id = parseInt(this.get('data-id')); if (this.checked) selectedIds[id]=true; else delete selectedIds[id]; });
+            });
+        }
+        renderDrafts();
 
         $('note-cancel').onclick = function(){ $('note-modal').setStyle('display', 'none'); };
         $('note-delete').onclick = function(){ deleteNote(visitId, function(ok){ $('note-modal').setStyle('display', 'none'); if(ok){ alertLoadingHistory(true); alertUser(returnLang('noteDeleted'),'open'); } else { alertLoadingHistory(true); alertUser(returnLang('noteError'),'open'); } refreshNoteBadges(); }); };
@@ -44,21 +73,64 @@ document.addEvent('domready', function () {
 
     function saveNote(visitId, url, text, cb){
         if (!db){ cb && cb(false); return; }
-        var tx = db.transaction(["VisitNote"], "readwrite");
-        var store = tx.objectStore("VisitNote");
+        var tx = db.transaction(["Note"], "readwrite");
+        var store = tx.objectStore("Note");
         var now = Date.now();
-        store.put({ visitId: visitId, url: url, note: text || '', updatedAt: now });
+        // find existing by visitId as parent note
+        var idx = store.index('visitId');
+        var found = false, targetId = 0;
+        idx.openCursor(IDBKeyRange.only(visitId)).onsuccess = function(e){
+            var c = e.target.result;
+            if (c){
+                if (c.value.kind === 'note' && c.value.parentId === 0){ found = true; targetId = c.value.id; }
+                c.continue();
+            } else {
+                if (found){
+                    store.put({ id: targetId, parentId:0, visitId: visitId, url: url, title:'', body: text||'', kind:'note', updatedAt: now });
+                } else {
+                    store.add({ parentId:0, visitId: visitId, url: url, title:'', body: text||'', kind:'note', updatedAt: now });
+                }
+            }
+        };
         tx.oncomplete = function(){ noteCache[visitId] = { note: text || '', updatedAt: now }; cb && cb(true); };
         tx.onerror = function(){ cb && cb(false); };
     }
 
     function deleteNote(visitId, cb){
         if (!db){ cb && cb(false); return; }
-        var tx = db.transaction(["VisitNote"], "readwrite");
-        var store = tx.objectStore("VisitNote");
-        var req = store.delete(visitId);
+        var tx = db.transaction(["Note"], "readwrite");
+        var store = tx.objectStore("Note");
+        var idx = store.index('visitId');
+        var ids = [];
+        idx.openCursor(IDBKeyRange.only(visitId)).onsuccess = function(e){ var c=e.target.result; if(c){ ids.push(c.value.id); c.continue(); } else { ids.forEach(id=>store.delete(id)); } };
         tx.oncomplete = function(){ delete noteCache[visitId]; cb && cb(true); };
         tx.onerror = function(){ cb && cb(false); };
+    }
+
+    function listDrafts(parentVisitId, done){
+        var tx = db.transaction(["Note"], "readonly");
+        var store = tx.objectStore("Note");
+        var idx = store.index('visitId');
+        var result = [];
+        idx.openCursor(IDBKeyRange.only(parentVisitId)).onsuccess = function(e){ var c=e.target.result; if(c){ if (c.value.kind==='draft') result.push(c.value); c.continue(); } else { done&&done(result); } };
+    }
+
+    function createDraftFromSelection(parentVisitId, url, selection, cb){
+        var tx = db.transaction(["Note"], "readwrite");
+        var store = tx.objectStore("Note");
+        store.add({ parentId: parentVisitId, visitId: parentVisitId, url: url, title:'', body: selection||'', kind:'draft', updatedAt: Date.now() });
+        tx.oncomplete=function(){ cb&&cb(true); };
+        tx.onerror=function(){ cb&&cb(false); };
+    }
+
+    function mergeDraftsToNewNote(parentVisitId, url, drafts, cb, keepDrafts){
+        var body = drafts.map(d=>d.body||'').join('\n\n---\n\n');
+        var tx = db.transaction(["Note"], "readwrite");
+        var store = tx.objectStore("Note");
+        store.add({ parentId:0, visitId: parentVisitId, url:url, title:'', body: body, kind:'note', updatedAt: Date.now() });
+        if (!keepDrafts){ drafts.forEach(d=>store.delete(d.id)); }
+        tx.oncomplete=function(){ cb&&cb(true); };
+        tx.onerror=function(){ cb&&cb(false); };
     }
 
     function loadNotesPresence(visitIds, done){
