@@ -1081,34 +1081,70 @@ function saveNoteToDatabase(visitId, pageUrl, selectedText) {
                     var now = Date.now();
                     var noteData;
                     
+                    // Get merge mode from settings
+                    var mergeMode = localStorage['notes-merge-mode'] || 'append';
+                    
                     if (existed){
-                        // Check if this exact text already exists to avoid duplicates
                         var existingNote = existed.note || '';
-                        if (existingNote.indexOf(selectedText) !== -1) {
+                        
+                        // Check for duplicates unless in replace mode
+                        if (mergeMode !== 'replace' && existingNote.indexOf(selectedText) !== -1) {
                             console.log('Selected text already exists in note, skipping duplicate');
                             resolve(true); // Return true to indicate duplicate
                             return;
                         }
                         
-                        // Append to existing note with detailed timestamp
-                        var timeString = new Date(now).toLocaleString();
-                        var isoTimeString = new Date(now).toISOString();
-                        var separator = existingNote ? "\n\n---\n**📅 " + timeString + "** *(saved at " + isoTimeString + ")*\n\n" : "**📅 " + timeString + "** *(saved at " + isoTimeString + ")*\n\n";
-                        noteData = {
-                            visitId: visitId,
-                            url: pageUrl,
-                            note: existingNote + separator + selectedText,
-                            updatedAt: now
-                        };
+                        switch(mergeMode) {
+                            case 'append':
+                                // Append with timestamp separator
+                                var timeString = new Date(now).toLocaleDateString() + ' ' + new Date(now).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                var separator = existingNote ? "\n\n---\n*Added on " + timeString + "*\n\n" : "";
+                                noteData = {
+                                    visitId: visitId,
+                                    url: pageUrl,
+                                    note: existingNote + separator + selectedText,
+                                    updatedAt: now
+                                };
+                                break;
+                                
+                            case 'separate':
+                                // Create a new note with unique visitId
+                                var newVisitId = Date.now();
+                                noteData = {
+                                    visitId: newVisitId,
+                                    url: pageUrl,
+                                    note: selectedText,
+                                    updatedAt: now
+                                };
+                                break;
+                                
+                            case 'replace':
+                                // Replace existing note completely
+                                noteData = {
+                                    visitId: visitId,
+                                    url: pageUrl,
+                                    note: selectedText,
+                                    updatedAt: now
+                                };
+                                break;
+                                
+                            default:
+                                // Default to append mode
+                                var timeString = new Date(now).toLocaleDateString() + ' ' + new Date(now).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                var separator = existingNote ? "\n\n---\n*Added on " + timeString + "*\n\n" : "";
+                                noteData = {
+                                    visitId: visitId,
+                                    url: pageUrl,
+                                    note: existingNote + separator + selectedText,
+                                    updatedAt: now
+                                };
+                        }
                     } else {
-                        // Create new note with initial timestamp
-                        var timeString = new Date(now).toLocaleString();
-                        var isoTimeString = new Date(now).toISOString();
-                        var initialTimestamp = "**📅 " + timeString + "** *(saved at " + isoTimeString + ")*\n\n";
+                        // Create new note (first selection doesn't need timestamp)
                         noteData = { 
                             visitId: visitId, 
                             url: pageUrl, 
-                            note: initialTimestamp + selectedText, 
+                            note: selectedText, 
                             updatedAt: now 
                         };
                     }
