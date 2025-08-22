@@ -72,16 +72,20 @@ document.addEvent('domready', function () {
         var treeObj = $jq.fn.zTree.getZTreeObj("treeDemo");
         if (!treeObj) return;
         var all = treeObj.getNodesByFilter(function(){ return true; }, false);
+        var showBadge = (localStorage['notes-badge'] == 'yes');
+        var showTooltip = (localStorage['notes-tooltip'] == 'yes');
         all.forEach(function(n){
             var tId = n.tId;
             var aObj = $jq("#"+tId+"_a");
             aObj.find('.note-badge').remove();
             if (noteCache[n.id] && noteCache[n.id].note && noteCache[n.id].note.trim()!==''){
-                var first = (noteCache[n.id].note||'').split(/\r?\n/)[0];
-                if (first.length>80) first = first.slice(0,80) + '…';
-                var $b = $jq('<span class="note-badge" style="margin-left:6px; color:#c97;">📝</span>');
-                $b.attr('title', first);
-                aObj.append($b);
+                if (showBadge){
+                    var first = (noteCache[n.id].note||'').split(/\r?\n/)[0];
+                    if (first.length>80) first = first.slice(0,80) + '…';
+                    var $b = $jq('<span class="note-badge" style="margin-left:6px; color:#c97;">📝</span>');
+                    if (showTooltip){ $b.attr('title', first); }
+                    aObj.append($b);
+                }
             }
         });
     }
