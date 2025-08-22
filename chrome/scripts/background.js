@@ -159,7 +159,7 @@ openDb();
 
 
 function openDb() {
-    request = window.indexedDB.open("testDB", 8);
+    request = window.indexedDB.open("testDB", 6);
     request.onerror = function (event) {
         console.log("Error opening DB", event);
     }
@@ -201,54 +201,6 @@ function openDb() {
             objectStore3.createIndex('close', 'close', { unique: false });
         } catch {
             console.log('Error in createObjectStore("closed", { autoIncrement: true }');
-        }
-
-        try {
-            var noteStore = db.createObjectStore("VisitNote", { keyPath: "visitId" });
-            noteStore.createIndex('url', 'url', { unique: false });
-            noteStore.createIndex('updatedAt', 'updatedAt', { unique: false });
-        } catch {
-            console.log('Error in createObjectStore("VisitNote", { keyPath: "visitId" })');
-        }
-
-        try {
-            // Unified Note store: auto-increment id, with indexes
-            var noteUnified = db.createObjectStore("Note", { keyPath: "id", autoIncrement: true });
-            noteUnified.createIndex('parentId', 'parentId', { unique: false });
-            noteUnified.createIndex('visitId', 'visitId', { unique: false });
-            noteUnified.createIndex('url', 'url', { unique: false });
-            noteUnified.createIndex('kind', 'kind', { unique: false });
-            noteUnified.createIndex('updatedAt', 'updatedAt', { unique: false });
-        } catch (e) {
-            console.log('Note store create error', e);
-        }
-
-        // Migrate VisitNote -> Note(kind='note') during upgrade if old store exists
-        try {
-            if (db.objectStoreNames.contains('VisitNote') && db.objectStoreNames.contains('Note')) {
-                var txn = event.target.transaction;
-                var oldStore = txn.objectStore('VisitNote');
-                var newStore = txn.objectStore('Note');
-                oldStore.openCursor().onsuccess = function (e) {
-                    var cursor = e.target.result;
-                    if (cursor) {
-                        var v = cursor.value;
-                        var note = {
-                            parentId: 0,
-                            visitId: v.visitId || 0,
-                            url: v.url || '',
-                            title: '',
-                            body: v.note || '',
-                            kind: 'note',
-                            updatedAt: v.updatedAt || Date.now()
-                        };
-                        newStore.add(note);
-                        cursor.continue();
-                    }
-                };
-            }
-        } catch (e) {
-            console.log('Note migration error', e);
         }
 
     };
@@ -782,6 +734,12 @@ function add_history(urls_p, i, visitItems, loadfrom, url_item) {
         // let timeStr = (new Date(visitTime)).toLocaleString();
         let transition = visitItems[i].transition;
 
+
+        if (transition == "typed" || transition == "auto_bookmark" || transition == "keyword" || transition == "keyword_generated") {
+            console.log("change refer " + visitItems[i].referringVisitId + "->0 cause transition=" + transition);
+            refer = 0;
+        }
+
         if (refer == undefined)
             refer = 0;
 
@@ -928,7 +886,11 @@ function add_tab_history(visitItems, i, loadfrom, url_item) {
 
         if (refer == undefined)
             refer = 0;
-        // keep original referringVisitId to preserve chains
+        else if (transition == "typed" || transition == "auto_bookmark" || transition == "keyword" || transition == "keyword_generated") {
+            // 输入、搜索、书签产生的新标签页，不需要refer
+            console.log("change refer " + visitItems[i].referringVisitId + "->0 cause transition=" + transition);
+            refer = 0;
+        }
 
         console.log("refer referringVisitId/refer2/tabUrl0/result=" + visitItems[i].referringVisitId + "/" + refer2 + "/" + idUrlJson[tabUrl0Json[tabstr]] + "/" + refer + ", transition=" + transition
             + " " + tabUrl0Json[tabstr] + " ->" + url_item.url);
@@ -975,27 +937,8 @@ chrome.contextMenus.removeAll(() => {
             console.log('select ' + options.id);
         });
 
-        // Add context menu for saving selection as a note
-        const saveSelectionMenu = {
-            type: 'normal',
-            id: 'tree_style_history_save_selection_' + getVersion(),
-            title: returnLang('saveSelectionAsNote'),
-            contexts: ["selection"],
-            visible: true,
-        };
-        chrome.contextMenus.create(saveSelectionMenu, () => {
-            console.log('select ' + saveSelectionMenu.id);
-        });
-
         chrome.contextMenus.onClicked.addListener((info) => {
             // console.log(JSON.stringify(info));
-            if (info.menuItemId && (''+info.menuItemId).indexOf('tree_style_history_save_selection_') === 0) {
-                let url = info.pageUrl || '';
-                let text = info.selectionText || '';
-                if (!url || !text) return;
-                saveSelectionAsNote(url, text);
-                return;
-            }
 
             let url = info.linkUrl;
             if (url != undefined) {
@@ -1008,44 +951,6 @@ chrome.contextMenus.removeAll(() => {
             }
         })
     }
-
-});
-
-// Save selected text as a note linked to the latest visit of the URL
-function saveSelectionAsNote(url, text){
-    if (!db || !url || !text) return;
-    var latest = { visitId: 0, visitTime: 0 };
-    var tx = db.transaction(["VisitItem"], "readonly");
-    var idx = tx.objectStore("VisitItem").index('url');
-    var c = idx.openCursor(IDBKeyRange.only(url));
-    c.onsuccess = function(e){
-        var cur = e.target.result;
-        if (cur){
-            var v = cur.value; var t = v.visitTime||0;
-            if (t >= latest.visitTime){ latest.visitTime = t; latest.visitId = v.visitId; }
-            cur.continue();
-        } else {
-            commitNote(latest.visitId);
-        }
-    };
-    c.onerror = function(){ commitNote(0); };
-
-    function commitNote(visitId){
-        var tx2 = db.transaction(["VisitNote"], "readwrite");
-        var store = tx2.objectStore("VisitNote");
-        if (visitId && visitId>0){
-            var g = store.get(visitId);
-            g.onsuccess = function(ev){
-                var n = ev.target.result;
-                var now = Date.now();
-                if (n){ n.note = (n.note||'') + (n.note ? "\n\n---\n" : '') + text; n.updatedAt = now; store.put(n); }
-                else { store.put({ visitId: visitId, url: url, note: text, updatedAt: now }); }
-            };
-            g.onerror = function(){ store.put({ visitId: visitId, url: url, note: text, updatedAt: Date.now() }); };
-        } else {
-            // fallback: create a standalone note linked by URL only
-            var id = Date.now();
-            store.put({ visitId: id, url: url, note: text, updatedAt: Date.now() });
-        }
-    }
 }
+
+);

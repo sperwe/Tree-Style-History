@@ -2,25 +2,6 @@ document.addEvent('domready', function () {
 
     //释放jquery中$定义，并直接使用jQuery代替平时的$
     var $jq = jQuery.noConflict();
-    var bg = chrome.extension.getBackgroundPage();
-    var db = bg && bg.db;
-    var noteCache = {}; // visitId -> {note, updatedAt}
-    var NOTE_BADGE = '<span class="note-badge" style="margin-left:6px; color:#c97;">📝</span>';
-
-	function waitDbAndLoad(maxTries){
-		var tries = 0;
-		var timer = setInterval(function(){
-			bg = chrome.extension.getBackgroundPage();
-			db = bg && bg.db;
-			if (db){
-				clearInterval(timer);
-				pre_History(0,0);
-			}else if (++tries >= (maxTries||40)){
-				clearInterval(timer);
-				alertLoadingHistory(true);
-			}
-		}, 250);
-	}
 
     // Fade in  
     var historyFx = new Fx.Morph('history-container', { duration: 250 });
@@ -36,168 +17,6 @@ document.addEvent('domready', function () {
         };
     }
     historyFx.start(ho);
-
-    function openNoteModal(visitId, url, title) {
-        var has = noteCache[visitId] && noteCache[visitId].note && noteCache[visitId].note.trim()!=='';
-        $('note-modal-title').set('text', (has ? returnLang('noteEdit') : returnLang('noteAdd')) + ' - ' + (title || ''));
-        $('note-text').set('value', has ? (noteCache[visitId].note || '') : '');
-        $('note-text').set('placeholder', returnLang('notePlaceholder'));
-        $('note-delete').set('value', returnLang('noteDelete'));
-        $('note-cancel').set('value', returnLang('noteCancel'));
-        $('note-save').set('value', returnLang('noteSave'));
-        if (!$('note-copy')){
-            var btn = new Element('input',{ id:'note-copy', type:'button', 'class':'button', value:(returnLang('copy')||'Copy') });
-            $('note-save').getParent().insertBefore(btn, $('note-save'));
-        }
-        alertLoadingHistory(true);
-        $('note-modal').setStyle('display', 'flex');
-
-        // drafts block
-        $('note-drafts').setStyle('display','block');
-        $('note-drafts').set('html','');
-        var selBtn = $('note-create-draft');
-        var mergeBtn = $('note-merge-drafts');
-        var selectedIds = {};
-        var currentEditingDraftId = 0;
-        selBtn.onclick = function(){
-            var sel = window.getSelection ? (window.getSelection().toString()||$('note-text').getSelectedText&&$('note-text').getSelectedText()) : '';
-            if (!sel || sel.trim()==='') sel = $('note-text').getSelectedText ? $('note-text').getSelectedText() : '';
-            createDraftFromSelection(visitId, url, sel, function(){ renderDrafts(); });
-        };
-        mergeBtn.onclick = function(){
-            listDrafts(visitId, function(list){ var picks = list.filter(d=>selectedIds[d.id]); mergeDraftsToNewNote(visitId, url, picks.length? picks:list, function(){ renderDrafts(); }, true); });
-        };
-        function renderDrafts(){
-            listDrafts(visitId, function(list){
-                if (!list || list.length===0){ $('note-drafts').set('html',''); return; }
-                var html = '<div style="font-weight:600; margin-bottom:6px;">Drafts</div>';
-                list.sort(function(a,b){ return (b.updatedAt||0)-(a.updatedAt||0); });
-                list.forEach(function(d){
-                    var id = d.id; var first = (d.body||'').split(/\r?\n/)[0]; if (first.length>80) first=first.slice(0,80)+'…';
-                    var chk = selectedIds[id]?'checked="checked"':'';
-                    html += '<div style="display:flex; align-items:center; gap:8px; margin:4px 0;">'
-                        + '<input type="checkbox" data-id="'+id+'" '+chk+'> '
-                        + '<span style="flex:1;">'+first+'</span>'
-                        + '<a href="#" data-edit="'+id+'">'+(returnLang('notesEdit')||'Edit')+'</a>'
-                        + '</div>';
-                });
-                $('note-drafts').set('html', html);
-                $$('\#note-drafts input[type="checkbox"]').addEvent('change', function(){ var id = parseInt(this.get('data-id')); if (this.checked) selectedIds[id]=true; else delete selectedIds[id]; });
-                $$('\#note-drafts a[data-edit]').addEvent('click', function(e){ e.stop(); var id = parseInt(this.get('data-edit')); listDrafts(visitId, function(list){ var d = list.filter(x=>x.id===id)[0]; if(d){ currentEditingDraftId=id; $('note-text').set('value', d.body||''); } }); });
-            });
-        }
-        renderDrafts();
-
-        $('note-cancel').onclick = function(){ $('note-modal').setStyle('display', 'none'); };
-        $('note-delete').onclick = function(){ deleteNote(visitId, function(ok){ $('note-modal').setStyle('display', 'none'); alertLoadingHistory(true); if(ok){ alertUser(returnLang('noteDeleted'),'open'); } else { alertUser(returnLang('noteError'),'open'); } refreshNoteBadges(); }); };
-        $('note-save').onclick = function(){
-            if (currentEditingDraftId>0){
-                var tx = db.transaction(["Note"], "readwrite"); var store = tx.objectStore("Note");
-                store.get(currentEditingDraftId).onsuccess=function(ev){ var d=ev.target.result; if(d){ d.body=$('note-text').get('value')||''; d.updatedAt=Date.now(); store.put(d);} };
-                tx.oncomplete=function(){ $('note-modal').setStyle('display','none'); alertLoadingHistory(true); alertUser(returnLang('noteSaved')||'Saved','open'); };
-                tx.onerror=function(){ $('note-modal').setStyle('display','none'); alertLoadingHistory(true); alertUser(returnLang('noteError')||'Error','open'); };
-            } else {
-                saveNote(visitId, url, $('note-text').get('value'), function(ok){ $('note-modal').setStyle('display', 'none'); alertLoadingHistory(true); if(ok){ alertUser(returnLang('noteSaved'),'open'); } else { alertUser(returnLang('noteError'),'open'); } refreshNoteBadges(); });
-            }
-        };
-        $('note-copy').onclick = function(){ var txt = $('note-text').get('value')||''; var t = (title||''); var u = (url||''); var payload=''; if (t) payload+='Title: '+t+'\n'; if (u) payload+='URL: '+u+'\n\n'; payload+=txt; Clipboard.copy(payload); };
-    }
-
-    function saveNote(visitId, url, text, cb){
-        if (!db){ cb && cb(false); return; }
-        var tx = db.transaction(["Note"], "readwrite");
-        var store = tx.objectStore("Note");
-        var now = Date.now();
-        // find existing by visitId as parent note
-        var idx = store.index('visitId');
-        var found = false, targetId = 0;
-        idx.openCursor(IDBKeyRange.only(visitId)).onsuccess = function(e){
-            var c = e.target.result;
-            if (c){
-                if (c.value.kind === 'note' && c.value.parentId === 0){ found = true; targetId = c.value.id; }
-                c.continue();
-            } else {
-                if (found){
-                    store.put({ id: targetId, parentId:0, visitId: visitId, url: url, title:'', body: text||'', kind:'note', updatedAt: now });
-                } else {
-                    store.add({ parentId:0, visitId: visitId, url: url, title:'', body: text||'', kind:'note', updatedAt: now });
-                }
-            }
-        };
-        tx.oncomplete = function(){ noteCache[visitId] = { note: text || '', updatedAt: now }; cb && cb(true); };
-        tx.onerror = function(){ cb && cb(false); };
-    }
-
-    function deleteNote(visitId, cb){
-        if (!db){ cb && cb(false); return; }
-        var tx = db.transaction(["Note"], "readwrite");
-        var store = tx.objectStore("Note");
-        var idx = store.index('visitId');
-        var ids = [];
-        idx.openCursor(IDBKeyRange.only(visitId)).onsuccess = function(e){ var c=e.target.result; if(c){ ids.push(c.value.id); c.continue(); } else { ids.forEach(id=>store.delete(id)); } };
-        tx.oncomplete = function(){ delete noteCache[visitId]; cb && cb(true); };
-        tx.onerror = function(){ cb && cb(false); };
-    }
-
-    function listDrafts(parentVisitId, done){
-        var tx = db.transaction(["Note"], "readonly");
-        var store = tx.objectStore("Note");
-        var idx = store.index('visitId');
-        var result = [];
-        idx.openCursor(IDBKeyRange.only(parentVisitId)).onsuccess = function(e){ var c=e.target.result; if(c){ if (c.value.kind==='draft') result.push(c.value); c.continue(); } else { done&&done(result); } };
-    }
-
-    function createDraftFromSelection(parentVisitId, url, selection, cb){
-        var tx = db.transaction(["Note"], "readwrite");
-        var store = tx.objectStore("Note");
-        store.add({ parentId: parentVisitId, visitId: parentVisitId, url: url, title:'', body: selection||'', kind:'draft', updatedAt: Date.now() });
-        tx.oncomplete=function(){ cb&&cb(true); };
-        tx.onerror=function(){ cb&&cb(false); };
-    }
-
-    function mergeDraftsToNewNote(parentVisitId, url, drafts, cb, keepDrafts){
-        var body = drafts.map(d=>d.body||'').join('\n\n---\n\n');
-        var tx = db.transaction(["Note"], "readwrite");
-        var store = tx.objectStore("Note");
-        store.add({ parentId:0, visitId: parentVisitId, url:url, title:'', body: body, kind:'note', updatedAt: Date.now() });
-        if (!keepDrafts){ drafts.forEach(d=>store.delete(d.id)); }
-        tx.oncomplete=function(){ cb&&cb(true); };
-        tx.onerror=function(){ cb&&cb(false); };
-    }
-
-    function loadNotesPresence(visitIds, done){
-        if (!db || visitIds.length === 0){ done && done(); return; }
-        var tx = db.transaction(["Note"], "readonly");
-        var store = tx.objectStore("Note");
-        var idx = store.index('visitId');
-        var c = 0;
-        visitIds.forEach(function(id){
-            var any = false, text=''; var up=0;
-            idx.openCursor(IDBKeyRange.only(id)).onsuccess=function(e){ var cur=e.target.result; if(cur){ if(cur.value.kind==='note' && cur.value.parentId===0){ any=true; text=cur.value.body||''; up=cur.value.updatedAt||0; } cur.continue(); } else { if(any){ noteCache[id]={ note:text, updatedAt:up }; } if (++c===visitIds.length) done&&done(); } };
-        });
-    }
-
-    function refreshNoteBadges(){
-        var treeObj = $jq.fn.zTree.getZTreeObj("treeDemo");
-        if (!treeObj) return;
-        var all = treeObj.getNodesByFilter(function(){ return true; }, false);
-        var showBadge = (localStorage['notes-badge'] == 'yes');
-        var showTooltip = (localStorage['notes-tooltip'] == 'yes');
-        all.forEach(function(n){
-            var tId = n.tId;
-            var aObj = $jq("#"+tId+"_a");
-            aObj.find('.note-badge').remove();
-            if (noteCache[n.id] && noteCache[n.id].note && noteCache[n.id].note.trim()!==''){
-                if (showBadge){
-                    var first = (noteCache[n.id].note||'').split(/\r?\n/)[0];
-                    if (first.length>80) first = first.slice(0,80) + '…';
-                    var $b = $jq('<span class="note-badge" style="margin-left:6px; color:#c97;">📝</span>');
-                    if (showTooltip){ $b.attr('title', first); }
-                    aObj.append($b);
-                }
-            }
-        });
-    }
 
     // Shift listener
     $(document.body).addEvent('keydown', function (e) {
@@ -418,14 +237,7 @@ document.addEvent('domready', function () {
 
         view: {
             nameIsHTML: true, //允许name支持html				
-            selectedMulti: false,
-            addDiyDom: function(treeId, treeNode){
-                var aObj = $jq("#" + treeNode.tId + "_a");
-                if (aObj.find('.note-btn').length>0) return;
-                var $btn = $jq('<span class="note-btn" style="margin-left:6px; cursor:pointer; color:#888;">📝</span>');
-                $btn.on('click', function(ev){ ev.preventDefault(); ev.stopPropagation(); openNoteModal(treeNode.id, treeNode.t, treeNode.name.replace(/<[^>]+>/g,'')); });
-                aObj.append($btn);
-            }
+            selectedMulti: false
         },
         edit: {
             enable: false,
@@ -554,10 +366,9 @@ document.addEvent('domready', function () {
     }
 
 
+    var db = chrome.extension.getBackgroundPage().db;
     if (db != undefined)
         pre_History(0, 0);
-    else
-        waitDbAndLoad(80);
 
     function pre_History(loadfrom, loadto) {
         alertLoadingHistory(false);
@@ -605,22 +416,20 @@ document.addEvent('domready', function () {
                 let t = transition_value[v.transition];
 
                 if (filtUrl(v.url) == false) {
- 					let node = {
- 						id: v.visitId,
- 						pId: parseInt(v.referringVisitId),
- 						name: TimeToStr(v.visitTime, true, true) + " - " + v.title.replace(/[<>]/g, ' ') + ' ' + t,
- 						url: v.url,
- 						icon: 'chrome://favicon/' + v.url.replace(/(?<![\/])\/[^\/].+/, ""),
- 						open: true,
- 						transition: v.transition,
- 						t: v.url
- 					};
+                    let node = {
+                        id: v.visitId,
+                        pId: parseInt(v.referringVisitId),
+                        name: TimeToStr(v.visitTime, true, true) + " - " + v.title.replace(/[<>]/g, ' ') + ' ' + t,
+                        // url: v.url,
+                        icon: 'chrome://favicon/' + v.url.replace(/(?<![\/])\/[^\/].+/, ""),
+                        open: true,
+                        transition: v.transition,
+                        t: v.url //+ " "+v.referringVisitId + ">"+v.visitId
+                    };
 
                     tag[t] = true;
 
                     pIDs[v.referringVisitId] = true;
-                    idPresent[v.visitId] = true;
-                    if (v.referringVisitId && v.referringVisitId>0) parentNeeded[v.referringVisitId]=true;
 
                     yNodes.push(node);
                 }
@@ -628,66 +437,56 @@ document.addEvent('domready', function () {
                 cursor.continue();
             } else {
 
-				zNodes = zNodes.concat(yNodes);
-				function hasMissingParents(){
-					for (var k in parentNeeded){ if (k!='0' && !idPresent[k]) return true; }
-					return false;
-				}
-				// backfill missing parent chains
-				function backfillParents(done){
-					var missing = Object.keys(parentNeeded).filter(function(pid){ return pid!='0' && !idPresent[pid]; });
-					if (missing.length===0){ done(); return; }
-					var tx = db.transaction(["VisitItem"], "readonly");
-					var st = tx.objectStore("VisitItem");
-					var cnt = 0;
-					missing.slice(0,200).forEach(function(pid){
-						var req = st.get(parseInt(pid));
-						req.onsuccess=function(ev){ var v=ev.target.result; if (v && filtUrl(v.url)==false){ var t = transition_value[v.transition]; zNodes.push({ id:v.visitId, pId: parseInt(v.referringVisitId)||0, name: TimeToStr(v.visitTime,true,true)+" - "+(v.title||'').replace(/[<>]/g,' ')+ ' ' + t, url:v.url, icon: 'chrome://favicon/' + v.url.replace(/(?<![\/])\/[^\/].+/, ""), open:true, transition:v.transition, t:v.url }); idPresent[v.visitId]=true; if (v.referringVisitId && v.referringVisitId>0) parentNeeded[v.referringVisitId]=true; }
-							if (++cnt===Math.min(missing.length,200)) done(); };
-						req.onerror=function(){ if (++cnt===Math.min(missing.length,200)) done(); };
-					});
-				}
-				function ensureChains(cb){ backfillParents(function(){ var more = Object.keys(parentNeeded).some(function(pid){ return pid!='0' && !idPresent[pid]; }); if (more){ ensureChains(cb); } else { cb(); } }); }
+                zNodes = zNodes.concat(yNodes);
 
-				if ((zNodes.length < localStorage['load-range4'] || hasMissingParents()) && loadfrom - DAY * t > date - localStorage['load-range3'] * DAY) {
-					feach_History(loadfrom, loadto, t + 1);
-				} else {
+                if (zNodes.length < localStorage['load-range4'] && loadfrom - DAY * t > date - localStorage['load-range3'] * DAY) {
+                    feach_History(loadfrom, loadto, t + 1);
+                } else {
+                    let nodes = treeObj.getNodes();
+                    while (nodes && nodes.length > 0) {
+                        treeObj.removeNode(nodes[0], false);
+                        // treeObj.removeNode(nodes,false);
+                    }
 
-					if (zNodes.length > 0 && showLessItem == 'yes') {
+                    if (zNodes.length > 0 && showLessItem == 'yes') {
 
-						let urls = {};
+                        let urls = {};
 
-						for (let s = 0; s < zNodes.length; s++) {
-							let ss = zNodes[s];
-							while (pIDs[ss.id] != true) {
-								if (ss.transition == 'reload' || urls[ss.url] == true) {
-									zNodes.splice(s, 1);
-								} else {
-									urls[ss.url] = true;
-									break;
-								}
+                        for (let s = 0; s < zNodes.length; s++) {
+                            let ss = zNodes[s];
+                            while (pIDs[ss.id] != true) {
+                                if (ss.transition == 'reload' || urls[ss.url] == true) {
+                                    zNodes.splice(s, 1);
+                                } else {
+                                    urls[ss.url] = true;
+                                    break;
+                                }
 
-								if (s < zNodes.length)
-									ss = zNodes[s];
-								else
-									break;
-							}
-						}
-					}
+                                if (s < zNodes.length)
+                                    ss = zNodes[s];
+                                else
+                                    break;
+                            }
+                        }
+                    }
 
-					ensureChains(function(){
-						if (zNodes.length > 0) {
-							treeObj.addNodes(null, zNodes, false);
-						} else {
-							treeObj.addNodes(null, mNodes, false);
-						}
-						$('calendar-total-value').set('text', zNodes.length);
-						$('header-text').set('text', timeStr2(new Date(loadfrom - DAY * t), false) + ' ~ ' + timeStr2(new Date(loadto), true));
-						refreshSearchTags();
-						alertLoadingHistory(true);
-						console.log(" pre_History() finish :( ");
-					});
-				}
+                    if (zNodes.length > 0) {
+                        treeObj.addNodes(null, zNodes, false);
+                        // $('calendar-total-value').set('text',zNodes.length);
+                    } else {
+                        treeObj.addNodes(null, mNodes, false);
+                        // $('search-tag').set('text','');
+                        // $('calendar-total-value').set('text', '0');
+                    }
+                    $('calendar-total-value').set('text', zNodes.length);
+
+                    // $('header-text').set('text',new Date(loadfrom-DAY*t).toLocaleString()+' - '+new Date(loadto).toLocaleString());
+                    $('header-text').set('text', timeStr2(new Date(loadfrom - DAY * t), false) + ' ~ ' + timeStr2(new Date(loadto), true));
+                    refreshSearchTags();
+                    // 
+                    alertLoadingHistory(true);
+                    console.log(" pre_History() finish :( ");
+                }
 
 
 
