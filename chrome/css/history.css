@@ -879,31 +879,36 @@ div[rel="grey"] {
     font-weight: bold;
 }
 
-/* Dark Mode Support for Notes */
+/* Dark Mode Support - Only for Note Editors */
 @media (prefers-color-scheme: dark) {
+    /* Note Editor Modal */
     #note-modal-content {
         background: #2d2d2d !important;
         color: #e0e0e0 !important;
         border: 1px solid #555 !important;
     }
     
+    /* Note Viewer Modal */
     #note-viewer-content {
         background: #2d2d2d !important;
         color: #e0e0e0 !important;
         border: 1px solid #555 !important;
     }
     
+    /* Text Editor */
     #note-text {
         background: #1e1e1e !important;
         color: #e0e0e0 !important;
         border: 1px solid #555 !important;
     }
     
+    /* Preview Pane */
     #note-preview-pane {
         background: #1e1e1e !important;
         border: 1px solid #555 !important;
     }
     
+    /* Markdown Content in Editor/Viewer */
     #note-preview-content, #note-viewer-rendered {
         color: #e0e0e0 !important;
     }
@@ -952,44 +957,26 @@ div[rel="grey"] {
         color: #ffffff !important;
     }
     
-    .button {
+    /* Editor Buttons Only */
+    #note-modal-content .button,
+    #note-viewer-content .button {
         background: #3d3d3d !important;
         color: #e0e0e0 !important;
         border: 1px solid #555 !important;
     }
     
-    .button:hover {
+    #note-modal-content .button:hover,
+    #note-viewer-content .button:hover {
         background: #4d4d4d !important;
     }
     
-    .button.active {
+    #note-modal-content .button.active,
+    #note-viewer-content .button.active {
         background-color: #007cba !important;
         color: white !important;
     }
     
-    /* Dark mode for notes list */
-    .item {
-        background: #2d2d2d !important;
-        border-color: #555 !important;
-    }
-    
-    .item .link {
-        color: #66b3ff !important;
-    }
-    
-    .item .desc {
-        color: #c0c0c0 !important;
-    }
-    
-    .item .info {
-        color: #999 !important;
-    }
-    
-    .item .ops a {
-        color: #66b3ff !important;
-    }
-    
-    /* Dark mode modal background */
+    /* Dark Modal Backgrounds */
     #note-modal {
         background: rgba(0,0,0,0.7) !important;
     }

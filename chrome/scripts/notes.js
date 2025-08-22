@@ -189,10 +189,4 @@ document.addEvent('domready', function(){
 		render(f);
 	});
 	load();
-	
-	// Apply dark mode theme if needed
-	if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-		document.body.style.backgroundColor = '#1e1e1e';
-		document.body.style.color = '#e0e0e0';
-	}
 });

@@ -232,39 +232,6 @@ document.addEvent('domready', function () {
         });
     }; 
 
-    // Theme-aware styling for note modal
-    function applyThemeToModal() {
-        // Detect if user prefers dark mode
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            // Apply dark theme styles
-            var modal = $jq('#note-modal-content');
-            if (modal.length) {
-                modal.css({
-                    'background': '#2d2d2d',
-                    'color': '#e0e0e0',
-                    'border': '1px solid #555'
-                });
-            }
-            
-            var textArea = $jq('#note-text');
-            if (textArea.length) {
-                textArea.css({
-                    'background': '#1e1e1e',
-                    'color': '#e0e0e0',
-                    'border': '1px solid #555'
-                });
-            }
-            
-            var previewPane = $jq('#note-preview-pane');
-            if (previewPane.length) {
-                previewPane.css({
-                    'background': '#1e1e1e',
-                    'border': '1px solid #555'
-                });
-            }
-        }
-    }
-
     // Note functionality for tree view
     function openNoteModal(treeNode) {
         console.log('openNoteModal called with:', treeNode);
@@ -321,9 +288,6 @@ document.addEvent('domready', function () {
         // Initialize mode
         var currentMode = 'edit';
         setEditorMode(currentMode);
-        
-        // Apply theme-aware styling
-        applyThemeToModal();
         
         // Show modal
         modal.css('display', 'flex');
