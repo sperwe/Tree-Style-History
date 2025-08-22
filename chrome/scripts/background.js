@@ -1090,9 +1090,10 @@ function saveNoteToDatabase(visitId, pageUrl, selectedText) {
                             return;
                         }
                         
-                        // Append to existing note with timestamp separator
+                        // Append to existing note with detailed timestamp
                         var timeString = new Date(now).toLocaleString();
-                        var separator = existingNote ? "\n\n---\n*Added on " + timeString + "*\n\n" : "";
+                        var isoTimeString = new Date(now).toISOString();
+                        var separator = existingNote ? "\n\n---\n**📅 " + timeString + "** *(saved at " + isoTimeString + ")*\n\n" : "**📅 " + timeString + "** *(saved at " + isoTimeString + ")*\n\n";
                         noteData = {
                             visitId: visitId,
                             url: pageUrl,
@@ -1100,11 +1101,14 @@ function saveNoteToDatabase(visitId, pageUrl, selectedText) {
                             updatedAt: now
                         };
                     } else {
-                        // Create new note
+                        // Create new note with initial timestamp
+                        var timeString = new Date(now).toLocaleString();
+                        var isoTimeString = new Date(now).toISOString();
+                        var initialTimestamp = "**📅 " + timeString + "** *(saved at " + isoTimeString + ")*\n\n";
                         noteData = { 
                             visitId: visitId, 
                             url: pageUrl, 
-                            note: selectedText, 
+                            note: initialTimestamp + selectedText, 
                             updatedAt: now 
                         };
                     }

@@ -232,6 +232,39 @@ document.addEvent('domready', function () {
         });
     }; 
 
+    // Theme-aware styling for note modal
+    function applyThemeToModal() {
+        // Detect if user prefers dark mode
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            // Apply dark theme styles
+            var modal = $jq('#note-modal-content');
+            if (modal.length) {
+                modal.css({
+                    'background': '#2d2d2d',
+                    'color': '#e0e0e0',
+                    'border': '1px solid #555'
+                });
+            }
+            
+            var textArea = $jq('#note-text');
+            if (textArea.length) {
+                textArea.css({
+                    'background': '#1e1e1e',
+                    'color': '#e0e0e0',
+                    'border': '1px solid #555'
+                });
+            }
+            
+            var previewPane = $jq('#note-preview-pane');
+            if (previewPane.length) {
+                previewPane.css({
+                    'background': '#1e1e1e',
+                    'border': '1px solid #555'
+                });
+            }
+        }
+    }
+
     // Note functionality for tree view
     function openNoteModal(treeNode) {
         console.log('openNoteModal called with:', treeNode);
@@ -288,6 +321,9 @@ document.addEvent('domready', function () {
         // Initialize mode
         var currentMode = 'edit';
         setEditorMode(currentMode);
+        
+        // Apply theme-aware styling
+        applyThemeToModal();
         
         // Show modal
         modal.css('display', 'flex');
@@ -741,45 +777,6 @@ document.addEvent('domready', function () {
             }
         });
 
-    }
-
-
-
-
-
-    // Note functionality for tree view
-    function openNoteModal(treeNode) {
-        console.log('openNoteModal called with:', treeNode);
-        if (!treeNode || !treeNode.id) return;
-        
-        var visitId = treeNode.id;
-        var url = treeNode.url || '';
-        var title = treeNode.title || treeNode.t || '';
-        console.log('Note data:', {visitId, url, title});
-        
-        // Get existing note if any
-        var bg = chrome.extension.getBackgroundPage();
-        var db = bg && bg.db;
-        
-        if (!db) {
-            alert('Database not available');
-            return;
-        }
-        
-        // Load existing note
-        var tx = db.transaction(["VisitNote"], "readonly");
-        var store = tx.objectStore("VisitNote");
-        var req = store.get(visitId);
-        
-        req.onsuccess = function(e) {
-            var existingNote = e.target.result;
-            var noteText = existingNote ? (existingNote.note || '') : '';
-            showNoteModal(visitId, url, title, noteText);
-        };
-        
-        req.onerror = function() {
-            showNoteModal(visitId, url, title, '');
-        };
     }
 
 });
