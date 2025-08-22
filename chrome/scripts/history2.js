@@ -274,10 +274,20 @@ document.addEvent('domready', function () {
         var saveBtn = $jq('#note-save');
         var deleteBtn = $jq('#note-delete');
         var cancelBtn = $jq('#note-cancel');
+        var editModeBtn = $jq('#note-mode-edit');
+        var previewModeBtn = $jq('#note-mode-preview');
+        var splitModeBtn = $jq('#note-mode-split');
+        var editPane = $jq('#note-edit-pane');
+        var previewPane = $jq('#note-preview-pane');
+        var previewContent = $jq('#note-preview-content');
         
         // Set content
         titleEl.text(title || url || 'Note');
         textEl.val(text || '');
+        
+        // Initialize mode
+        var currentMode = 'edit';
+        setEditorMode(currentMode);
         
         // Show modal
         modal.css('display', 'flex');
@@ -287,8 +297,61 @@ document.addEvent('domready', function () {
         saveBtn.off('click');
         deleteBtn.off('click');
         cancelBtn.off('click');
+        editModeBtn.off('click');
+        previewModeBtn.off('click');
+        splitModeBtn.off('click');
+        textEl.off('input');
+        
+        // Mode switching
+        function setEditorMode(mode) {
+            currentMode = mode;
+            editModeBtn.removeClass('active');
+            previewModeBtn.removeClass('active');
+            splitModeBtn.removeClass('active');
+            
+            if (mode === 'edit') {
+                editModeBtn.addClass('active');
+                editPane.css('flex', '1');
+                previewPane.hide();
+            } else if (mode === 'preview') {
+                previewModeBtn.addClass('active');
+                editPane.hide();
+                previewPane.css('flex', '1').show();
+                updatePreview();
+            } else if (mode === 'split') {
+                splitModeBtn.addClass('active');
+                editPane.css('flex', '1').show();
+                previewPane.css('flex', '1').show();
+                updatePreview();
+            }
+        }
+        
+        function updatePreview() {
+            if (typeof marked !== 'undefined') {
+                var markdownText = textEl.val() || '';
+                try {
+                    var html = marked.parse(markdownText);
+                    previewContent.html(html);
+                } catch (e) {
+                    previewContent.html('<em>Error parsing Markdown: ' + e.message + '</em>');
+                }
+            } else {
+                previewContent.html('<em>Markdown parser not available</em>');
+            }
+        }
         
         // Add event handlers
+        editModeBtn.on('click', function() { setEditorMode('edit'); });
+        previewModeBtn.on('click', function() { setEditorMode('preview'); });
+        splitModeBtn.on('click', function() { setEditorMode('split'); });
+        
+        // Live preview update in split mode
+        textEl.on('input', function() {
+            if (currentMode === 'split' || currentMode === 'preview') {
+                updatePreview();
+            }
+        });
+        
         cancelBtn.on('click', function() {
             modal.css('display', 'none');
         });
@@ -716,108 +779,6 @@ document.addEvent('domready', function () {
         
         req.onerror = function() {
             showNoteModal(visitId, url, title, '');
-        };
-    }
-    
-    function showNoteModal(visitId, url, title, text) {
-        var modal = $jq('#note-modal');
-        var titleEl = $jq('#note-modal-title');
-        var textEl = $jq('#note-text');
-        var saveBtn = $jq('#note-save');
-        var deleteBtn = $jq('#note-delete');
-        var cancelBtn = $jq('#note-cancel');
-        
-        // Set content
-        titleEl.text(title || url || 'Note');
-        textEl.val(text || '');
-        
-        // Show modal
-        modal.css('display', 'flex');
-        textEl.focus();
-        
-        // Remove old event handlers
-        saveBtn.off('click');
-        deleteBtn.off('click');
-        cancelBtn.off('click');
-        
-        // Add event handlers
-        cancelBtn.on('click', function() {
-            modal.css('display', 'none');
-        });
-        
-        deleteBtn.on('click', function() {
-            if (confirm(returnLang('notesDeleteConfirm') || 'Are you sure you want to delete this note?')) {
-                deleteNote(visitId, function(success) {
-                    modal.css('display', 'none');
-                    if (success) {
-                        console.log('Note deleted successfully');
-                    }
-                });
-            }
-        });
-        
-        saveBtn.on('click', function() {
-            var noteContent = textEl.val();
-            saveNote(visitId, url, noteContent, function(success) {
-                modal.css('display', 'none');
-                if (success) {
-                    console.log('Note saved successfully');
-                } else {
-                    alert(returnLang('notesFailed') || 'Failed to save note');
-                }
-            });
-        });
-    }
-    
-    function saveNote(visitId, url, text, callback) {
-        var bg = chrome.extension.getBackgroundPage();
-        var db = bg && bg.db;
-        
-        if (!db) {
-            callback && callback(false);
-            return;
-        }
-        
-        var tx = db.transaction(["VisitNote"], "readwrite");
-        var store = tx.objectStore("VisitNote");
-        var now = Date.now();
-        
-        store.put({ 
-            visitId: visitId, 
-            url: url, 
-            note: text || '', 
-            updatedAt: now 
-        });
-        
-        tx.oncomplete = function() {
-            callback && callback(true);
-        };
-        
-        tx.onerror = function() {
-            callback && callback(false);
-        };
-    }
-    
-    function deleteNote(visitId, callback) {
-        var bg = chrome.extension.getBackgroundPage();
-        var db = bg && bg.db;
-        
-        if (!db) {
-            callback && callback(false);
-            return;
-        }
-        
-        var tx = db.transaction(["VisitNote"], "readwrite");
-        var store = tx.objectStore("VisitNote");
-        
-        store.delete(visitId);
-        
-        tx.oncomplete = function() {
-            callback && callback(true);
-        };
-        
-        tx.onerror = function() {
-            callback && callback(false);
         };
     }
 
