@@ -34,13 +34,16 @@ document.addEvent('domready', function () {
             var btn = new Element('input',{ id:'note-copy', type:'button', 'class':'button', value:(returnLang('copy')||'Copy') });
             $('note-save').getParent().insertBefore(btn, $('note-save'));
         }
+        alertLoadingHistory(true);
         $('note-modal').setStyle('display', 'flex');
+
         // drafts block
         $('note-drafts').setStyle('display','block');
         $('note-drafts').set('html','');
         var selBtn = $('note-create-draft');
         var mergeBtn = $('note-merge-drafts');
         var selectedIds = {};
+        var currentEditingDraftId = 0;
         selBtn.onclick = function(){
             var sel = window.getSelection ? (window.getSelection().toString()||$('note-text').getSelectedText&&$('note-text').getSelectedText()) : '';
             if (!sel || sel.trim()==='') sel = $('note-text').getSelectedText ? $('note-text').getSelectedText() : '';
@@ -57,17 +60,31 @@ document.addEvent('domready', function () {
                 list.forEach(function(d){
                     var id = d.id; var first = (d.body||'').split(/\r?\n/)[0]; if (first.length>80) first=first.slice(0,80)+'…';
                     var chk = selectedIds[id]?'checked="checked"':'';
-                    html += '<label style="display:block; font-weight:normal;"><input type="checkbox" data-id="'+id+'" '+chk+'> '+first+'</label>';
+                    html += '<div style="display:flex; align-items:center; gap:8px; margin:4px 0;">'
+                        + '<input type="checkbox" data-id="'+id+'" '+chk+'> '
+                        + '<span style="flex:1;">'+first+'</span>'
+                        + '<a href="#" data-edit="'+id+'">'+(returnLang('notesEdit')||'Edit')+'</a>'
+                        + '</div>';
                 });
                 $('note-drafts').set('html', html);
                 $$('\#note-drafts input[type="checkbox"]').addEvent('change', function(){ var id = parseInt(this.get('data-id')); if (this.checked) selectedIds[id]=true; else delete selectedIds[id]; });
+                $$('\#note-drafts a[data-edit]').addEvent('click', function(e){ e.stop(); var id = parseInt(this.get('data-edit')); listDrafts(visitId, function(list){ var d = list.filter(x=>x.id===id)[0]; if(d){ currentEditingDraftId=id; $('note-text').set('value', d.body||''); } }); });
             });
         }
         renderDrafts();
 
         $('note-cancel').onclick = function(){ $('note-modal').setStyle('display', 'none'); };
-        $('note-delete').onclick = function(){ deleteNote(visitId, function(ok){ $('note-modal').setStyle('display', 'none'); if(ok){ alertLoadingHistory(true); alertUser(returnLang('noteDeleted'),'open'); } else { alertLoadingHistory(true); alertUser(returnLang('noteError'),'open'); } refreshNoteBadges(); }); };
-        $('note-save').onclick = function(){ saveNote(visitId, url, $('note-text').get('value'), function(ok){ $('note-modal').setStyle('display', 'none'); if(ok){ alertLoadingHistory(true); alertUser(returnLang('noteSaved'),'open'); } else { alertLoadingHistory(true); alertUser(returnLang('noteError'),'open'); } refreshNoteBadges(); }); };
+        $('note-delete').onclick = function(){ deleteNote(visitId, function(ok){ $('note-modal').setStyle('display', 'none'); alertLoadingHistory(true); if(ok){ alertUser(returnLang('noteDeleted'),'open'); } else { alertUser(returnLang('noteError'),'open'); } refreshNoteBadges(); }); };
+        $('note-save').onclick = function(){
+            if (currentEditingDraftId>0){
+                var tx = db.transaction(["Note"], "readwrite"); var store = tx.objectStore("Note");
+                store.get(currentEditingDraftId).onsuccess=function(ev){ var d=ev.target.result; if(d){ d.body=$('note-text').get('value')||''; d.updatedAt=Date.now(); store.put(d);} };
+                tx.oncomplete=function(){ $('note-modal').setStyle('display','none'); alertLoadingHistory(true); alertUser(returnLang('noteSaved')||'Saved','open'); };
+                tx.onerror=function(){ $('note-modal').setStyle('display','none'); alertLoadingHistory(true); alertUser(returnLang('noteError')||'Error','open'); };
+            } else {
+                saveNote(visitId, url, $('note-text').get('value'), function(ok){ $('note-modal').setStyle('display', 'none'); alertLoadingHistory(true); if(ok){ alertUser(returnLang('noteSaved'),'open'); } else { alertUser(returnLang('noteError'),'open'); } refreshNoteBadges(); });
+            }
+        };
         $('note-copy').onclick = function(){ var txt = $('note-text').get('value')||''; var t = (title||''); var u = (url||''); var payload=''; if (t) payload+='Title: '+t+'\n'; if (u) payload+='URL: '+u+'\n\n'; payload+=txt; Clipboard.copy(payload); };
     }
 
@@ -135,13 +152,13 @@ document.addEvent('domready', function () {
 
     function loadNotesPresence(visitIds, done){
         if (!db || visitIds.length === 0){ done && done(); return; }
-        var tx = db.transaction(["VisitNote"], "readonly");
-        var store = tx.objectStore("VisitNote");
+        var tx = db.transaction(["Note"], "readonly");
+        var store = tx.objectStore("Note");
+        var idx = store.index('visitId');
         var c = 0;
         visitIds.forEach(function(id){
-            var r = store.get(id);
-            r.onsuccess = function(e){ var v=e.target.result; if (v) noteCache[id] = { note: v.note||'', updatedAt: v.updatedAt||0 }; if (++c===visitIds.length) done&&done(); };
-            r.onerror = function(){ if (++c===visitIds.length) done&&done(); };
+            var any = false, text=''; var up=0;
+            idx.openCursor(IDBKeyRange.only(id)).onsuccess=function(e){ var cur=e.target.result; if(cur){ if(cur.value.kind==='note' && cur.value.parentId===0){ any=true; text=cur.value.body||''; up=cur.value.updatedAt||0; } cur.continue(); } else { if(any){ noteCache[id]={ note:text, updatedAt:up }; } if (++c===visitIds.length) done&&done(); } };
         });
     }
 
