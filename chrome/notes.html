@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+	<title>Recent Notes | Tree Style History</title>
+	<link rel="stylesheet" href="css/history.css">
+	<script type="text/javascript" src="scripts/moo.js"></script>
+	<script type="text/javascript" src="scripts/func.js"></script>
+	<script type="text/javascript" src="scripts/notes.js"></script>
+	<script type="text/javascript" src="scripts/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+	<div id="navigation-menu">
+		<h1 class="lang" data-lang-string="treeOptions"></h1>
+		<ul>
+			<li><a href="history2.html" class="lang" data-lang-string="treeOptions"></a></li>
+			<li><a href="history.html" class="lang" data-lang-string="linerHistory"></a></li>
+			<li><a href="closed.html" class="lang" data-lang-string="closeHistory"></a></li>
+			<li><a href="bookmark.html" class="lang" data-lang-string="linerBookMark"></a></li>
+			<li><a href="notes.html" class="lang selected" data-lang-string="recentNotes"></a></li>
+			<li><a href="options.html" class="lang" data-lang-string="options"></a></li>
+		</ul>
+	</div>
+	<div id="history-container">
+		<table id="main-table">
+			<tr>
+				<td>
+					<h1 class="lang" id="header-text" data-lang-string="recentNotes"></h1>
+				</td>
+				<td id="search">
+					<input id="notes-search" type="text" placeholder="Filter" value="">
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2">
+					<div id="rh-views">
+						<div id="notes-list"></div>
+					</div>
+				</td>
+			</tr>
+		</table>
+	</div>
+</body>
+</html>

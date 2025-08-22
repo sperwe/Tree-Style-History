@@ -679,5 +679,8 @@
     },
     "importNotesMd": {
         "message": "从Markdown文件导入笔记"
+    },
+    "recentNotes": {
+        "message": "最近笔记"
     }
 }

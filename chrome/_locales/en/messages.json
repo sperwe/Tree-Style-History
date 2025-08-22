@@ -589,5 +589,8 @@
     },
     "importNotesFailed": {
         "message": "Failed to import notes."
+    },
+    "recentNotes": {
+        "message": "Recent Notes"
     }
 }
