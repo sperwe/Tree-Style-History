@@ -588,12 +588,14 @@ document.addEvent('domready', function () {
                 let t = transition_value[v.transition];
 
                 if (filtUrl(v.url) == false) {
+                    let origin = v.url;
+                    try { origin = new URL(v.url).origin; } catch(e){ var m=v.url.match(/^(https?:\/\/[^/]+)/i); if(m) origin=m[1]; }
                     let node = {
                         id: v.visitId,
-                        pId: parseInt(v.referringVisitId),
+                        pId: (v.referringVisitId && (v.referringVisitId*1)>0) ? parseInt(v.referringVisitId) : 0,
                         name: TimeToStr(v.visitTime, true, true) + " - " + v.title.replace(/[<>]/g, ' ') + ' ' + t,
                         url: v.url,
-                        icon: 'chrome://favicon/' + v.url.replace(/(?<![\/])\/[^\/].+/, ""),
+                        icon: 'chrome://favicon/' + origin,
                         open: true,
                         transition: v.transition,
                         t: v.url
