@@ -236,8 +236,18 @@ document.addEvent('domready', function () {
     var setting = {
 
         view: {
-            nameIsHTML: true, //允许name支持html				
-            selectedMulti: false
+            nameIsHTML: true, //允许name支持html			
+            selectedMulti: false,
+            addDiyDom: function (treeId, treeNode) {
+                var aObj = $jq("#" + treeNode.tId + "_a");
+                if ($jq("#noteBtn_" + treeNode.id).length > 0) return;
+                var btn = $jq('<span class="note-btn" id="noteBtn_' + treeNode.id + '" title="' + (returnLang('notes')||'Notes') + '" style="margin-left:6px; cursor:pointer;">📝</span>');
+                btn.appendTo(aObj);
+                btn.on('click', function (e) {
+                    e.stopPropagation();
+                    openNoteModal(treeNode);
+                });
+            }
         },
         edit: {
             enable: false,

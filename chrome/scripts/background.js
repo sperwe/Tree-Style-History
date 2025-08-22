@@ -159,7 +159,7 @@ openDb();
 
 
 function openDb() {
-    request = window.indexedDB.open("testDB", 6);
+    request = window.indexedDB.open("testDB", 7);
     request.onerror = function (event) {
         console.log("Error opening DB", event);
     }
@@ -201,6 +201,15 @@ function openDb() {
             objectStore3.createIndex('close', 'close', { unique: false });
         } catch {
             console.log('Error in createObjectStore("closed", { autoIncrement: true }');
+        }
+
+        try {
+            // VisitNote: key is visitId to match VisitItem, store note text and url
+            var noteStore = db.createObjectStore("VisitNote", { keyPath: "visitId" });
+            noteStore.createIndex('url', 'url', { unique: false });
+            noteStore.createIndex('updatedAt', 'updatedAt', { unique: false });
+        } catch (e) {
+            console.log('VisitNote store may already exist:', e && e.message);
         }
 
     };
@@ -951,6 +960,69 @@ chrome.contextMenus.removeAll(() => {
             }
         })
     }
-}
 
-);
+    // Add: save selection as note
+    try {
+        chrome.contextMenus.create({
+            id: 'tsh_save_selection_as_note',
+            title: returnLang('saveSelectionAsNote'),
+            contexts: ['selection']
+        });
+    } catch(e) { console.log('contextMenus create selection failed', e); }
+});
+
+// Save selection as note handler
+chrome.contextMenus.onClicked.addListener((info) => {
+    if (info.menuItemId === 'tsh_save_selection_as_note') {
+        const selectedText = info.selectionText || '';
+        const pageUrl = info.pageUrl || '';
+        if (!selectedText) return;
+        saveSelectionAsNote(pageUrl, selectedText);
+    }
+});
+
+function saveSelectionAsNote(pageUrl, selectedText){
+    if (!pageUrl || !selectedText) return;
+    if (!db){ console.log('DB not ready for saveSelectionAsNote'); return; }
+    // Find latest visitId for the URL
+    var latestVisitId = 0;
+    var latestVisitTime = 0;
+    var tx = db.transaction(["VisitItem"], "readonly");
+    var st = tx.objectStore("VisitItem");
+    var idx = st.index('url');
+    var c = idx.openCursor(IDBKeyRange.only(pageUrl));
+    c.onsuccess = function(e){
+        var cur = e.target.result;
+        if (cur){
+            var v = cur.value;
+            if ((v.visitTime||0) > latestVisitTime){ latestVisitTime = v.visitTime||0; latestVisitId = v.visitId; }
+            cur.continue();
+        } else {
+            // write note
+            var tx2 = db.transaction(["VisitNote"], "readwrite");
+            var ns = tx2.objectStore("VisitNote");
+            if (latestVisitId){
+                var getReq = ns.get(latestVisitId);
+                getReq.onsuccess = function(ev){
+                    var existed = ev.target.result;
+                    var now = Date.now();
+                    if (existed){
+                        existed.note = (existed.note||'') + (existed.note ? "\n\n" : "") + selectedText;
+                        existed.updatedAt = now;
+                        ns.put(existed);
+                    } else {
+                        ns.put({ visitId: latestVisitId, url: pageUrl, note: selectedText, updatedAt: now });
+                    }
+                };
+                getReq.onerror = function(){
+                    ns.put({ visitId: latestVisitId, url: pageUrl, note: selectedText, updatedAt: Date.now() });
+                };
+            } else {
+                // Fallback: create a pseudo visitId
+                var pseudoId = Date.now();
+                ns.put({ visitId: pseudoId, url: pageUrl, note: selectedText, updatedAt: Date.now() });
+            }
+        }
+    };
+    c.onerror = function(err){ console.log('openCursor url index error', err); };
+}
