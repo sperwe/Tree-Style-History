@@ -667,5 +667,17 @@
     },
     "noteCancel": {
         "message": "取消"
+    },
+    "exportNotes": {
+        "message": "导出笔记"
+    },
+    "importNotes": {
+        "message": "导入笔记"
+    },
+    "exportNotesMd": {
+        "message": "导出笔记为Markdown文件"
+    },
+    "importNotesMd": {
+        "message": "从Markdown文件导入笔记"
     }
 }

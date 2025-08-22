@@ -128,4 +128,79 @@ document.addEvent('domready', function () {
         $('select_history_page').set('style','display:none');
     }
 
+	// Export/Import Notes (Markdown)
+	$('exportNotesMd') && $('exportNotesMd').addEvent('click', function(){ exportNotesAsMarkdown(); });
+	$('importNotesMd') && $('importNotesMd').addEvent('click', function(){ $('notesImportFile').click(); });
+	$('notesImportFile') && $('notesImportFile').addEvent('change', function(){ importNotesFromMarkdown(this); });
+
 });
+
+
+function exportNotesAsMarkdown(){
+	var bg = chrome.extension.getBackgroundPage();
+	var db = bg && bg.db;
+	if (!db){ alert(returnLang('exportNotesFailed')); return; }
+	var tx = db.transaction(["VisitNote"], "readonly");
+	var store = tx.objectStore("VisitNote");
+	var req = store.getAll ? store.getAll() : (function(){
+		var out=[]; store.openCursor().onsuccess=function(e){var c=e.target.result; if(c){ out.push(c.value); c.continue(); } else { build(out); } };
+		function build(list){ generate(list); }
+		return { onsuccess:null };
+	})();
+	if (req.onsuccess!==undefined){
+		req.onsuccess = function(e){ var list = e.target.result || []; generate(list); };
+	}
+	function generate(list){
+		var lines = ['# Tree Style History Notes'];
+		list.forEach(function(n){
+			var time = n.updatedAt ? new Date(n.updatedAt).toISOString() : '';
+			lines.push('', '## ' + (n.url || '')); 
+			lines.push('', 'VisitId: ' + n.visitId);
+			if (time) lines.push('Updated: ' + time);
+			lines.push('', '```', (n.note||''), '```');
+		});
+		var blob = new Blob([lines.join('\n')], {type:'text/markdown;charset=utf-8'});
+		var url = URL.createObjectURL(blob);
+		var a = document.createElement('a');
+		a.href = url; a.download = 'tree-style-history-notes.md';
+		document.body.appendChild(a); a.click(); document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}
+}
+
+function importNotesFromMarkdown(fileInput){
+	var file = fileInput.files && fileInput.files[0];
+	if (!file){ return; }
+	var reader = new FileReader();
+	reader.onload = function(){ parseAndImport(reader.result || ''); };
+	reader.readAsText(file);
+	function parseAndImport(text){
+		var sections = text.split(/\n##\s+/).slice(1);
+		var bg = chrome.extension.getBackgroundPage();
+		var db = bg && bg.db;
+		if (!db){ alert(returnLang('importNotesFailed')); return; }
+		var tx = db.transaction(["VisitNote"], "readwrite");
+		var store = tx.objectStore("VisitNote");
+		sections.forEach(function(sec){
+			var lines = sec.split('\n');
+			var url = lines[0].trim();
+			var vid = 0;
+			var note = '';
+			for (var i=1;i<lines.length;i++){
+				var L = lines[i];
+				if (/^VisitId:\s*/i.test(L)) { vid = parseInt(L.replace(/^VisitId:\s*/i,''))||0; }
+				else if (L.trim()==='```'){ // start or end
+					var j=i+1; var buf=[];
+					while (j<lines.length && lines[j].trim()!=='```'){ buf.push(lines[j]); j++; }
+					note = buf.join('\n'); i=j; // jump to closing fence
+				}
+			}
+			if (vid>0 || url){
+				var id = vid>0 ? vid : (Date.now() + Math.floor(Math.random()*1000));
+				store.put({ visitId:id, url:url, note:note||'', updatedAt: Date.now() });
+			}
+		});
+		tx.oncomplete = function(){ alert(returnLang('importNotesSuccess')); };
+		tx.onerror = function(){ alert(returnLang('importNotesFailed')); };
+	}
+}
