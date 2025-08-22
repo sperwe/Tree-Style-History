@@ -946,19 +946,28 @@ chrome.contextMenus.removeAll(() => {
             console.log('select ' + options.id);
         });
 
+        // Combined context menu handler
         chrome.contextMenus.onClicked.addListener((info) => {
-            // console.log(JSON.stringify(info));
-
-            let url = info.linkUrl;
-            if (url != undefined) {
-                window.open('history.html?' + url);
-            } else {
-                url = info.pageUrl;
+            // Handle main context menu
+            if (info.menuItemId === options.id) {
+                let url = info.linkUrl;
                 if (url != undefined) {
                     window.open('history.html?' + url);
+                } else {
+                    url = info.pageUrl;
+                    if (url != undefined) {
+                        window.open('history.html?' + url);
+                    }
                 }
             }
-        })
+            // Handle save selection as note
+            else if (info.menuItemId === 'tsh_save_selection_as_note') {
+                const selectedText = info.selectionText || '';
+                const pageUrl = info.pageUrl || '';
+                if (!selectedText) return;
+                saveSelectionAsNote(pageUrl, selectedText);
+            }
+        });
     }
 
     // Add: save selection as note
@@ -971,58 +980,157 @@ chrome.contextMenus.removeAll(() => {
     } catch(e) { console.log('contextMenus create selection failed', e); }
 });
 
-// Save selection as note handler
-chrome.contextMenus.onClicked.addListener((info) => {
-    if (info.menuItemId === 'tsh_save_selection_as_note') {
-        const selectedText = info.selectionText || '';
-        const pageUrl = info.pageUrl || '';
-        if (!selectedText) return;
-        saveSelectionAsNote(pageUrl, selectedText);
-    }
-});
-
 function saveSelectionAsNote(pageUrl, selectedText){
     if (!pageUrl || !selectedText) return;
-    if (!db){ console.log('DB not ready for saveSelectionAsNote'); return; }
-    // Find latest visitId for the URL
-    var latestVisitId = 0;
-    var latestVisitTime = 0;
-    var tx = db.transaction(["VisitItem"], "readonly");
-    var st = tx.objectStore("VisitItem");
-    var idx = st.index('url');
-    var c = idx.openCursor(IDBKeyRange.only(pageUrl));
-    c.onsuccess = function(e){
-        var cur = e.target.result;
-        if (cur){
-            var v = cur.value;
-            if ((v.visitTime||0) > latestVisitTime){ latestVisitTime = v.visitTime||0; latestVisitId = v.visitId; }
-            cur.continue();
-        } else {
-            // write note
-            var tx2 = db.transaction(["VisitNote"], "readwrite");
-            var ns = tx2.objectStore("VisitNote");
-            if (latestVisitId){
-                var getReq = ns.get(latestVisitId);
-                getReq.onsuccess = function(ev){
+    if (!db){ 
+        console.log('DB not ready for saveSelectionAsNote'); 
+        return; 
+    }
+    
+    console.log('Saving selection as note:', {pageUrl, selectedText: selectedText.substring(0, 50) + '...'});
+    
+    // Step 1: Find latest visitId for the URL
+    findLatestVisitId(pageUrl)
+        .then(visitId => {
+            console.log('Found visitId:', visitId);
+            return saveNoteToDatabase(visitId, pageUrl, selectedText);
+        })
+        .then(() => {
+            console.log('Note saved successfully');
+            // Show notification
+            if (chrome.notifications) {
+                chrome.notifications.create({
+                    type: 'basic',
+                    iconUrl: 'images/tree-48.png',
+                    title: 'Tree Style History',
+                    message: 'Selected text saved as note'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error saving selection as note:', error);
+        });
+}
+
+function findLatestVisitId(pageUrl) {
+    return new Promise((resolve, reject) => {
+        try {
+            var latestVisitId = 0;
+            var latestVisitTime = 0;
+            var tx = db.transaction(["VisitItem"], "readonly");
+            var st = tx.objectStore("VisitItem");
+            var idx = st.index('url');
+            var c = idx.openCursor(IDBKeyRange.only(pageUrl));
+            
+            c.onsuccess = function(e){
+                var cur = e.target.result;
+                if (cur){
+                    var v = cur.value;
+                    if ((v.visitTime||0) > latestVisitTime){ 
+                        latestVisitTime = v.visitTime||0; 
+                        latestVisitId = v.visitId; 
+                    }
+                    cur.continue();
+                } else {
+                    // If no visitId found, create a pseudo one
+                    if (!latestVisitId) {
+                        latestVisitId = Date.now();
+                    }
+                    resolve(latestVisitId);
+                }
+            };
+            
+            c.onerror = function(err){ 
+                console.log('openCursor url index error', err);
+                // Fallback: create a pseudo visitId
+                resolve(Date.now());
+            };
+            
+            tx.onerror = function(err) {
+                console.error('Transaction error in findLatestVisitId:', err);
+                reject(err);
+            };
+        } catch (error) {
+            console.error('Exception in findLatestVisitId:', error);
+            reject(error);
+        }
+    });
+}
+
+function saveNoteToDatabase(visitId, pageUrl, selectedText) {
+    return new Promise((resolve, reject) => {
+        try {
+            var tx = db.transaction(["VisitNote"], "readwrite");
+            var ns = tx.objectStore("VisitNote");
+            
+            var getReq = ns.get(visitId);
+            getReq.onsuccess = function(ev){
+                try {
                     var existed = ev.target.result;
                     var now = Date.now();
+                    var noteData;
+                    
                     if (existed){
-                        existed.note = (existed.note||'') + (existed.note ? "\n\n" : "") + selectedText;
-                        existed.updatedAt = now;
-                        ns.put(existed);
+                        // Append to existing note
+                        noteData = {
+                            visitId: visitId,
+                            url: pageUrl,
+                            note: (existed.note||'') + (existed.note ? "\n\n" : "") + selectedText,
+                            updatedAt: now
+                        };
                     } else {
-                        ns.put({ visitId: latestVisitId, url: pageUrl, note: selectedText, updatedAt: now });
+                        // Create new note
+                        noteData = { 
+                            visitId: visitId, 
+                            url: pageUrl, 
+                            note: selectedText, 
+                            updatedAt: now 
+                        };
                     }
-                };
-                getReq.onerror = function(){
-                    ns.put({ visitId: latestVisitId, url: pageUrl, note: selectedText, updatedAt: Date.now() });
-                };
-            } else {
-                // Fallback: create a pseudo visitId
-                var pseudoId = Date.now();
-                ns.put({ visitId: pseudoId, url: pageUrl, note: selectedText, updatedAt: Date.now() });
-            }
+                    
+                    var putReq = ns.put(noteData);
+                    putReq.onsuccess = function() {
+                        resolve();
+                    };
+                    putReq.onerror = function(err) {
+                        console.error('Put request error:', err);
+                        reject(err);
+                    };
+                } catch (error) {
+                    console.error('Exception in getReq.onsuccess:', error);
+                    reject(error);
+                }
+            };
+            
+            getReq.onerror = function(err){
+                console.error('Get request error:', err);
+                // Try to save anyway
+                try {
+                    var noteData = { 
+                        visitId: visitId, 
+                        url: pageUrl, 
+                        note: selectedText, 
+                        updatedAt: Date.now() 
+                    };
+                    var putReq = ns.put(noteData);
+                    putReq.onsuccess = function() {
+                        resolve();
+                    };
+                    putReq.onerror = function(putErr) {
+                        reject(putErr);
+                    };
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            
+            tx.onerror = function(err) {
+                console.error('Transaction error in saveNoteToDatabase:', err);
+                reject(err);
+            };
+        } catch (error) {
+            console.error('Exception in saveNoteToDatabase:', error);
+            reject(error);
         }
-    };
-    c.onerror = function(err){ console.log('openCursor url index error', err); };
+    });
 }
