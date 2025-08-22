@@ -23,13 +23,18 @@ document.addEvent('domready', function () {
     historyFx.start(ho);
 
     function openNoteModal(visitId, url, title) {
-        $('note-modal-title').set('text', '📝 ' + (title || ''));
-        $('note-text').set('value', noteCache[visitId] ? (noteCache[visitId].note || '') : '');
+        var has = noteCache[visitId] && noteCache[visitId].note && noteCache[visitId].note.trim()!=='';
+        $('note-modal-title').set('text', (has ? returnLang('noteEdit') : returnLang('noteAdd')) + ' - ' + (title || ''));
+        $('note-text').set('value', has ? (noteCache[visitId].note || '') : '');
+        $('note-text').set('placeholder', returnLang('notePlaceholder'));
+        $('note-delete').set('value', returnLang('noteDelete'));
+        $('note-cancel').set('value', returnLang('noteCancel'));
+        $('note-save').set('value', returnLang('noteSave'));
         $('note-modal').setStyle('display', 'flex');
 
         $('note-cancel').onclick = function(){ $('note-modal').setStyle('display', 'none'); };
-        $('note-delete').onclick = function(){ deleteNote(visitId, function(){ $('note-modal').setStyle('display', 'none'); refreshNoteBadges(); }); };
-        $('note-save').onclick = function(){ saveNote(visitId, url, $('note-text').get('value'), function(){ $('note-modal').setStyle('display', 'none'); refreshNoteBadges(); }); };
+        $('note-delete').onclick = function(){ deleteNote(visitId, function(ok){ $('note-modal').setStyle('display', 'none'); if(ok){ alertUser(returnLang('noteDeleted'),'open'); } else { alertUser(returnLang('noteError'),'open'); } refreshNoteBadges(); }); };
+        $('note-save').onclick = function(){ saveNote(visitId, url, $('note-text').get('value'), function(ok){ $('note-modal').setStyle('display', 'none'); if(ok){ alertUser(returnLang('noteSaved'),'open'); } else { alertUser(returnLang('noteError'),'open'); } refreshNoteBadges(); }); };
     }
 
     function saveNote(visitId, url, text, cb){
@@ -72,7 +77,11 @@ document.addEvent('domready', function () {
             var aObj = $jq("#"+tId+"_a");
             aObj.find('.note-badge').remove();
             if (noteCache[n.id] && noteCache[n.id].note && noteCache[n.id].note.trim()!==''){
-                aObj.append(NOTE_BADGE);
+                var first = (noteCache[n.id].note||'').split(/\r?\n/)[0];
+                if (first.length>80) first = first.slice(0,80) + '…';
+                var $b = $jq('<span class="note-badge" style="margin-left:6px; color:#c97;">📝</span>');
+                $b.attr('title', first);
+                aObj.append($b);
             }
         });
     }
