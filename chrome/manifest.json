@@ -20,7 +20,8 @@
     "bookmarks",
     "sessions",
     "chrome://favicon/",
-    "contextMenus"
+    "contextMenus",
+    "notifications"
   ],
   "icons": {
     "16": "images/tree-16.png",
