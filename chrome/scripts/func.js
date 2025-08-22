@@ -462,6 +462,8 @@ function loadOptions(full) {
     $$('#rhsshowext option[value="' + localStorage['rhs-showext'] + '"]').set('selected', 'selected');
     $$('#rhsshowbg option[value="' + localStorage['rhs-showbg'] + '"]').set('selected', 'selected');
     $$('#lessItem option[value="' + localStorage['less-item'] + '"]').set('selected', 'selected');
+    $$('#notesBadge option[value="' + localStorage['notes-badge'] + '"]').set('selected', 'selected');
+    $$('#notesTooltip option[value="' + localStorage['notes-tooltip'] + '"]').set('selected', 'selected');
     
     previewItem();
 
@@ -651,6 +653,8 @@ function saveOptions(sync) {
     so['rm-click'] = $('rmclick').getSelected().get('value');
     so['rm-path'] = $('rmpath').getSelected().get('value');
     so['use-contextmenu'] = $('contextmenu').getSelected().get('value');
+    so['notes-badge'] = $('notesBadge').getSelected().get('value');
+    so['notes-tooltip'] = $('notesTooltip').getSelected().get('value');
     so['rh-filtered'] = flil;
     if ($('langSelect')){
         so['rh-lang'] = $('langSelect').getSelected().get('value');
