@@ -245,6 +245,7 @@ document.addEvent('domready', function () {
                 btn.appendTo(aObj);
                 btn.on('click', function (e) {
                     e.stopPropagation();
+                    console.log('Note button clicked for node:', treeNode);
                     openNoteModal(treeNode);
                 });
             }
@@ -546,15 +547,15 @@ document.addEvent('domready', function () {
 
 
 
-});
-
     // Note functionality for tree view
     function openNoteModal(treeNode) {
+        console.log('openNoteModal called with:', treeNode);
         if (!treeNode || !treeNode.id) return;
         
         var visitId = treeNode.id;
         var url = treeNode.url || '';
         var title = treeNode.title || treeNode.t || '';
+        console.log('Note data:', {visitId, url, title});
         
         // Get existing note if any
         var bg = chrome.extension.getBackgroundPage();
@@ -682,3 +683,5 @@ document.addEvent('domready', function () {
             callback && callback(false);
         };
     }
+
+});
