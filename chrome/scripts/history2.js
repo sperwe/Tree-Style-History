@@ -30,11 +30,16 @@ document.addEvent('domready', function () {
         $('note-delete').set('value', returnLang('noteDelete'));
         $('note-cancel').set('value', returnLang('noteCancel'));
         $('note-save').set('value', returnLang('noteSave'));
+        if (!$('note-copy')){
+            var btn = new Element('input',{ id:'note-copy', type:'button', 'class':'button', value:(returnLang('copy')||'Copy') });
+            $('note-save').getParent().insertBefore(btn, $('note-save'));
+        }
         $('note-modal').setStyle('display', 'flex');
 
         $('note-cancel').onclick = function(){ $('note-modal').setStyle('display', 'none'); };
         $('note-delete').onclick = function(){ deleteNote(visitId, function(ok){ $('note-modal').setStyle('display', 'none'); if(ok){ alertLoadingHistory(true); alertUser(returnLang('noteDeleted'),'open'); } else { alertLoadingHistory(true); alertUser(returnLang('noteError'),'open'); } refreshNoteBadges(); }); };
         $('note-save').onclick = function(){ saveNote(visitId, url, $('note-text').get('value'), function(ok){ $('note-modal').setStyle('display', 'none'); if(ok){ alertLoadingHistory(true); alertUser(returnLang('noteSaved'),'open'); } else { alertLoadingHistory(true); alertUser(returnLang('noteError'),'open'); } refreshNoteBadges(); }); };
+        $('note-copy').onclick = function(){ var txt = $('note-text').get('value')||''; var t = (title||''); var u = (url||''); var payload=''; if (t) payload+='Title: '+t+'\n'; if (u) payload+='URL: '+u+'\n\n'; payload+=txt; Clipboard.copy(payload); };
     }
 
     function saveNote(visitId, url, text, cb){

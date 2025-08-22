@@ -17,16 +17,18 @@ document.addEvent('domready', function(){
 			if (firstLine.length>140) firstLine = firstLine.slice(0,140)+'…';
 			var eid = 'edit-'+m.note.visitId;
 			var did = 'del-'+m.note.visitId;
+			var cid = 'copy-'+m.note.visitId;
 			var html = '';
 			html += '<div class="item">';
 			html += '<a class="link" href="'+url+'" target="_blank">'+escapeHtml(title)+'</a>';
 			html += '<span class="info">'+(fmt(m.note.updatedAt)||'')+'</span>';
 			html += '<div class="desc">'+escapeHtml(firstLine)+'</div>';
-			html += '<div class="ops"><a href="#" id="'+eid+'">'+escapeHtml(returnLang('notesEdit')||'Edit')+'</a> · <a href="#" id="'+did+'">'+escapeHtml(returnLang('notesDelete')||'Delete')+'</a></div>';
+			html += '<div class="ops"><a href="#" id="'+eid+'">'+escapeHtml(returnLang('notesEdit')||'Edit')+'</a> · <a href="#" id="'+did+'">'+escapeHtml(returnLang('notesDelete')||'Delete')+'</a> · <a href="#" id="'+cid+'">'+escapeHtml(returnLang('copy')||'Copy')+'</a></div>';
 			html += '</div>';
 			var el = new Element('div', { 'html': html }).inject(listEl);
 			$(eid).addEvent('click', function(e){ e.stop(); openEditor(m.note.visitId, m.note.url, m.title, m.note.note||''); });
 			$(did).addEvent('click', function(e){ e.stop(); deleteNote(m.note.visitId, function(){ load(); }); });
+			$(cid).addEvent('click', function(e){ e.stop(); var text = (title?('Title: '+title+'\n'):'') + (url?('URL: '+url+'\n'):'') + '\n' + (m.note.note||''); Clipboard.copy(text); });
 		});
 	}
 	function load(){
