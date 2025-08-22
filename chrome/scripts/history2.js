@@ -7,6 +7,21 @@ document.addEvent('domready', function () {
     var noteCache = {}; // visitId -> {note, updatedAt}
     var NOTE_BADGE = '<span class="note-badge" style="margin-left:6px; color:#c97;">📝</span>';
 
+	function waitDbAndLoad(maxTries){
+		var tries = 0;
+		var timer = setInterval(function(){
+			bg = chrome.extension.getBackgroundPage();
+			db = bg && bg.db;
+			if (db){
+				clearInterval(timer);
+				pre_History(0,0);
+			}else if (++tries >= (maxTries||40)){
+				clearInterval(timer);
+				alertLoadingHistory(true);
+			}
+		}, 250);
+	}
+
     // Fade in  
     var historyFx = new Fx.Morph('history-container', { duration: 250 });
     if (chrome.i18n.getMessage("@@bidi_dir") == 'rtl' && chrome.i18n.getMessage("@@ui_locale") !== 'en') {
@@ -541,6 +556,8 @@ document.addEvent('domready', function () {
 
     if (db != undefined)
         pre_History(0, 0);
+    else
+        waitDbAndLoad(80);
 
     function pre_History(loadfrom, loadto) {
         alertLoadingHistory(false);
