@@ -143,21 +143,63 @@ function exportNotesAsMarkdown(){
 	var tx = db.transaction(["VisitNote"], "readonly");
 	var store = tx.objectStore("VisitNote");
 	var req = store.getAll ? store.getAll() : (function(){
-		var out=[]; store.openCursor().onsuccess=function(e){var c=e.target.result; if(c){ out.push(c.value); c.continue(); } else { build(out); } };
-		function build(list){ generate(list); }
-		return { onsuccess:null };
+		var out=[]; store.openCursor().onsuccess=function(e){var c=e.target.result; if(c){ out.push(c.value); c.continue(); } else { enrich(out); } }; return { onsuccess:null };
 	})();
 	if (req.onsuccess!==undefined){
-		req.onsuccess = function(e){ var list = e.target.result || []; generate(list); };
+		req.onsuccess = function(e){ var list = e.target.result || []; enrich(list); };
 	}
-	function generate(list){
-		var lines = ['# Tree Style History Notes'];
-		list.forEach(function(n){
-			var time = n.updatedAt ? new Date(n.updatedAt).toISOString() : '';
-			lines.push('', '## ' + (n.url || '')); 
-			lines.push('', 'VisitId: ' + n.visitId);
-			if (time) lines.push('Updated: ' + time);
-			lines.push('', '```', (n.note||''), '```');
+
+	function enrich(list){
+		var i = 0, enriched = [];
+		if (list.length === 0){ return build(enriched); }
+		(function next(){
+			if (i >= list.length){ build(enriched); return; }
+			var n = list[i++];
+			var meta = { note: n, title: '', visitTime: 0, transition: '', refUrl: '', first: 0, last: 0, total: 0 };
+			var done1=false, done2=false, done3=true;
+			var tx2 = db.transaction(["VisitItem"], "readonly");
+			var st = tx2.objectStore("VisitItem");
+			// 1) get by visitId for precise visit info
+			var r1 = st.get(n.visitId);
+			r1.onsuccess = function(ev){ var v=ev.target.result; if (v){ meta.title=v.title||''; meta.visitTime=v.visitTime||0; meta.transition=v.transition||''; if (v.referringVisitId>0){ done3=false; var rp=st.get(v.referringVisitId); rp.onsuccess=function(e2){ var pv=e2.target.result; if (pv && pv.url) meta.refUrl=pv.url; done3=true; check(); }; rp.onerror=function(){ done3=true; check(); }; } } done1=true; check(); };
+			r1.onerror = function(){ done1=true; check(); };
+			// 2) aggregate by URL to get first/last/total and fallback title
+			if (n.url){
+				var idx = st.index('url');
+				var c = idx.openCursor(IDBKeyRange.only(n.url));
+				c.onsuccess = function(e){ var cur=e.target.result; if(cur){ var vv=cur.value; meta.total++; var t=vv.visitTime||0; if (!meta.first||t<meta.first) meta.first=t; if (!meta.last||t>meta.last) meta.last=t; if(!meta.title && vv.title) meta.title=vv.title; cur.continue(); } else { done2=true; check(); } };
+				c.onerror = function(){ done2=true; check(); };
+			} else { done2=true; }
+			function check(){ if (done1 && done2 && done3){ enriched.push(meta); next(); } }
+		})();
+	}
+
+	function fmt(ts){ if(!ts) return ''; try{ return new Date(ts).toLocaleString(); } catch(e){ return ''; } }
+	function esc(s){ return (s||'').replace(/\r?\n/g,' ').replace(/\|/g,'\\|'); }
+
+	function build(items){
+		var exportedAt = new Date().toLocaleString();
+		var lines = [
+			'# Tree Style History Notes',
+			'',
+			'- Exported: ' + exportedAt,
+			'- Notes: ' + items.length,
+			''
+		];
+		items.forEach(function(m){
+			var url = m.note.url || '';
+			var title = (m.title && m.title.trim()!=='') ? m.title : url;
+			lines.push('## ' + (title && url ? ('['+title+']('+url+')') : (title||url)) );
+			if (url) lines.push('- URL: ' + url);
+			if (m.note.visitId) lines.push('- VisitId: ' + m.note.visitId);
+			if (m.visitTime) lines.push('- Visited: ' + fmt(m.visitTime));
+			if (m.first) lines.push('- FirstVisited: ' + fmt(m.first));
+			if (m.last) lines.push('- LastVisited: ' + fmt(m.last));
+			if (m.total) lines.push('- TotalVisits: ' + m.total);
+			if (m.transition) lines.push('- Transition: ' + m.transition);
+			if (m.refUrl) lines.push('- Referrer: ' + m.refUrl);
+			if (m.note.updatedAt) lines.push('- Updated: ' + new Date(m.note.updatedAt).toISOString());
+			lines.push('', '```', (m.note.note||''), '```', '');
 		});
 		var blob = new Blob([lines.join('\n')], {type:'text/markdown;charset=utf-8'});
 		var url = URL.createObjectURL(blob);
