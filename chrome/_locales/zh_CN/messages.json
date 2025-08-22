@@ -652,5 +652,20 @@
     },
     "notesGroupByClear": {
         "message": "清除分组"
+    },
+    "noteAdd": {
+        "message": "添加笔记"
+    },
+    "noteEdit": {
+        "message": "编辑笔记"
+    },
+    "noteDelete": {
+        "message": "删除笔记"
+    },
+    "noteSave": {
+        "message": "保存笔记"
+    },
+    "noteCancel": {
+        "message": "取消"
     }
 }
