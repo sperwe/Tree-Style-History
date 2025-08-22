@@ -571,5 +571,23 @@
     },
     "backupDeleteConfirmYes": {
         "message": "Yes, delete it"
+    },
+    "exportNotes": {
+        "message": "Export Notes"
+    },
+    "importNotes": {
+        "message": "Import Notes"
+    },
+    "exportNotesSuccess": {
+        "message": "Notes exported successfully!"
+    },
+    "importNotesSuccess": {
+        "message": "Notes imported successfully!"
+    },
+    "exportNotesFailed": {
+        "message": "Failed to export notes."
+    },
+    "importNotesFailed": {
+        "message": "Failed to import notes."
     }
 }
