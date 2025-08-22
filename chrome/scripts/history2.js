@@ -602,6 +602,8 @@ document.addEvent('domready', function () {
                     tag[t] = true;
 
                     pIDs[v.referringVisitId] = true;
+                    idPresent[v.visitId] = true;
+                    if (v.referringVisitId && v.referringVisitId>0) parentNeeded[v.referringVisitId]=true;
 
                     yNodes.push(node);
                 }
@@ -610,6 +612,21 @@ document.addEvent('domready', function () {
             } else {
 
                 zNodes = zNodes.concat(yNodes);
+                // backfill missing parent chains
+                function backfillParents(done){
+                    var missing = Object.keys(parentNeeded).filter(function(pid){ return pid!='0' && !idPresent[pid]; });
+                    if (missing.length===0){ done(); return; }
+                    var tx = db.transaction(["VisitItem"], "readonly");
+                    var st = tx.objectStore("VisitItem");
+                    var cnt = 0;
+                    missing.slice(0,200).forEach(function(pid){
+                        var req = st.get(parseInt(pid));
+                        req.onsuccess=function(ev){ var v=ev.target.result; if (v && filtUrl(v.url)==false){ var t = transition_value[v.transition]; zNodes.push({ id:v.visitId, pId: parseInt(v.referringVisitId)||0, name: TimeToStr(v.visitTime,true,true)+" - "+(v.title||'').replace(/[<>]/g,' ')+ ' ' + t, url:v.url, icon: 'chrome://favicon/' + v.url.replace(/(?<![\/])\/[^\/].+/, ""), open:true, transition:v.transition, t:v.url }); idPresent[v.visitId]=true; if (v.referringVisitId && v.referringVisitId>0) parentNeeded[v.referringVisitId]=true; }
+                            if (++cnt===Math.min(missing.length,200)) done(); };
+                        req.onerror=function(){ if (++cnt===Math.min(missing.length,200)) done(); };
+                    });
+                }
+                function ensureChains(cb){ backfillParents(function(){ var more = Object.keys(parentNeeded).some(function(pid){ return pid!='0' && !idPresent[pid]; }); if (more){ ensureChains(cb); } else { cb(); } }); }
 
                 if (zNodes.length < localStorage['load-range4'] && loadfrom - DAY * t > date - localStorage['load-range3'] * DAY) {
                     feach_History(loadfrom, loadto, t + 1);
@@ -642,26 +659,18 @@ document.addEvent('domready', function () {
                         }
                     }
 
-                    if (zNodes.length > 0) {
-                        treeObj.addNodes(null, zNodes, false);
-                        // $('calendar-total-value').set('text',zNodes.length);
-                        (function(){
-                            var ids = zNodes.map(function(n){ return n.id; });
-                            loadNotesPresence(ids, function(){ refreshNoteBadges(); });
-                        }).delay(0);
-                    } else {
-                        treeObj.addNodes(null, mNodes, false);
-                        // $('search-tag').set('text','');
-                        // $('calendar-total-value').set('text', '0');
-                    }
-                    $('calendar-total-value').set('text', zNodes.length);
-
-                    // $('header-text').set('text',new Date(loadfrom-DAY*t).toLocaleString()+' - '+new Date(loadto).toLocaleString());
-                    $('header-text').set('text', timeStr2(new Date(loadfrom - DAY * t), false) + ' ~ ' + timeStr2(new Date(loadto), true));
-                    refreshSearchTags();
-                    // 
-                    alertLoadingHistory(true);
-                    console.log(" pre_History() finish :( ");
+                    ensureChains(function(){
+                        if (zNodes.length > 0) {
+                            treeObj.addNodes(null, zNodes, false);
+                        } else {
+                            treeObj.addNodes(null, mNodes, false);
+                        }
+                        $('calendar-total-value').set('text', zNodes.length);
+                        $('header-text').set('text', timeStr2(new Date(loadfrom - DAY * t), false) + ' ~ ' + timeStr2(new Date(loadto), true));
+                        refreshSearchTags();
+                        alertLoadingHistory(true);
+                        console.log(" pre_History() finish :( ");
+                    });
                 }
 
 
