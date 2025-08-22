@@ -373,7 +373,8 @@ var defaultValues = {
 	"rhs-showbg": "no",
 	"show-popup": "yes",
 	"notes-badge": "yes",
-	"notes-tooltip": "yes"
+	"notes-tooltip": "yes",
+	"notes-merge-mode": "append"
 };
 
 function defaultConfig(clean) {
