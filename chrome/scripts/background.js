@@ -945,8 +945,27 @@ chrome.contextMenus.removeAll(() => {
             console.log('select ' + options.id);
         });
 
+        // Add context menu for saving selection as a note
+        const saveSelectionMenu = {
+            type: 'normal',
+            id: 'tree_style_history_save_selection_' + getVersion(),
+            title: returnLang('saveSelectionAsNote'),
+            contexts: ["selection"],
+            visible: true,
+        };
+        chrome.contextMenus.create(saveSelectionMenu, () => {
+            console.log('select ' + saveSelectionMenu.id);
+        });
+
         chrome.contextMenus.onClicked.addListener((info) => {
             // console.log(JSON.stringify(info));
+            if (info.menuItemId && (''+info.menuItemId).indexOf('tree_style_history_save_selection_') === 0) {
+                let url = info.pageUrl || '';
+                let text = info.selectionText || '';
+                if (!url || !text) return;
+                saveSelectionAsNote(url, text);
+                return;
+            }
 
             let url = info.linkUrl;
             if (url != undefined) {
@@ -959,6 +978,44 @@ chrome.contextMenus.removeAll(() => {
             }
         })
     }
-}
 
-);
+});
+
+// Save selected text as a note linked to the latest visit of the URL
+function saveSelectionAsNote(url, text){
+    if (!db || !url || !text) return;
+    var latest = { visitId: 0, visitTime: 0 };
+    var tx = db.transaction(["VisitItem"], "readonly");
+    var idx = tx.objectStore("VisitItem").index('url');
+    var c = idx.openCursor(IDBKeyRange.only(url));
+    c.onsuccess = function(e){
+        var cur = e.target.result;
+        if (cur){
+            var v = cur.value; var t = v.visitTime||0;
+            if (t >= latest.visitTime){ latest.visitTime = t; latest.visitId = v.visitId; }
+            cur.continue();
+        } else {
+            commitNote(latest.visitId);
+        }
+    };
+    c.onerror = function(){ commitNote(0); };
+
+    function commitNote(visitId){
+        var tx2 = db.transaction(["VisitNote"], "readwrite");
+        var store = tx2.objectStore("VisitNote");
+        if (visitId && visitId>0){
+            var g = store.get(visitId);
+            g.onsuccess = function(ev){
+                var n = ev.target.result;
+                var now = Date.now();
+                if (n){ n.note = (n.note||'') + (n.note ? "\n\n---\n" : '') + text; n.updatedAt = now; store.put(n); }
+                else { store.put({ visitId: visitId, url: url, note: text, updatedAt: now }); }
+            };
+            g.onerror = function(){ store.put({ visitId: visitId, url: url, note: text, updatedAt: Date.now() }); };
+        } else {
+            // fallback: create a standalone note linked by URL only
+            var id = Date.now();
+            store.put({ visitId: id, url: url, note: text, updatedAt: Date.now() });
+        }
+    }
+}

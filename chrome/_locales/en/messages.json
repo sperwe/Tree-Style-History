@@ -628,5 +628,8 @@
     },
     "importNotesSingleFailed": {
         "message": "Failed to import note."
+    },
+    "saveSelectionAsNote": {
+        "message": "Save selection as note"
     }
 }
