@@ -782,12 +782,6 @@ function add_history(urls_p, i, visitItems, loadfrom, url_item) {
         // let timeStr = (new Date(visitTime)).toLocaleString();
         let transition = visitItems[i].transition;
 
-
-        if (transition == "typed" || transition == "auto_bookmark" || transition == "keyword" || transition == "keyword_generated") {
-            console.log("change refer " + visitItems[i].referringVisitId + "->0 cause transition=" + transition);
-            refer = 0;
-        }
-
         if (refer == undefined)
             refer = 0;
 
@@ -934,11 +928,7 @@ function add_tab_history(visitItems, i, loadfrom, url_item) {
 
         if (refer == undefined)
             refer = 0;
-        else if (transition == "typed" || transition == "auto_bookmark" || transition == "keyword" || transition == "keyword_generated") {
-            // 输入、搜索、书签产生的新标签页，不需要refer
-            console.log("change refer " + visitItems[i].referringVisitId + "->0 cause transition=" + transition);
-            refer = 0;
-        }
+        // keep original referringVisitId to preserve chains
 
         console.log("refer referringVisitId/refer2/tabUrl0/result=" + visitItems[i].referringVisitId + "/" + refer2 + "/" + idUrlJson[tabUrl0Json[tabstr]] + "/" + refer + ", transition=" + transition
             + " " + tabUrl0Json[tabstr] + " ->" + url_item.url);
