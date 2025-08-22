@@ -17,8 +17,8 @@ document.addEvent('domready', function(){
 			var firstLine = noteText.split(/\r?\n/)[0];
 			if (firstLine.length>140) firstLine = firstLine.slice(0,140)+'…';
 			
-			// Count number of selections (by counting separators)
-			var selectionCount = (noteText.match(/---\n\*Added on /g) || []).length + 1;
+			// Count number of selections (by counting timestamp markers)
+			var selectionCount = (noteText.match(/\*\*📅 /g) || []).length;
 			var countBadge = selectionCount > 1 ? ' <span style="background:#007cba;color:white;padding:1px 6px;border-radius:10px;font-size:10px;margin-left:4px;">' + selectionCount + ' selections</span>' : '';
 			
 			// Render first line as Markdown if available
@@ -189,4 +189,10 @@ document.addEvent('domready', function(){
 		render(f);
 	});
 	load();
+	
+	// Apply dark mode theme if needed
+	if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+		document.body.style.backgroundColor = '#1e1e1e';
+		document.body.style.color = '#e0e0e0';
+	}
 });
