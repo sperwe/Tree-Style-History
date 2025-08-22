@@ -159,7 +159,7 @@ openDb();
 
 
 function openDb() {
-    request = window.indexedDB.open("testDB", 6);
+    request = window.indexedDB.open("testDB", 7);
     request.onerror = function (event) {
         console.log("Error opening DB", event);
     }
@@ -201,6 +201,14 @@ function openDb() {
             objectStore3.createIndex('close', 'close', { unique: false });
         } catch {
             console.log('Error in createObjectStore("closed", { autoIncrement: true }');
+        }
+
+        try {
+            var noteStore = db.createObjectStore("VisitNote", { keyPath: "visitId" });
+            noteStore.createIndex('url', 'url', { unique: false });
+            noteStore.createIndex('updatedAt', 'updatedAt', { unique: false });
+        } catch {
+            console.log('Error in createObjectStore("VisitNote", { keyPath: "visitId" })');
         }
 
     };
@@ -659,7 +667,7 @@ function removeVisitItem(i) {
         removeHistory();
     } else {
 
-        var transaction = db.transaction(["VisitItem"], "readwrite");
+        var transaction = db.transaction(["VisitItem", "VisitNote"], "readwrite");
         transaction.oncomplete = function (event) {
             console.log("del Success :) ");
             removeVisitItem(i);
@@ -669,7 +677,9 @@ function removeVisitItem(i) {
             console.log("del Error :( " + event);
         };
         var objectStore = transaction.objectStore("VisitItem");
-        objectStore.delete(visitItems_wait_remove[i].visitId);;
+        objectStore.delete(visitItems_wait_remove[i].visitId);
+        var noteStore = transaction.objectStore("VisitNote");
+        noteStore.delete(visitItems_wait_remove[i].visitId);
     }
 }
 
