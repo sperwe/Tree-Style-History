@@ -15,13 +15,18 @@ document.addEvent('domready', function(){
 			var title = (m.title && m.title.trim()!=='') ? m.title : url;
 			var firstLine = (m.note.note||'').split(/\r?\n/)[0];
 			if (firstLine.length>140) firstLine = firstLine.slice(0,140)+'…';
+			var eid = 'edit-'+m.note.visitId;
+			var did = 'del-'+m.note.visitId;
 			var html = '';
 			html += '<div class="item">';
 			html += '<a class="link" href="'+url+'" target="_blank">'+escapeHtml(title)+'</a>';
 			html += '<span class="info">'+(fmt(m.note.updatedAt)||'')+'</span>';
 			html += '<div class="desc">'+escapeHtml(firstLine)+'</div>';
+			html += '<div class="ops"><a href="#" id="'+eid+'">'+escapeHtml(returnLang('notesEdit')||'Edit')+'</a> · <a href="#" id="'+did+'">'+escapeHtml(returnLang('notesDelete')||'Delete')+'</a></div>';
 			html += '</div>';
-			new Element('div', { 'html': html }).inject(listEl);
+			var el = new Element('div', { 'html': html }).inject(listEl);
+			$(eid).addEvent('click', function(e){ e.stop(); openEditor(m.note.visitId, m.note.url, m.title, m.note.note||''); });
+			$(did).addEvent('click', function(e){ e.stop(); deleteNote(m.note.visitId, function(){ load(); }); });
 		});
 	}
 	function load(){
@@ -50,6 +55,32 @@ document.addEvent('domready', function(){
 			r.onsuccess=function(ev){ var v=ev.target.result; if(v){ meta.title=v.title||''; meta.visitTime=v.visitTime||0; } all.push(meta); next(); };
 			r.onerror=function(){ all.push(meta); next(); };
 		})();
+	}
+	function openEditor(visitId, url, title, text){
+		var mm = $('note-modal'); if(!mm){ mm = new Element('div', { id:'note-modal', style:'display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.35); z-index:9999; align-items:center; justify-content:center;' }).inject(document.body); new Element('div',{ id:'note-modal-content', style:'background:#fff; padding:12px; width:520px; max-width:90%; border-radius:6px; box-shadow:0 8px 24px rgba(0,0,0,0.2); margin:0 auto;' , html:'<h3 id="note-modal-title" style="margin:0 0 8px 0; font-size:16px;"></h3><textarea id="note-text" style="width:100%; height:160px; box-sizing:border-box; resize:vertical;"></textarea><div style="margin-top:8px; text-align:right; display:flex; gap:8px; justify-content:flex-end;"><input id="note-delete" type="button" class="button" value="'+escapeHtml(returnLang('notesDelete')||'Delete')+'"><input id="note-cancel" type="button" class="button" value="'+escapeHtml(returnLang('notesCancel')||'Cancel')+'"><input id="note-save" type="button" class="button" value="'+escapeHtml(returnLang('notesSave')||'Save')+'"></div>'}).inject(mm); }
+		$('note-modal-title').set('text', (title||url||''));
+		$('note-text').set('value', text||'');
+		$('note-modal').setStyle('display', 'flex');
+		$('note-cancel').onclick=function(){ $('note-modal').setStyle('display','none'); };
+		$('note-delete').onclick=function(){ deleteNote(visitId, function(){ $('note-modal').setStyle('display','none'); load(); }); };
+		$('note-save').onclick=function(){ saveNote(visitId, url, $('note-text').get('value'), function(){ $('note-modal').setStyle('display','none'); load(); }); };
+	}
+	function saveNote(visitId, url, text, cb){
+		if (!db){ cb&&cb(false); return; }
+		var tx = db.transaction(["VisitNote"], "readwrite");
+		var store = tx.objectStore("VisitNote");
+		var now = Date.now();
+		store.put({ visitId: visitId, url: url, note: text||'', updatedAt: now });
+		tx.oncomplete=function(){ cb&&cb(true); };
+		tx.onerror=function(){ cb&&cb(false); };
+	}
+	function deleteNote(visitId, cb){
+		if (!db){ cb&&cb(false); return; }
+		var tx = db.transaction(["VisitNote"], "readwrite");
+		var store = tx.objectStore("VisitNote");
+		store.delete(visitId);
+		tx.oncomplete=function(){ cb&&cb(true); };
+		tx.onerror=function(){ cb&&cb(false); };
 	}
 	searchEl && searchEl.addEvent('keyup', function(){
 		var q=this.get('value').toLowerCase();
