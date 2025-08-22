@@ -724,5 +724,8 @@
     },
     "notesEditDeleteConfirmYesLabel": {
         "message": "Yes, delete it"
+    },
+    "language": {
+        "message": "Language"
     }
 }
