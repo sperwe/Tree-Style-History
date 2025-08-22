@@ -2,6 +2,10 @@ document.addEvent('domready', function () {
 
     //释放jquery中$定义，并直接使用jQuery代替平时的$
     var $jq = jQuery.noConflict();
+    var bg = chrome.extension.getBackgroundPage();
+    var db = bg && bg.db;
+    var noteCache = {}; // visitId -> {note, updatedAt}
+    var NOTE_BADGE = '<span class="note-badge" style="margin-left:6px; color:#c97;">📝</span>';
 
     // Fade in  
     var historyFx = new Fx.Morph('history-container', { duration: 250 });
@@ -17,6 +21,61 @@ document.addEvent('domready', function () {
         };
     }
     historyFx.start(ho);
+
+    function openNoteModal(visitId, url, title) {
+        $('note-modal-title').set('text', '📝 ' + (title || ''));
+        $('note-text').set('value', noteCache[visitId] ? (noteCache[visitId].note || '') : '');
+        $('note-modal').setStyle('display', 'flex');
+
+        $('note-cancel').onclick = function(){ $('note-modal').setStyle('display', 'none'); };
+        $('note-delete').onclick = function(){ deleteNote(visitId, function(){ $('note-modal').setStyle('display', 'none'); refreshNoteBadges(); }); };
+        $('note-save').onclick = function(){ saveNote(visitId, url, $('note-text').get('value'), function(){ $('note-modal').setStyle('display', 'none'); refreshNoteBadges(); }); };
+    }
+
+    function saveNote(visitId, url, text, cb){
+        if (!db){ cb && cb(false); return; }
+        var tx = db.transaction(["VisitNote"], "readwrite");
+        var store = tx.objectStore("VisitNote");
+        var now = Date.now();
+        store.put({ visitId: visitId, url: url, note: text || '', updatedAt: now });
+        tx.oncomplete = function(){ noteCache[visitId] = { note: text || '', updatedAt: now }; cb && cb(true); };
+        tx.onerror = function(){ cb && cb(false); };
+    }
+
+    function deleteNote(visitId, cb){
+        if (!db){ cb && cb(false); return; }
+        var tx = db.transaction(["VisitNote"], "readwrite");
+        var store = tx.objectStore("VisitNote");
+        var req = store.delete(visitId);
+        tx.oncomplete = function(){ delete noteCache[visitId]; cb && cb(true); };
+        tx.onerror = function(){ cb && cb(false); };
+    }
+
+    function loadNotesPresence(visitIds, done){
+        if (!db || visitIds.length === 0){ done && done(); return; }
+        var tx = db.transaction(["VisitNote"], "readonly");
+        var store = tx.objectStore("VisitNote");
+        var c = 0;
+        visitIds.forEach(function(id){
+            var r = store.get(id);
+            r.onsuccess = function(e){ var v=e.target.result; if (v) noteCache[id] = { note: v.note||'', updatedAt: v.updatedAt||0 }; if (++c===visitIds.length) done&&done(); };
+            r.onerror = function(){ if (++c===visitIds.length) done&&done(); };
+        });
+    }
+
+    function refreshNoteBadges(){
+        var treeObj = $jq.fn.zTree.getZTreeObj("treeDemo");
+        if (!treeObj) return;
+        var all = treeObj.getNodesByFilter(function(){ return true; }, false);
+        all.forEach(function(n){
+            var tId = n.tId;
+            var aObj = $jq("#"+tId+"_a");
+            aObj.find('.note-badge').remove();
+            if (noteCache[n.id] && noteCache[n.id].note && noteCache[n.id].note.trim()!==''){
+                aObj.append(NOTE_BADGE);
+            }
+        });
+    }
 
     // Shift listener
     $(document.body).addEvent('keydown', function (e) {
@@ -237,7 +296,14 @@ document.addEvent('domready', function () {
 
         view: {
             nameIsHTML: true, //允许name支持html				
-            selectedMulti: false
+            selectedMulti: false,
+            addDiyDom: function(treeId, treeNode){
+                var aObj = $jq("#" + treeNode.tId + "_a");
+                if (aObj.find('.note-btn').length>0) return;
+                var $btn = $jq('<span class="note-btn" style="margin-left:6px; cursor:pointer; color:#888;">📝</span>');
+                $btn.on('click', function(ev){ ev.preventDefault(); ev.stopPropagation(); openNoteModal(treeNode.id, treeNode.t, treeNode.name.replace(/<[^>]+>/g,'')); });
+                aObj.append($btn);
+            }
         },
         edit: {
             enable: false,
@@ -366,7 +432,6 @@ document.addEvent('domready', function () {
     }
 
 
-    var db = chrome.extension.getBackgroundPage().db;
     if (db != undefined)
         pre_History(0, 0);
 
@@ -473,6 +538,10 @@ document.addEvent('domready', function () {
                     if (zNodes.length > 0) {
                         treeObj.addNodes(null, zNodes, false);
                         // $('calendar-total-value').set('text',zNodes.length);
+                        (function(){
+                            var ids = zNodes.map(function(n){ return n.id; });
+                            loadNotesPresence(ids, function(){ refreshNoteBadges(); });
+                        }).delay(0);
                     } else {
                         treeObj.addNodes(null, mNodes, false);
                         // $('search-tag').set('text','');
