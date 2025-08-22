@@ -498,11 +498,11 @@ document.addEvent('domready', function () {
                         id: v.visitId,
                         pId: parseInt(v.referringVisitId),
                         name: TimeToStr(v.visitTime, true, true) + " - " + v.title.replace(/[<>]/g, ' ') + ' ' + t,
-                        // url: v.url,
+                        url: v.url,
                         icon: 'chrome://favicon/' + v.url.replace(/(?<![\/])\/[^\/].+/, ""),
                         open: true,
                         transition: v.transition,
-                        t: v.url //+ " "+v.referringVisitId + ">"+v.visitId
+                        t: v.url
                     };
 
                     tag[t] = true;
@@ -527,25 +527,16 @@ document.addEvent('domready', function () {
                     }
 
                     if (zNodes.length > 0 && showLessItem == 'yes') {
-
-                        let urls = {};
-
-                        for (let s = 0; s < zNodes.length; s++) {
-                            let ss = zNodes[s];
-                            while (pIDs[ss.id] != true) {
-                                if (ss.transition == 'reload' || urls[ss.url] == true) {
-                                    zNodes.splice(s, 1);
-                                } else {
-                                    urls[ss.url] = true;
-                                    break;
-                                }
-
-                                if (s < zNodes.length)
-                                    ss = zNodes[s];
-                                else
-                                    break;
-                            }
-                        }
+                        const seen = {};
+                        zNodes = zNodes.filter(function(n){
+                            // Keep roots and first occurrence per URL; do not drop if it has children
+                            if (pIDs[n.id] === true) return true; // is parent of someone -> keep
+                            if (n.transition === 'reload') return false;
+                            if (!n.url) return true;
+                            if (seen[n.url]) return false;
+                            seen[n.url] = true;
+                            return true;
+                        });
                     }
 
                     if (zNodes.length > 0) {
