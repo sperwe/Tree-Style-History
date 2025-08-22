@@ -547,3 +547,138 @@ document.addEvent('domready', function () {
 
 
 });
+
+    // Note functionality for tree view
+    function openNoteModal(treeNode) {
+        if (!treeNode || !treeNode.id) return;
+        
+        var visitId = treeNode.id;
+        var url = treeNode.url || '';
+        var title = treeNode.title || treeNode.t || '';
+        
+        // Get existing note if any
+        var bg = chrome.extension.getBackgroundPage();
+        var db = bg && bg.db;
+        
+        if (!db) {
+            alert('Database not available');
+            return;
+        }
+        
+        // Load existing note
+        var tx = db.transaction(["VisitNote"], "readonly");
+        var store = tx.objectStore("VisitNote");
+        var req = store.get(visitId);
+        
+        req.onsuccess = function(e) {
+            var existingNote = e.target.result;
+            var noteText = existingNote ? (existingNote.note || '') : '';
+            showNoteModal(visitId, url, title, noteText);
+        };
+        
+        req.onerror = function() {
+            showNoteModal(visitId, url, title, '');
+        };
+    }
+    
+    function showNoteModal(visitId, url, title, text) {
+        var modal = $jq('#note-modal');
+        var titleEl = $jq('#note-modal-title');
+        var textEl = $jq('#note-text');
+        var saveBtn = $jq('#note-save');
+        var deleteBtn = $jq('#note-delete');
+        var cancelBtn = $jq('#note-cancel');
+        
+        // Set content
+        titleEl.text(title || url || 'Note');
+        textEl.val(text || '');
+        
+        // Show modal
+        modal.css('display', 'flex');
+        textEl.focus();
+        
+        // Remove old event handlers
+        saveBtn.off('click');
+        deleteBtn.off('click');
+        cancelBtn.off('click');
+        
+        // Add event handlers
+        cancelBtn.on('click', function() {
+            modal.css('display', 'none');
+        });
+        
+        deleteBtn.on('click', function() {
+            if (confirm(returnLang('notesDeleteConfirm') || 'Are you sure you want to delete this note?')) {
+                deleteNote(visitId, function(success) {
+                    modal.css('display', 'none');
+                    if (success) {
+                        console.log('Note deleted successfully');
+                    }
+                });
+            }
+        });
+        
+        saveBtn.on('click', function() {
+            var noteContent = textEl.val();
+            saveNote(visitId, url, noteContent, function(success) {
+                modal.css('display', 'none');
+                if (success) {
+                    console.log('Note saved successfully');
+                } else {
+                    alert(returnLang('notesFailed') || 'Failed to save note');
+                }
+            });
+        });
+    }
+    
+    function saveNote(visitId, url, text, callback) {
+        var bg = chrome.extension.getBackgroundPage();
+        var db = bg && bg.db;
+        
+        if (!db) {
+            callback && callback(false);
+            return;
+        }
+        
+        var tx = db.transaction(["VisitNote"], "readwrite");
+        var store = tx.objectStore("VisitNote");
+        var now = Date.now();
+        
+        store.put({ 
+            visitId: visitId, 
+            url: url, 
+            note: text || '', 
+            updatedAt: now 
+        });
+        
+        tx.oncomplete = function() {
+            callback && callback(true);
+        };
+        
+        tx.onerror = function() {
+            callback && callback(false);
+        };
+    }
+    
+    function deleteNote(visitId, callback) {
+        var bg = chrome.extension.getBackgroundPage();
+        var db = bg && bg.db;
+        
+        if (!db) {
+            callback && callback(false);
+            return;
+        }
+        
+        var tx = db.transaction(["VisitNote"], "readwrite");
+        var store = tx.objectStore("VisitNote");
+        
+        store.delete(visitId);
+        
+        tx.oncomplete = function() {
+            callback && callback(true);
+        };
+        
+        tx.onerror = function() {
+            callback && callback(false);
+        };
+    }
