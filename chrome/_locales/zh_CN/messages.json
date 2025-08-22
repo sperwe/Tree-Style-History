@@ -384,7 +384,7 @@
         "message": "为popup弹窗、树状历史、线性历史、最近关闭的页面设置不同的快捷键"
     },
     "name": {
-        "message": "Tree Style History - 树形历史"
+        "message": "Tree Style History · Notes - 树形历史·笔记"
     },
     "nameShort": {
         "message": "树形历史"
