@@ -251,6 +251,23 @@ function echoLang(str) {
 // Return lang
 
 function returnLang(str) {
+    // When rh-lang is set to a specific locale, try to fetch that locale string manually
+    var forced = localStorage['rh-lang'];
+    if (!forced || forced === 'auto') return chrome.i18n.getMessage(str);
+    try {
+        // preload caches
+        if (!window.__langs) window.__langs = {};
+        if (!window.__langs[forced]) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '_locales/' + forced + '/messages.json', false);
+            xhr.send(null);
+            if (xhr.status >= 200 && xhr.status < 300) {
+                window.__langs[forced] = JSON.parse(xhr.responseText);
+            }
+        }
+        var dict = window.__langs[forced];
+        if (dict && dict[str] && dict[str].message) return dict[str].message;
+    } catch (e) { }
     return chrome.i18n.getMessage(str);
 }
 
@@ -475,6 +492,15 @@ function loadOptions(full) {
         $$('#rhclick option[value="' + localStorage['rh-click'] + '"]').set('selected', 'selected');
         $$('#rmclick option[value="' + localStorage['rm-click'] + '"]').set('selected', 'selected');
 
+    // lang select
+    (function(){
+        var v = localStorage['rh-lang'] || 'auto';
+        if ($('langSelect')){
+            $$('#langSelect option').removeProperty('selected');
+            $$('#langSelect option[value="'+v+'"]').set('selected','selected');
+        }
+    })();
+
 }
 
 
@@ -626,6 +652,9 @@ function saveOptions(sync) {
     so['rm-path'] = $('rmpath').getSelected().get('value');
     so['use-contextmenu'] = $('contextmenu').getSelected().get('value');
     so['rh-filtered'] = flil;
+    if ($('langSelect')){
+        so['rh-lang'] = $('langSelect').getSelected().get('value');
+    }
     for (var i in so) {
         localStorage[i] = so[i];
         console.log(i + '=' + so[i]);
