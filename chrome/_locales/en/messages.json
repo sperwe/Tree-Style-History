@@ -523,5 +523,53 @@
     },
     "notesDeleteConfirmYes": {
         "message": "Yes, delete it"
+    },
+    "singleFormNote": {
+        "message": "Single Form Note"
+    },
+    "backup": {
+        "message": "Backup"
+    },
+    "restore": {
+        "message": "Restore"
+    },
+    "backupSuccess": {
+        "message": "Backup successful!"
+    },
+    "backupFailed": {
+        "message": "Backup failed!"
+    },
+    "restoreSuccess": {
+        "message": "Restore successful!"
+    },
+    "restoreFailed": {
+        "message": "Restore failed!"
+    },
+    "backupList": {
+        "message": "Backup List"
+    },
+    "backupAdd": {
+        "message": "Add Backup"
+    },
+    "backupEdit": {
+        "message": "Edit Backup"
+    },
+    "backupDelete": {
+        "message": "Delete Backup"
+    },
+    "backupCancel": {
+        "message": "Cancel"
+    },
+    "backupSave": {
+        "message": "Save"
+    },
+    "backupDeleteConfirm": {
+        "message": "Are you sure you want to delete this backup?"
+    },
+    "backupDeleteCancel": {
+        "message": "No, cancel"
+    },
+    "backupDeleteConfirmYes": {
+        "message": "Yes, delete it"
     }
 }
