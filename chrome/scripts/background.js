@@ -159,7 +159,7 @@ openDb();
 
 
 function openDb() {
-    request = window.indexedDB.open("testDB", 7);
+    request = window.indexedDB.open("testDB", 8);
     request.onerror = function (event) {
         console.log("Error opening DB", event);
     }
@@ -209,6 +209,46 @@ function openDb() {
             noteStore.createIndex('updatedAt', 'updatedAt', { unique: false });
         } catch {
             console.log('Error in createObjectStore("VisitNote", { keyPath: "visitId" })');
+        }
+
+        try {
+            // Unified Note store: auto-increment id, with indexes
+            var noteUnified = db.createObjectStore("Note", { keyPath: "id", autoIncrement: true });
+            noteUnified.createIndex('parentId', 'parentId', { unique: false });
+            noteUnified.createIndex('visitId', 'visitId', { unique: false });
+            noteUnified.createIndex('url', 'url', { unique: false });
+            noteUnified.createIndex('kind', 'kind', { unique: false });
+            noteUnified.createIndex('updatedAt', 'updatedAt', { unique: false });
+        } catch (e) {
+            console.log('Note store create error', e);
+        }
+
+        // Migrate VisitNote -> Note(kind='note') during upgrade if old store exists
+        try {
+            if (db.objectStoreNames.contains('VisitNote') && db.objectStoreNames.contains('Note')) {
+                var txn = event.target.transaction;
+                var oldStore = txn.objectStore('VisitNote');
+                var newStore = txn.objectStore('Note');
+                oldStore.openCursor().onsuccess = function (e) {
+                    var cursor = e.target.result;
+                    if (cursor) {
+                        var v = cursor.value;
+                        var note = {
+                            parentId: 0,
+                            visitId: v.visitId || 0,
+                            url: v.url || '',
+                            title: '',
+                            body: v.note || '',
+                            kind: 'note',
+                            updatedAt: v.updatedAt || Date.now()
+                        };
+                        newStore.add(note);
+                        cursor.continue();
+                    }
+                };
+            }
+        } catch (e) {
+            console.log('Note migration error', e);
         }
 
     };
