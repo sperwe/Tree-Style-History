@@ -995,16 +995,27 @@ function saveSelectionAsNote(pageUrl, selectedText){
             console.log('Found visitId:', visitId);
             return saveNoteToDatabase(visitId, pageUrl, selectedText);
         })
-        .then(() => {
-            console.log('Note saved successfully');
-            // Show notification
-            if (chrome.notifications) {
-                chrome.notifications.create({
-                    type: 'basic',
-                    iconUrl: 'images/tree-48.png',
-                    title: 'Tree Style History',
-                    message: 'Selected text saved as note'
-                });
+        .then((isDuplicate) => {
+            if (isDuplicate) {
+                console.log('Duplicate text not saved');
+                if (chrome.notifications) {
+                    chrome.notifications.create({
+                        type: 'basic',
+                        iconUrl: 'images/tree-48.png',
+                        title: 'Tree Style History',
+                        message: 'Selected text already exists in notes'
+                    });
+                }
+            } else {
+                console.log('Note saved successfully');
+                if (chrome.notifications) {
+                    chrome.notifications.create({
+                        type: 'basic',
+                        iconUrl: 'images/tree-48.png',
+                        title: 'Tree Style History',
+                        message: 'Selected text added to notes'
+                    });
+                }
             }
         })
         .catch(error => {
@@ -1071,11 +1082,21 @@ function saveNoteToDatabase(visitId, pageUrl, selectedText) {
                     var noteData;
                     
                     if (existed){
-                        // Append to existing note
+                        // Check if this exact text already exists to avoid duplicates
+                        var existingNote = existed.note || '';
+                        if (existingNote.indexOf(selectedText) !== -1) {
+                            console.log('Selected text already exists in note, skipping duplicate');
+                            resolve(true); // Return true to indicate duplicate
+                            return;
+                        }
+                        
+                        // Append to existing note with timestamp separator
+                        var timeString = new Date(now).toLocaleString();
+                        var separator = existingNote ? "\n\n---\n*Added on " + timeString + "*\n\n" : "";
                         noteData = {
                             visitId: visitId,
                             url: pageUrl,
-                            note: (existed.note||'') + (existed.note ? "\n\n" : "") + selectedText,
+                            note: existingNote + separator + selectedText,
                             updatedAt: now
                         };
                     } else {
@@ -1088,14 +1109,14 @@ function saveNoteToDatabase(visitId, pageUrl, selectedText) {
                         };
                     }
                     
-                    var putReq = ns.put(noteData);
-                    putReq.onsuccess = function() {
-                        resolve();
-                    };
-                    putReq.onerror = function(err) {
-                        console.error('Put request error:', err);
-                        reject(err);
-                    };
+                                         var putReq = ns.put(noteData);
+                     putReq.onsuccess = function() {
+                         resolve(false); // Return false to indicate successful save
+                     };
+                     putReq.onerror = function(err) {
+                         console.error('Put request error:', err);
+                         reject(err);
+                     };
                 } catch (error) {
                     console.error('Exception in getReq.onsuccess:', error);
                     reject(error);
@@ -1112,13 +1133,13 @@ function saveNoteToDatabase(visitId, pageUrl, selectedText) {
                         note: selectedText, 
                         updatedAt: Date.now() 
                     };
-                    var putReq = ns.put(noteData);
-                    putReq.onsuccess = function() {
-                        resolve();
-                    };
-                    putReq.onerror = function(putErr) {
-                        reject(putErr);
-                    };
+                                         var putReq = ns.put(noteData);
+                     putReq.onsuccess = function() {
+                         resolve(false); // Return false to indicate successful save
+                     };
+                     putReq.onerror = function(putErr) {
+                         reject(putErr);
+                     };
                 } catch (error) {
                     reject(error);
                 }

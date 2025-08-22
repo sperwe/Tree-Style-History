@@ -17,6 +17,10 @@ document.addEvent('domready', function(){
 			var firstLine = noteText.split(/\r?\n/)[0];
 			if (firstLine.length>140) firstLine = firstLine.slice(0,140)+'…';
 			
+			// Count number of selections (by counting separators)
+			var selectionCount = (noteText.match(/---\n\*Added on /g) || []).length + 1;
+			var countBadge = selectionCount > 1 ? ' <span style="background:#007cba;color:white;padding:1px 6px;border-radius:10px;font-size:10px;margin-left:4px;">' + selectionCount + ' selections</span>' : '';
+			
 			// Render first line as Markdown if available
 			var renderedFirstLine = '';
 			if (typeof marked !== 'undefined' && firstLine.trim()) {
@@ -35,7 +39,7 @@ document.addEvent('domready', function(){
 			var vid = 'view-'+m.note.visitId;
 			var html = '';
 			html += '<div class="item">';
-			html += '<a class="link" href="'+url+'" target="_blank">'+escapeHtml(title)+'</a>';
+			html += '<a class="link" href="'+url+'" target="_blank">'+escapeHtml(title)+'</a>' + countBadge;
 			html += '<span class="info">'+(fmt(m.note.updatedAt)||'')+'</span>';
 			html += '<div class="desc">'+renderedFirstLine+'</div>';
 			html += '<div class="ops"><a href="#" id="'+eid+'">'+escapeHtml(returnLang('notesEdit')||'Edit')+'</a> · <a href="#" id="'+vid+'">'+escapeHtml(returnLang('notesView')||'View')+'</a> · <a href="#" id="'+did+'">'+escapeHtml(returnLang('notesDelete')||'Delete')+'</a> · <a href="#" id="'+cid+'">'+escapeHtml(returnLang('copy')||'Copy')+'</a></div>';
