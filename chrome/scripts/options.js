@@ -70,6 +70,14 @@ document.addEvent('domready', function () {
         bg.deleteDb();
     });
 
+    if ($('deleteCacheButton')){
+        $('deleteCacheButton').set('value', returnLang('deleteCache'));
+        $('deleteCacheButton').addEvent('click', function(){
+            var bg = chrome.extension.getBackgroundPage();
+            bg.deleteDb();
+        });
+    }
+
 
     // $('shortcuts').set('value', returnLang('shortcuts'));
     $('shortcuts').addEvent('click', function () {
