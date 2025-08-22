@@ -631,5 +631,98 @@
     },
     "saveSelectionAsNote": {
         "message": "Save selection as note"
+    },
+    "notesDeleteConfirmLabel": {
+        "message": "Are you sure you want to delete this note?"
+    },
+    "notesDeleteCancelLabel": {
+        "message": "No, cancel"
+    },
+    "notesDeleteConfirmYesLabel": {
+        "message": "Yes, delete it"
+    },
+    "notesEditLabel": {
+        "message": "Edit Note"
+    },
+    "notesDeleteLabel": {
+        "message": "Delete Note"
+    },
+    "notesCancelLabel": {
+        "message": "Cancel"
+    },
+    "notesSaveLabel": {
+        "message": "Save"
+    },
+    "notesAddLabel": {
+        "message": "Add New Note"
+    },
+    "notesListLabel": {
+        "message": "Notes List"
+    },
+    "notesNotFoundLabel": {
+        "message": "No notes found for this item."
+    },
+    "notesAddConfirmLabel": {
+        "message": "Add New Note"
+    },
+    "notesEditConfirmLabel": {
+        "message": "Edit Note"
+    },
+    "notesDeleteConfirmLabel": {
+        "message": "Are you sure you want to delete this note?"
+    },
+    "notesDeleteCancelLabel": {
+        "message": "No, cancel"
+    },
+    "notesDeleteConfirmYesLabel": {
+        "message": "Yes, delete it"
+    },
+    "notesEditCancelLabel": {
+        "message": "Cancel"
+    },
+    "notesEditSaveLabel": {
+        "message": "Save"
+    },
+    "notesEditDeleteLabel": {
+        "message": "Delete Note"
+    },
+    "notesEditCancelConfirmLabel": {
+        "message": "Cancel"
+    },
+    "notesEditSaveConfirmLabel": {
+        "message": "Save"
+    },
+    "notesEditDeleteConfirmLabel": {
+        "message": "Are you sure you want to delete this note?"
+    },
+    "notesEditDeleteCancelLabel": {
+        "message": "No, cancel"
+    },
+    "notesEditDeleteConfirmYesLabel": {
+        "message": "Yes, delete it"
+    },
+    "notesEditCancelLabel": {
+        "message": "Cancel"
+    },
+    "notesEditSaveLabel": {
+        "message": "Save"
+    },
+    "notesEditDeleteLabel": {
+        "message": "Delete Note"
+    },
+    "notesEditCancelConfirmLabel": {
+        "message": "Cancel"
+    },
+    "notesEditSaveConfirmLabel": {
+        "message": "Save"
+    },
+    "notesEditDeleteConfirmLabel": {
+        "message": "Are you sure you want to delete this note?"
+    },
+    "notesEditDeleteCancelLabel": {
+        "message": "No, cancel"
+    },
+    "notesEditDeleteConfirmYesLabel": {
+        "message": "Yes, delete it"
     }
 }
