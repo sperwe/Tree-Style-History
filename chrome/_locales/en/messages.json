@@ -592,5 +592,41 @@
     },
     "recentNotes": {
         "message": "Recent Notes"
+    },
+    "exportNotesMd": {
+        "message": "Export Notes (Markdown)"
+    },
+    "importNotesMd": {
+        "message": "Import Notes (Markdown)"
+    },
+    "exportNotesMdSuccess": {
+        "message": "Notes exported successfully (Markdown)!"
+    },
+    "importNotesMdSuccess": {
+        "message": "Notes imported successfully (Markdown)!"
+    },
+    "exportNotesMdFailed": {
+        "message": "Failed to export notes (Markdown)."
+    },
+    "importNotesMdFailed": {
+        "message": "Failed to import notes (Markdown)."
+    },
+    "exportNotesSingle": {
+        "message": "Export Note"
+    },
+    "importNotesSingle": {
+        "message": "Import Note"
+    },
+    "exportNotesSingleSuccess": {
+        "message": "Note exported successfully!"
+    },
+    "importNotesSingleSuccess": {
+        "message": "Note imported successfully!"
+    },
+    "exportNotesSingleFailed": {
+        "message": "Failed to export note."
+    },
+    "importNotesSingleFailed": {
+        "message": "Failed to import note."
     }
 }
