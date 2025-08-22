@@ -727,5 +727,8 @@
     },
     "language": {
         "message": "Language"
+    },
+    "singleFormNote": {
+        "message": "Single Form Note"
     }
 }

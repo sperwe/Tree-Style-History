@@ -33,8 +33,8 @@ document.addEvent('domready', function () {
         $('note-modal').setStyle('display', 'flex');
 
         $('note-cancel').onclick = function(){ $('note-modal').setStyle('display', 'none'); };
-        $('note-delete').onclick = function(){ deleteNote(visitId, function(ok){ $('note-modal').setStyle('display', 'none'); if(ok){ alertUser(returnLang('noteDeleted'),'open'); } else { alertUser(returnLang('noteError'),'open'); } refreshNoteBadges(); }); };
-        $('note-save').onclick = function(){ saveNote(visitId, url, $('note-text').get('value'), function(ok){ $('note-modal').setStyle('display', 'none'); if(ok){ alertUser(returnLang('noteSaved'),'open'); } else { alertUser(returnLang('noteError'),'open'); } refreshNoteBadges(); }); };
+        $('note-delete').onclick = function(){ deleteNote(visitId, function(ok){ $('note-modal').setStyle('display', 'none'); if(ok){ alertLoadingHistory(true); alertUser(returnLang('noteDeleted'),'open'); } else { alertLoadingHistory(true); alertUser(returnLang('noteError'),'open'); } refreshNoteBadges(); }); };
+        $('note-save').onclick = function(){ saveNote(visitId, url, $('note-text').get('value'), function(ok){ $('note-modal').setStyle('display', 'none'); if(ok){ alertLoadingHistory(true); alertUser(returnLang('noteSaved'),'open'); } else { alertLoadingHistory(true); alertUser(returnLang('noteError'),'open'); } refreshNoteBadges(); }); };
     }
 
     function saveNote(visitId, url, text, cb){
