@@ -469,5 +469,59 @@
     },
     "recentTabs": {
         "message": "Recent viewed tabs"
+    },
+    "notes": {
+        "message": "Notes"
+    },
+    "notesTip": {
+        "message": "Add notes to your history items."
+    },
+    "notesPlaceholder": {
+        "message": "Enter your notes here..."
+    },
+    "saveNotes": {
+        "message": "Save Notes"
+    },
+    "notesSaved": {
+        "message": "Notes Saved!"
+    },
+    "notesFailed": {
+        "message": "Failed to save notes."
+    },
+    "deleteNotes": {
+        "message": "Delete Notes"
+    },
+    "notesDeleted": {
+        "message": "Notes Deleted!"
+    },
+    "notesNotFound": {
+        "message": "No notes found for this item."
+    },
+    "notesList": {
+        "message": "Notes List"
+    },
+    "notesAdd": {
+        "message": "Add New Note"
+    },
+    "notesEdit": {
+        "message": "Edit Note"
+    },
+    "notesDelete": {
+        "message": "Delete Note"
+    },
+    "notesCancel": {
+        "message": "Cancel"
+    },
+    "notesSave": {
+        "message": "Save"
+    },
+    "notesDeleteConfirm": {
+        "message": "Are you sure you want to delete this note?"
+    },
+    "notesDeleteCancel": {
+        "message": "No, cancel"
+    },
+    "notesDeleteConfirmYes": {
+        "message": "Yes, delete it"
     }
 }
