@@ -632,6 +632,18 @@
     "saveSelectionAsNote": {
         "message": "Save selection as note"
     },
+    "notesMergeMode": {
+        "message": "Note merge mode"
+    },
+    "notesMergeAppend": {
+        "message": "Append with timestamp"
+    },
+    "notesMergeSeparate": {
+        "message": "Create separate notes"
+    },
+    "notesMergeReplace": {
+        "message": "Replace existing note"
+    },
     "notesDeleteConfirmLabel": {
         "message": "Are you sure you want to delete this note?"
     },

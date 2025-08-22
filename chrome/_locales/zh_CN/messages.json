@@ -685,5 +685,17 @@
     },
     "saveSelectionAsNote": {
         "message": "保存选中的内容为笔记"
+    },
+    "notesMergeMode": {
+        "message": "笔记合并模式"
+    },
+    "notesMergeAppend": {
+        "message": "追加并添加时间戳"
+    },
+    "notesMergeSeparate": {
+        "message": "创建单独的笔记"
+    },
+    "notesMergeReplace": {
+        "message": "替换现有笔记"
     }
 }
