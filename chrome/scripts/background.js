@@ -1733,6 +1733,14 @@ function loadNoteFromDatabase(visitId) {
  */
 async function getAllNotesFromDatabase() {
     return new Promise((resolve) => {
+        console.log('[TST Background] getAllNotesFromDatabase开始，db状态:', !!db);
+        
+        if (!db) {
+            console.error('[TST Background] 数据库未初始化');
+            resolve([]);
+            return;
+        }
+        
         const transaction = db.transaction(['VisitNote'], 'readonly');
         const objectStore = transaction.objectStore('VisitNote');
         const request = objectStore.getAll();
