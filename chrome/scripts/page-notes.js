@@ -1591,23 +1591,41 @@
 
             container.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">加载中...</div>';
 
+            // 添加超时处理
+            const timeoutPromise = new Promise((resolve) => {
+                setTimeout(() => {
+                    console.warn('[TST Floating] 请求超时');
+                    resolve([]);
+                }, 5000);
+            });
+
             // 从background获取笔记
-            const notes = await new Promise((resolve) => {
+            const notesPromise = new Promise((resolve) => {
                 if (chrome && chrome.runtime) {
+                    console.log('[TST Floating] 发送getAllNotes请求');
                     chrome.runtime.sendMessage({
                         action: 'getAllNotes'
                     }, (response) => {
+                        console.log('[TST Floating] 收到响应:', response);
                         if (chrome.runtime.lastError) {
                             console.error('[TST Floating] Runtime错误:', chrome.runtime.lastError);
                             resolve([]);
+                        } else if (response && response.success && response.notes) {
+                            console.log('[TST Floating] 成功获取笔记数量:', response.notes.length);
+                            resolve(response.notes);
                         } else {
-                            resolve(response && response.notes ? response.notes : []);
+                            console.warn('[TST Floating] 响应格式异常或无笔记:', response);
+                            resolve([]);
                         }
                     });
                 } else {
+                    console.error('[TST Floating] Chrome runtime不可用');
                     resolve([]);
                 }
             });
+
+            // 使用Promise.race来处理超时
+            const notes = await Promise.race([notesPromise, timeoutPromise]);
 
             if (notes.length === 0) {
                 container.innerHTML = `
