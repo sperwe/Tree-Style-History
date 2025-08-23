@@ -1211,6 +1211,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Return true to indicate we will send a response asynchronously
         return true;
     }
+    
+    if (request.action === 'loadPageNote') {
+        loadPageNoteFromContentScript(request.data)
+            .then((note) => {
+                sendResponse({ success: true, note: note });
+            })
+            .catch((error) => {
+                console.error('Error loading page note:', error);
+                sendResponse({ success: false, error: error.message || 'Unknown error' });
+            });
+        
+        // Return true to indicate we will send a response asynchronously
+        return true;
+    }
 });
 
 /**
@@ -1248,4 +1262,67 @@ async function savePageNoteFromContentScript(pageData) {
         console.error('Error in savePageNoteFromContentScript:', error);
         throw error;
     }
+}
+
+/**
+ * Load page note from content script
+ */
+async function loadPageNoteFromContentScript(pageData) {
+    try {
+        // Find visitId for this URL
+        const visitId = await findLatestVisitId(pageData.url);
+        
+        // Load the note from database
+        const note = await loadNoteFromDatabase(visitId);
+        
+        return note;
+    } catch (error) {
+        console.error('Error in loadPageNoteFromContentScript:', error);
+        throw error;
+    }
+}
+
+/**
+ * Load note from database by visitId
+ */
+function loadNoteFromDatabase(visitId) {
+    return new Promise((resolve, reject) => {
+        try {
+            if (!dbConn) {
+                reject(new Error('Database not initialized'));
+                return;
+            }
+            
+            const tx = dbConn.transaction(['VisitNote'], 'readonly');
+            const ns = tx.objectStore('VisitNote');
+            const getReq = ns.get(visitId);
+            
+            getReq.onsuccess = function() {
+                try {
+                    const result = getReq.result;
+                    if (result && result.note) {
+                        resolve(result.note);
+                    } else {
+                        resolve(null); // No note found
+                    }
+                } catch (error) {
+                    console.error('Exception in getReq.onsuccess for loadNoteFromDatabase:', error);
+                    reject(error);
+                }
+            };
+            
+            getReq.onerror = function(err) {
+                console.error('Get request error in loadNoteFromDatabase:', err);
+                resolve(null); // Return null instead of rejecting to avoid blocking the UI
+            };
+            
+            tx.onerror = function(err) {
+                console.error('Transaction error in loadNoteFromDatabase:', err);
+                resolve(null);
+            };
+        } catch (error) {
+            console.error('Exception in loadNoteFromDatabase:', error);
+            resolve(null);
+        }
+    });
 }

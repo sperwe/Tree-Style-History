@@ -134,6 +134,9 @@
 
         // 拖拽摘录功能
         setupDragAndDrop();
+        
+        // 复制粘贴格式化功能
+        setupCopyPasteFormat();
 
         document.body.appendChild(quickNoteModal);
     }
@@ -150,6 +153,9 @@
         updateWindowTransform();
         quickNoteModal.style.display = 'block';
         isModalOpen = true;
+
+        // 加载历史笔记内容
+        loadHistoryNotes();
 
         // 聚焦到文本框
         const textarea = quickNoteModal.querySelector('#tst-quick-note-textarea');
@@ -436,6 +442,94 @@
         textarea.focus();
         
         showNotification('摘录已添加到笔记', 'success');
+    }
+
+    /**
+     * 加载历史笔记内容
+     */
+    function loadHistoryNotes() {
+        const pageUrl = window.location.href;
+        
+        // 发送消息到background脚本查询历史笔记
+        chrome.runtime.sendMessage({
+            action: 'loadPageNote',
+            data: { url: pageUrl }
+        }, (response) => {
+            if (response && response.success && response.note) {
+                const textarea = quickNoteModal.querySelector('#tst-quick-note-textarea');
+                if (!textarea.value.trim()) {
+                    // 只有当前没有内容时才加载历史笔记
+                    textarea.value = response.note;
+                    showNotification('已加载页面历史笔记', 'info');
+                } else {
+                    // 如果已有内容，提示用户是否要加载历史笔记
+                    if (confirm('发现该页面的历史笔记，是否要加载？（当前内容将被替换）')) {
+                        textarea.value = response.note;
+                        showNotification('已加载页面历史笔记', 'info');
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * 实现复制粘贴文本自动格式化
+     */
+    function setupCopyPasteFormat() {
+        const textarea = quickNoteModal.querySelector('#tst-quick-note-textarea');
+        
+        textarea.addEventListener('paste', (e) => {
+            // 检查是否是纯文本粘贴
+            const clipboardData = e.clipboardData || window.clipboardData;
+            const pastedText = clipboardData.getData('text/plain');
+            
+            if (!pastedText || pastedText.trim().length === 0) {
+                return; // 如果没有文本内容，使用默认行为
+            }
+            
+            // 检查粘贴的文本是否已经是引用格式
+            if (pastedText.startsWith('>') || pastedText.includes('*摘录自:')) {
+                return; // 如果已经是格式化的内容，使用默认行为
+            }
+            
+            // 检查是否是从其他地方复制的普通文本（可能是摘录）
+            const lines = pastedText.split('\n');
+            const isLikelyExcerpt = pastedText.length > 10 && 
+                                  !pastedText.includes('\n\n') && 
+                                  lines.length <= 3;
+            
+            if (isLikelyExcerpt) {
+                e.preventDefault(); // 阻止默认粘贴行为
+                
+                // 使用摘录格式
+                const pageTitle = document.title || '无标题页面';
+                const pageUrl = window.location.href;
+                const timestamp = new Date().toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                const formattedText = `> ${pastedText.trim()}\n> \n> *摘录自: [${pageTitle}](${pageUrl}) - ${timestamp}*\n\n`;
+                
+                // 插入格式化的文本
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const currentValue = textarea.value;
+                
+                const prefix = (start > 0 && !currentValue.substring(start - 2, start).includes('\n\n')) ? '\n\n' : '';
+                
+                textarea.value = currentValue.substring(0, start) + prefix + formattedText + currentValue.substring(end);
+                
+                const newPosition = start + prefix.length + formattedText.length;
+                textarea.setSelectionRange(newPosition, newPosition);
+                
+                showNotification('文本已格式化为摘录格式', 'success');
+            }
+            // 对于其他情况，使用默认粘贴行为
+        });
     }
 
     /**
