@@ -1,0 +1,98 @@
+{
+  "addon_name": {
+    "message": "Research Navigator",
+    "description": "The name of the addon"
+  },
+  "addon_description": {
+    "message": "A Zotero plugin for tracking research history and enhanced note navigation",
+    "description": "The description of the addon"
+  },
+  "search_placeholder": {
+    "message": "Search history records...",
+    "description": "Placeholder text for search input"
+  },
+  "access_history": {
+    "message": "Access History",
+    "description": "Title for the access history panel"
+  },
+  "collapse_all": {
+    "message": "Collapse All",
+    "description": "Tooltip for collapse all button"
+  },
+  "expand_all": {
+    "message": "Expand All",
+    "description": "Tooltip for expand all button"
+  },
+  "item_preview": {
+    "message": "Item Preview",
+    "description": "Title for the item preview panel"
+  },
+  "open_item": {
+    "message": "Open Item",
+    "description": "Button text to open an item"
+  },
+  "view_details": {
+    "message": "View Details",
+    "description": "Button text to view item details"
+  },
+  "no_history": {
+    "message": "No access history",
+    "description": "Empty state message when no history exists"
+  },
+  "no_matches": {
+    "message": "No matching records found",
+    "description": "Empty state message when search returns no results"
+  },
+  "type_label": {
+    "message": "Type:",
+    "description": "Label for item type in preview"
+  },
+  "access_count_label": {
+    "message": "Access Count:",
+    "description": "Label for access count in preview"
+  },
+  "last_accessed_label": {
+    "message": "Last Accessed:",
+    "description": "Label for last accessed time in preview"
+  },
+  "time_today": {
+    "message": "Today",
+    "description": "Time group label for today"
+  },
+  "time_yesterday": {
+    "message": "Yesterday",
+    "description": "Time group label for yesterday"
+  },
+  "days_ago": {
+    "message": "{count} days ago",
+    "description": "Time group label for multiple days ago"
+  },
+  "item_type_literature": {
+    "message": "📖 Literature Items",
+    "description": "Display name for literature items"
+  },
+  "item_type_note": {
+    "message": "📝 Notes",
+    "description": "Display name for notes"
+  },
+  "item_type_collection": {
+    "message": "📁 Collections",
+    "description": "Display name for collections"
+  },
+  "item_type_search": {
+    "message": "🔍 Search Results",
+    "description": "Display name for search results"
+  },
+  "clear_history": {
+    "message": "Clear History",
+    "description": "Menu item to clear all history"
+  },
+  "clear_history_confirm": {
+    "message": "Are you sure you want to clear all Research Navigator data?",
+    "description": "Confirmation message for clearing history"
+  },
+  "toggle_panel": {
+    "message": "Toggle Research Navigator Panel",
+    "description": "Tooltip for toolbar button"
+  }
+}
