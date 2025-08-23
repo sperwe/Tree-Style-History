@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.7.2",
-  "version_name": "4.7.2 by sperwe - Enhanced Global Floating Window with Smart AlwaysOnTop",
+  "version": "4.8.0",
+  "version_name": "4.8.0 by sperwe - Refined In-Page Floating Window with Smart Titles",
   "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.7.2: Smart AlwaysOnTop Detection - Graceful fallback & enhanced visibility management",
+  "description": "v4.8.0: Simplified & Reliable - In-page floating window + intelligent title generation",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
@@ -29,8 +29,7 @@
     "sessions",
     "chrome://favicon/",
     "contextMenus",
-    "notifications",
-    "system.display"
+    "notifications"
   ],
   "icons": {
     "16": "images/tree-16.png",
