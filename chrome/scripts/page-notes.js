@@ -718,15 +718,15 @@
                 cursor: pointer;
                 transition: background-color 0.2s;
                 font-size: 12px;
-                ${index === 0 ? 'background: #e3f2fd; border: 1px solid #2196f3;' : ''}
+                ${index === 0 ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'background: #2a4a5c; border: 1px solid #4a90e2; color: #ffffff;' : 'background: #e3f2fd; border: 1px solid #2196f3;') : ''}
             `;
             
             noteItem.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                    <span class="tst-history-item-label ${index === 0 ? 'current' : ''}" style="font-weight: bold;">${index === 0 ? '💡 最新' : `#${index + 1}`}</span>
-                    <span class="tst-history-item-time" style="font-size: 10px;">${updateTime.split(' ')[1] || updateTime}</span>
+                    <span class="tst-history-item-label ${index === 0 ? 'current' : ''}" style="font-weight: bold; ${index === 0 && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'color: #ffffff;' : ''}">${index === 0 ? '💡 最新' : `#${index + 1}`}</span>
+                    <span class="tst-history-item-time" style="font-size: 10px; ${index === 0 && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'color: #ffffff;' : ''}">${updateTime.split(' ')[1] || updateTime}</span>
                 </div>
-                <div class="tst-history-item-preview" style="line-height: 1.3; font-size: 11px;">${escapeHtml(preview)}</div>
+                <div class="tst-history-item-preview" style="line-height: 1.3; font-size: 11px; ${index === 0 && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'color: #e0e0e0;' : ''}">${escapeHtml(preview)}</div>
             `;
             
             noteItem.addEventListener('click', () => {
