@@ -239,7 +239,7 @@
                 </div>
                 
                 <!-- 历史笔记加载区域 -->
-                <div id="tst-history-notes-panel" style="display: none; margin: 0 10px 10px 10px; padding: 8px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #007bff;">
+                <div id="tst-history-notes-panel" class="tst-history-panel" style="display: none; margin: 0 10px 10px 10px; padding: 8px; border-radius: 6px;">
                     <div style="display: flex; align-items: center; margin-bottom: 8px;">
                         <span style="font-weight: bold; color: #007bff; font-size: 13px;">📚 历史笔记</span>
                         <button id="tst-hide-history" style="margin-left: auto; background: none; border: none; color: #666; cursor: pointer; font-size: 16px;" title="隐藏">&times;</button>
@@ -739,7 +739,7 @@
             });
             
             noteItem.addEventListener('mouseleave', () => {
-                if (index !== 0) noteItem.style.backgroundColor = 'white';
+                if (index !== 0) noteItem.style.backgroundColor = '';
             });
             
             notesList.appendChild(noteItem);
@@ -1633,6 +1633,15 @@
         
         // 现代苹果/macOS风格的CSS样式
         styleElement.textContent = `
+            /* CSS变量定义 */
+            #tst-floating-note-manager {
+                --floating-bg-primary: #ffffff;
+                --floating-bg-secondary: #f8f9fa;
+                --floating-text-primary: #1d1d1f;
+                --floating-text-secondary: #666;
+                --floating-border: rgba(0, 0, 0, 0.04);
+            }
+            
             /* 全局重置和基础样式 */
             #tst-floating-note-manager * {
                 box-sizing: border-box;
@@ -1847,7 +1856,8 @@
                 position: relative;
             }
             
-            #tst-floating-note-manager .note-item:hover {
+            #tst-floating-note-manager .note-item:hover,
+            #tst-floating-note-manager .floating-note-item-hover:hover {
                 background: #f8f9fa;
             }
             
@@ -2151,10 +2161,18 @@
             
             /* 深色模式支持 */
             @media (prefers-color-scheme: dark) {
+                #tst-floating-note-manager {
+                    --floating-bg-primary: #1a1a1a;
+                    --floating-bg-secondary: #2d2d2d;
+                    --floating-text-primary: #e0e0e0;
+                    --floating-text-secondary: #b0b0b0;
+                    --floating-border: rgba(255, 255, 255, 0.08);
+                }
+                
                 #tst-floating-note-manager .note-manager-container,
                 #tst-floating-note-manager .main-content {
-                    background: #1a1a1a;
-                    color: #e0e0e0;
+                    background: var(--floating-bg-primary);
+                    color: var(--floating-text-primary);
                 }
                 
                 #tst-floating-note-manager .toolbar {
@@ -2182,7 +2200,8 @@
                     border-bottom-color: rgba(255, 255, 255, 0.06);
                 }
                 
-                #tst-floating-note-manager .note-item:hover {
+                #tst-floating-note-manager .note-item:hover,
+                #tst-floating-note-manager .floating-note-item-hover:hover {
                     background: #3a3a3a;
                 }
                 
@@ -2885,7 +2904,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            background: #f8f9fa;
+            background: var(--floating-bg-secondary, #f8f9fa);
         `;
 
         // 5. 直接创建笔记管理器的DOM结构
@@ -3235,8 +3254,7 @@
                         border-bottom: 1px solid #eee;
                         cursor: pointer;
                         transition: background-color 0.2s;
-                    " onmouseover="this.style.backgroundColor='#f8f9fa'" 
-                       onmouseout="this.style.backgroundColor='white'"
+                    " class="floating-note-item-hover"
                        onclick="selectFloatingNote('${note.id}')">
                         <div style="
                             font-weight: 500;
