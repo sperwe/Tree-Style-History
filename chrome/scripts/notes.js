@@ -10,21 +10,102 @@ document.addEvent('domready', function(){
 	function render(items){
 		listEl.set('html','');
 		if (items.length===0){ listEl.set('html','<div class="no-results"><span>'+returnLang('noResults')+'</span></div>'); return; }
+		
+		// Group notes by URL
+		var groupedItems = {};
 		items.forEach(function(m){
-			var url = m.note.url || '';
-			var title = (m.title && m.title.trim()!=='') ? m.title : url;
-			var noteText = m.note.note || '';
-			var firstLine = noteText.split(/\r?\n/)[0];
-			if (firstLine.length>120) firstLine = firstLine.slice(0,120)+'…';
+			var url = m.note.url || 'unknown';
+			if (!groupedItems[url]) {
+				groupedItems[url] = [];
+			}
+			groupedItems[url].push(m);
+		});
+		
+		// Sort URLs by most recent note
+		var sortedUrls = Object.keys(groupedItems).sort(function(a, b) {
+			var aLatest = Math.max.apply(Math, groupedItems[a].map(function(item) { return item.note.updatedAt || 0; }));
+			var bLatest = Math.max.apply(Math, groupedItems[b].map(function(item) { return item.note.updatedAt || 0; }));
+			return bLatest - aLatest;
+		});
+		
+		// Render grouped items
+		sortedUrls.forEach(function(url) {
+			var urlItems = groupedItems[url];
+			renderUrlGroup(url, urlItems);
+		});
+	}
+	
+	function renderUrlGroup(url, items) {
+		// Sort items within group by update time (newest first)
+		items.sort(function(a, b) {
+			return (b.note.updatedAt || 0) - (a.note.updatedAt || 0);
+		});
+		
+		var isMultiple = items.length > 1;
+		var firstItem = items[0];
+		var title = (firstItem.title && firstItem.title.trim()!=='') ? firstItem.title : url;
+		
+		if (isMultiple) {
+			// Create collapsible group for multiple notes
+			var groupId = 'group-' + btoa(url).replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+			var totalSelections = items.reduce(function(sum, item) {
+				var noteText = item.note.note || '';
+				var excerptCount = 0;
+				excerptCount += (noteText.match(/---\n\*Added on /g) || []).length;
+				excerptCount += (noteText.match(/\*摘录自:/g) || []).length;
+				if (excerptCount === 0 && noteText.trim()) excerptCount = 1;
+				return sum + excerptCount;
+			}, 0);
 			
-			// Count number of selections (by counting different separator patterns)
-			var excerptCount = 0;
-			// Count old format separators
-			excerptCount += (noteText.match(/---\n\*Added on /g) || []).length;
-			// Count new format separators  
-			excerptCount += (noteText.match(/\*摘录自:/g) || []).length;
-			// If no separators but has content, count as 1
-			if (excerptCount === 0 && noteText.trim()) excerptCount = 1;
+			// Group header
+			var html = '';
+			html += '<div class="note-group">';
+			html += '<div class="note-group-header" data-group="' + groupId + '">';
+			html += '<div class="note-group-toggle">▶</div>';
+			html += '<div class="note-group-favicon"><img src="chrome://favicon/' + escapeHtml(url) + '" width="16" height="16" onerror="this.style.display=\'none\'"></div>';
+			html += '<div class="note-group-title">' + escapeHtml(title) + '</div>';
+			html += '<div class="note-group-count">' + items.length + ' notes · ' + totalSelections + ' selections</div>';
+			html += '</div>';
+			html += '<div class="note-group-items" id="' + groupId + '" style="display: none;">';
+			
+			var groupEl = new Element('div', { 'html': html }).inject(listEl);
+			
+			// Render individual notes in group
+			items.forEach(function(m, index) {
+				renderSingleNote(m, true, index + 1);
+			});
+			
+			// Close group
+			listEl.set('html', listEl.get('html') + '</div></div>');
+			
+			// Add click handler for group toggle
+			var groupHeader = listEl.querySelector('[data-group="' + groupId + '"]');
+			if (groupHeader) {
+				groupHeader.addEventListener('click', function() {
+					toggleGroup(groupId);
+				});
+			}
+		} else {
+			// Single note, render normally
+			renderSingleNote(firstItem, false);
+		}
+	}
+	
+	function renderSingleNote(m, isInGroup, noteIndex) {
+		var url = m.note.url || '';
+		var title = (m.title && m.title.trim()!=='') ? m.title : url;
+		var noteText = m.note.note || '';
+		var firstLine = noteText.split(/\r?\n/)[0];
+		if (firstLine.length>120) firstLine = firstLine.slice(0,120)+'…';
+		
+		// Count number of selections (by counting different separator patterns)
+		var excerptCount = 0;
+		// Count old format separators
+		excerptCount += (noteText.match(/---\n\*Added on /g) || []).length;
+		// Count new format separators  
+		excerptCount += (noteText.match(/\*摘录自:/g) || []).length;
+		// If no separators but has content, count as 1
+		if (excerptCount === 0 && noteText.trim()) excerptCount = 1;
 			
 			var countBadge = excerptCount > 1 ? 
 				' <span style="background:#007cba;color:white;padding:2px 6px;border-radius:10px;font-size:10px;margin-left:6px;">' + 
@@ -207,5 +288,20 @@ document.addEvent('domready', function(){
 		var f=all.filter(function(m){ return (m.note.url||'').toLowerCase().indexOf(q)>=0 || (m.title||'').toLowerCase().indexOf(q)>=0 || (m.note.note||'').toLowerCase().indexOf(q)>=0; });
 		render(f);
 	});
+	function toggleGroup(groupId) {
+		var groupItems = document.getElementById(groupId);
+		var toggle = document.querySelector('[data-group="' + groupId + '"] .note-group-toggle');
+		
+		if (groupItems && toggle) {
+			if (groupItems.style.display === 'none') {
+				groupItems.style.display = 'block';
+				toggle.textContent = '▼';
+			} else {
+				groupItems.style.display = 'none';
+				toggle.textContent = '▶';
+			}
+		}
+	}
+	
 	load();
 });
