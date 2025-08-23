@@ -2160,7 +2160,7 @@
 
         // 窗口控制按钮 - 苹果风格（左侧）
         const controls = document.createElement('div');
-        controls.style.cssText = 'display: flex; gap: 8px;';
+        controls.style.cssText = 'display: flex; gap: 6px; padding-left: 2px;';
 
         const closeBtn = createMacControlButton('●', '关闭', '#FF5F57', () => {
             floatingManager.remove();
@@ -2741,17 +2741,19 @@
             background: ${color};
             border: none;
             color: transparent;
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 8px;
-            font-weight: bold;
-            transition: all 0.2s ease;
+            font-size: 9px;
+            font-weight: 600;
+            transition: all 0.15s ease;
             position: relative;
+            box-shadow: 0 0.5px 2px rgba(0, 0, 0, 0.12), inset 0 0.5px 0 rgba(255, 255, 255, 0.3);
+            margin: 0;
         `;
         
         // 悬停时显示符号
