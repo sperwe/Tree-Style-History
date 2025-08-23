@@ -5,21 +5,146 @@ document.addEvent('domready', function(){
 	var all = [];
 	var listEl = $('rh-views-insert');
 	var searchEl = $('notes-search');
+	
+	// Tree structure variables (similar to history2.js)
+	var treeObj;
+	var zNodes = [];
+	var setting = {
+		view: {
+			nameIsHTML: true,
+			selectedMulti: false,
+			addDiyDom: function (treeId, treeNode) {
+				var aObj = $jq("#" + treeNode.tId + "_a");
+				if ($jq("#editBtn_" + treeNode.id).length > 0) return;
+				
+				// Add edit and delete buttons for note items (not domain groups)
+				if (treeNode.isNote) {
+					var editBtn = $jq('<span class="note-edit-btn" id="editBtn_' + treeNode.id + '" title="Edit Note" style="margin-left:6px; cursor:pointer;">✏️</span>');
+					var deleteBtn = $jq('<span class="note-delete-btn" id="deleteBtn_' + treeNode.id + '" title="Delete Note" style="margin-left:3px; cursor:pointer;">🗑️</span>');
+					editBtn.appendTo(aObj);
+					deleteBtn.appendTo(aObj);
+					
+					// Add event handlers
+					editBtn.click(function(e) {
+						e.stopPropagation();
+						var note = treeNode.noteData;
+						openEditor(note.visitId, note.url, treeNode.title, note.note||'');
+					});
+					
+					deleteBtn.click(function(e) {
+						e.stopPropagation();
+						if (confirm('Delete this note?')) {
+							deleteNote(treeNode.noteData.visitId, function(){ load(); });
+						}
+					});
+				}
+			}
+		},
+		data: {
+			simpleData: {
+				enable: true,
+				pIdKey: "pId"
+			}
+		},
+		callback: {
+			onClick: function(event, treeId, treeNode) {
+				if (treeNode.isNote && treeNode.noteData) {
+					// Open note in viewer for reading
+					var note = treeNode.noteData;
+					openViewer(note.visitId, note.url, treeNode.title, note.note||'');
+				} else if (treeNode.t) {
+					// Open URL for domain groups
+					window.open(treeNode.t, "_blank");
+				}
+			}
+		}
+	};
+	
 	function fmt(ts){ if(!ts) return ''; try{ return new Date(ts).toLocaleString(); } catch(e){ return ''; } }
 	function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+	
 	function render(items){
-		listEl.set('html','');
 		console.log('render called with', items.length, 'items');
-		if (items.length===0){ listEl.set('html','<div class="no-results"><span>'+returnLang('noResults')+'</span></div>'); return; }
 		
-		// Render each note as individual item like in tree history
-		// Items are already sorted in enrich function
-		var rel = 'white';
+		// Initialize tree if not already done
+		if (!treeObj) {
+			try {
+				$jq.fn.zTree.init($jq("#notesTreeDemo"), setting, []);
+				treeObj = $jq.fn.zTree.getZTreeObj("notesTreeDemo");
+				
+				// Hide fallback flat structure
+				if ($('rh-views-tube')) {
+					$('rh-views-tube').setStyle('display', 'none');
+				}
+			} catch (e) {
+				console.error('Failed to initialize tree, using fallback:', e);
+				// Use fallback flat structure
+				if ($('rh-views-tube')) {
+					$('rh-views-tube').setStyle('display', 'block');
+				}
+				renderFlat(items);
+				return;
+			}
+		}
+		
+		// Clear existing tree
+		var nodes = treeObj.getNodes();
+		while (nodes && nodes.length > 0) {
+			treeObj.removeNode(nodes[0], false);
+		}
+		
+		if (items.length === 0) { 
+			var emptyNode = [{
+				id: 'empty',
+				pId: 0,
+				name: '📝 ' + (returnLang('noResults') || 'No notes found'),
+				isNote: false,
+				open: true
+			}];
+			treeObj.addNodes(null, emptyNode, false);
+			return; 
+		}
+		
+		// Group notes by domain and organize in tree structure
+		zNodes = [];
+		var domainGroups = {};
+		var nodeId = 1;
+		
+		// Sort items by updatedAt desc first
+		items.sort(function(a, b) { 
+			return (b.note.updatedAt || 0) - (a.note.updatedAt || 0); 
+		});
+		
+		// Process each note
 		for (var i = 0; i < items.length; i++) {
 			var m = items[i];
-			console.log('rendering item:', m.note ? m.note.url : 'no note', m.title);
-			
 			var url = m.note.url || '';
+			var domain = '';
+			
+			try {
+				if (url && url.trim()) {
+					var urlObj = new URL(url);
+					domain = urlObj.hostname || url;
+				} else {
+					domain = 'Unknown';
+				}
+			} catch (e) {
+				domain = url.split('/')[0] || 'Unknown';
+			}
+			
+			// Create domain group if it doesn't exist
+			if (!domainGroups[domain]) {
+				domainGroups[domain] = {
+					id: 'domain_' + nodeId++,
+					pId: 0,
+					name: '🌐 ' + domain,
+					isNote: false,
+					open: true,
+					t: 'https://' + domain
+				};
+				zNodes.push(domainGroups[domain]);
+			}
+			
 			var title = (m.title && m.title.trim()!=='') ? m.title : url;
 			var noteText = m.note.note || '';
 			var firstLine = noteText.split(/\r?\n/)[0];
@@ -40,22 +165,81 @@ document.addEvent('domready', function(){
 			}
 			displayTitle += countBadge;
 			
-			// Generate IDs
-			var selectId = 'select-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
-			var errorId = 'error-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
+			// Create note node
+			var noteNode = {
+				id: 'note_' + nodeId++,
+				pId: domainGroups[domain].id,
+				name: '📝 ' + timeStr + ' - ' + escapeHtml(displayTitle),
+				isNote: true,
+				open: false,
+				noteData: m.note,
+				title: title,
+				t: url,
+				icon: 'chrome://favicon/' + escapeHtml(url)
+			};
 			
-			// Build item HTML exactly like tree history
+			zNodes.push(noteNode);
+		}
+		
+		// Add nodes to tree
+		if (zNodes.length > 0) {
+			treeObj.addNodes(null, zNodes, false);
+		}
+		
+		// Setup search functionality for tree
+		if (typeof fuzzySearch === 'function') {
+			fuzzySearch('notesTreeDemo', '#notes-search', null, false);
+		}
+	}
+	
+	// Fallback flat rendering function (original logic)
+	function renderFlat(items) {
+		if (!listEl) return;
+		
+		listEl.set('html','');
+		console.log('renderFlat called with', items.length, 'items');
+		if (items.length===0){ 
+			listEl.set('html','<div class="no-results"><span>'+returnLang('noResults')+'</span></div>'); 
+			return; 
+		}
+		
+		// Render each note as individual item (original logic)
+		var rel = 'white';
+		for (var i = 0; i < items.length; i++) {
+			var m = items[i];
+			var url = m.note.url || '';
+			var title = (m.title && m.title.trim()!=='') ? m.title : url;
+			var noteText = m.note.note || '';
+			var firstLine = noteText.split(/\r?\n/)[0];
+			if (firstLine.length > 60) firstLine = firstLine.slice(0,60)+'…';
+			
+			var excerptCount = 0;
+			excerptCount += (noteText.match(/---\n\*Added on /g) || []).length;
+			excerptCount += (noteText.match(/\*摘录自:/g) || []).length;
+			if (excerptCount === 0 && noteText.trim()) excerptCount = 1;
+			
+			var countBadge = excerptCount > 1 ? ' [' + excerptCount + ' selections]' : '';
+			var timeStr = fmt(m.note.updatedAt) || '';
+			
+			var displayTitle = title;
+			if (firstLine && firstLine !== title) {
+				displayTitle = title + ': ' + firstLine;
+			}
+			displayTitle += countBadge;
+			
 			var item = '';
 			item += '<div class="item">';
-			item += '<span class="checkbox"><label><input class="chkbx" type="checkbox" id="' + selectId + '" value="' + url + '" name="check"></label>&nbsp;</span>';
 			item += '<span class="time">' + timeStr + '</span>';
 			item += '<a target="_blank" class="link" href="' + url + '">';
-			item += '<img id="' + errorId + '" class="favicon" alt="Favicon" src="chrome://favicon/' + escapeHtml(url) + '">';
+			item += '<img class="favicon" alt="Favicon" src="chrome://favicon/' + escapeHtml(url) + '">';
 			item += '<span class="title" title="' + escapeHtml(url + ' - ' + noteText.substring(0, 200)) + '">' + escapeHtml(displayTitle) + '</span>';
 			item += '</a>';
+			item += '<span class="note-actions" style="float:right;">';
+			item += '<a href="#" onclick="openEditor(\''+m.note.visitId+'\', \''+escapeHtml(url)+'\', \''+escapeHtml(title)+'\', \''+escapeHtml(noteText)+'\'); return false;">✏️</a>';
+			item += '<a href="#" onclick="if(confirm(\'Delete note?\')) deleteNote(\''+m.note.visitId+'\', function(){load();}); return false;">🗑️</a>';
+			item += '</span>';
 			item += '</div>';
 			
-			// Create and inject element
 			var noteElement = new Element('div', { 
 				'rel': rel, 
 				'class': 'item-holder',
@@ -63,38 +247,11 @@ document.addEvent('domready', function(){
 			});
 			noteElement.inject(listEl);
 			
-			// Add event handlers
-			addNoteEventHandlers(m);
-			
-			// Add double-click to edit
-			noteElement.addEvent('dblclick', function(e) {
-				e.stop();
-				openEditor(m.note.visitId, m.note.url, m.title, m.note.note||'');
-			}.bind(null, m));
-			
-			// Alternate background
 			rel = (rel === 'white') ? 'grey' : 'white';
 		}
 	}
-	
 
-
-	
-
-	
-	function addNoteEventHandlers(m) {
-		var eid = 'edit-'+m.note.visitId;
-		var did = 'del-'+m.note.visitId;
-		var cid = 'copy-'+m.note.visitId;
-		var vid = 'view-'+m.note.visitId;
-		var title = (m.title && m.title.trim()!=='') ? m.title : (m.note.url || '');
-		var url = m.note.url || '';
-		
-		$(eid).addEvent('click', function(e){ e.stop(); openEditor(m.note.visitId, m.note.url, m.title, m.note.note||''); });
-		$(vid).addEvent('click', function(e){ e.stop(); openViewer(m.note.visitId, m.note.url, m.title, m.note.note||''); });
-		$(did).addEvent('click', function(e){ e.stop(); deleteNote(m.note.visitId, function(){ load(); }); });
-		$(cid).addEvent('click', function(e){ e.stop(); var text = (title?('Title: '+title+'\n'):'') + (url?('URL: '+url+'\n'):'') + '\n' + (m.note.note||''); Clipboard.copy(text); });
-	}
+	// Removed addNoteEventHandlers - now handled in tree structure
 	function load(){
 		if (!db){ render([]); return; }
 		var tx = db.transaction(["VisitNote"], "readonly");
@@ -233,10 +390,18 @@ document.addEvent('domready', function(){
 		tx.oncomplete=function(){ cb&&cb(true); };
 		tx.onerror=function(){ cb&&cb(false); };
 	}
+	// Search functionality is now handled by fuzzySearch in tree structure
 	searchEl && searchEl.addEvent('keyup', function(){
 		var q=this.get('value').toLowerCase();
-		if (!q){ render(all); return; }
-		var f=all.filter(function(m){ return (m.note.url||'').toLowerCase().indexOf(q)>=0 || (m.title||'').toLowerCase().indexOf(q)>=0 || (m.note.note||'').toLowerCase().indexOf(q)>=0; });
+		if (!q){ 
+			render(all); 
+			return; 
+		}
+		var f=all.filter(function(m){ 
+			return (m.note.url||'').toLowerCase().indexOf(q)>=0 || 
+				   (m.title||'').toLowerCase().indexOf(q)>=0 || 
+				   (m.note.note||'').toLowerCase().indexOf(q)>=0; 
+		});
 		render(f);
 	});
 
