@@ -33,6 +33,11 @@ document.addEvent('domready', function () {
             window.close();
             break;
 
+        case 'notes':
+            window.open("notes.html");
+            window.close();
+            break;
+
         case 'options':
             window.open("options.html");
             window.close();
