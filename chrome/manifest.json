@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.5.4",
+  "version": "4.5.5",
   "version_name": "4.5.3 by sperwe - Fixed Comment Block Syntax Error",
   "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.5.4: Restored Floating Button to v4.4.5 Working State",
+  "description": "v4.5.5: Unified Floating Window using iframe+srcdoc",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
