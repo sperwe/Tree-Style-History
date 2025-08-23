@@ -718,7 +718,7 @@
                 cursor: pointer;
                 transition: background-color 0.2s;
                 font-size: 12px;
-                ${index === 0 ? 'background: #e3f2fd; border: 1px solid #2196f3;' : 'background: white; border: 1px solid #e0e0e0;'}
+                ${index === 0 ? 'background: #e3f2fd; border: 1px solid #2196f3;' : ''}
             `;
             
             noteItem.innerHTML = `
@@ -1133,8 +1133,7 @@
             position: fixed;
             left: ${x}px;
             top: ${y}px;
-            background: white;
-            border: 1px solid #ddd;
+
             border-radius: 6px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             z-index: 999999;
