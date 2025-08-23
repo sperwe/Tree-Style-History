@@ -512,21 +512,162 @@
             action: 'loadPageNote',
             data: { url: pageUrl }
         }, (response) => {
+            console.log('[TST Notes] 加载笔记响应:', response);
+            
             if (response && response.success && response.note) {
+                const notesData = response.note;
                 const textarea = quickNoteModal.querySelector('#tst-quick-note-textarea');
-                if (!textarea.value.trim()) {
-                    // 只有当前没有内容时才加载历史笔记
-                    textarea.value = response.note;
-                    showNotification('已加载页面历史笔记', 'info');
-                } else {
-                    // 如果已有内容，提示用户是否要加载历史笔记
-                    if (confirm('发现该页面的历史笔记，是否要加载？（当前内容将被替换）')) {
-                        textarea.value = response.note;
-                        showNotification('已加载页面历史笔记', 'info');
-                    }
+                
+                if (notesData.count === 1) {
+                    // 只有一个笔记，直接加载
+                    loadSingleNote(notesData.latest, textarea);
+                } else if (notesData.count > 1) {
+                    // 多个笔记，显示选择列表
+                    showNotesSelector(notesData.notes, textarea);
                 }
+            } else {
+                console.log('[TST Notes] 未找到历史笔记或加载失败');
             }
         });
+    }
+    
+    /**
+     * 加载单个笔记
+     */
+    function loadSingleNote(note, textarea) {
+        const noteContent = note.note || '';
+        const updateTime = note.updatedAt ? new Date(note.updatedAt).toLocaleString() : '未知时间';
+        
+        if (!textarea.value.trim()) {
+            // 当前没有内容，直接加载
+            textarea.value = noteContent;
+            showNotification(`已加载历史笔记 (${updateTime})`, 'info');
+        } else {
+            // 当前有内容，询问是否替换
+            if (confirm(`发现历史笔记 (${updateTime})，是否要加载？\n当前内容将被替换。`)) {
+                textarea.value = noteContent;
+                showNotification(`已加载历史笔记 (${updateTime})`, 'info');
+            }
+        }
+    }
+    
+    /**
+     * 显示笔记选择器
+     */
+    function showNotesSelector(notes, textarea) {
+        // 创建笔记选择弹窗
+        const selectorModal = document.createElement('div');
+        selectorModal.id = 'tst-notes-selector';
+        selectorModal.style.cssText = `
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        
+        const selectorContent = document.createElement('div');
+        selectorContent.style.cssText = `
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        `;
+        
+        selectorContent.innerHTML = `
+            <h3 style="margin: 0 0 15px 0; color: #333;">📝 选择要加载的笔记 (共${notes.length}条)</h3>
+            <div id="notes-list"></div>
+            <div style="margin-top: 15px; text-align: right;">
+                <button id="cancel-selector" style="margin-right: 10px; padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">取消</button>
+                <button id="load-latest" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">加载最新</button>
+            </div>
+        `;
+        
+        const notesList = selectorContent.querySelector('#notes-list');
+        
+        // 渲染笔记列表
+        notes.forEach((note, index) => {
+            const noteItem = document.createElement('div');
+            const updateTime = note.updatedAt ? new Date(note.updatedAt).toLocaleString() : '未知时间';
+            const preview = (note.note || '').substring(0, 100) + (note.note && note.note.length > 100 ? '...' : '');
+            
+            noteItem.style.cssText = `
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                padding: 12px;
+                margin-bottom: 10px;
+                cursor: pointer;
+                transition: background-color 0.2s;
+                ${index === 0 ? 'border-color: #007bff; background: #f8f9ff;' : ''}
+            `;
+            
+            noteItem.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-weight: bold; color: #007bff;">${index === 0 ? '📝💡 最新笔记' : `📝 笔记 ${index + 1}`}</span>
+                    <span style="font-size: 12px; color: #666;">${updateTime}</span>
+                </div>
+                <div style="color: #333; line-height: 1.4;">${escapeHtml(preview)}</div>
+            `;
+            
+            noteItem.addEventListener('click', () => {
+                loadSelectedNote(note, textarea, updateTime);
+                document.body.removeChild(selectorModal);
+            });
+            
+            noteItem.addEventListener('mouseenter', () => {
+                if (index !== 0) noteItem.style.backgroundColor = '#f5f5f5';
+            });
+            
+            noteItem.addEventListener('mouseleave', () => {
+                if (index !== 0) noteItem.style.backgroundColor = '';
+            });
+            
+            notesList.appendChild(noteItem);
+        });
+        
+        // 事件处理
+        selectorContent.querySelector('#cancel-selector').addEventListener('click', () => {
+            document.body.removeChild(selectorModal);
+        });
+        
+        selectorContent.querySelector('#load-latest').addEventListener('click', () => {
+            loadSelectedNote(notes[0], textarea, notes[0].updatedAt ? new Date(notes[0].updatedAt).toLocaleString() : '未知时间');
+            document.body.removeChild(selectorModal);
+        });
+        
+        // 点击背景关闭
+        selectorModal.addEventListener('click', (e) => {
+            if (e.target === selectorModal) {
+                document.body.removeChild(selectorModal);
+            }
+        });
+        
+        selectorModal.appendChild(selectorContent);
+        document.body.appendChild(selectorModal);
+    }
+    
+    /**
+     * 加载选中的笔记
+     */
+    function loadSelectedNote(note, textarea, timeStr) {
+        const noteContent = note.note || '';
+        
+        if (!textarea.value.trim()) {
+            // 当前没有内容，直接加载
+            textarea.value = noteContent;
+            showNotification(`已加载笔记 (${timeStr})`, 'success');
+        } else {
+            // 当前有内容，询问是否替换
+            if (confirm(`是否要加载此笔记？\n创建时间: ${timeStr}\n当前内容将被替换。`)) {
+                textarea.value = noteContent;
+                showNotification(`已加载笔记 (${timeStr})`, 'success');
+            }
+        }
     }
 
     /**

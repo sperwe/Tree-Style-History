@@ -1295,15 +1295,27 @@ async function loadPageNoteFromContentScript(pageData) {
         const notes = await loadNotesByUrl(pageData.url);
         
         if (notes && notes.length > 0) {
-            // 返回最新的笔记
-            return notes[0];
+            // 返回所有笔记，让前端决定如何显示
+            return {
+                notes: notes,
+                count: notes.length,
+                latest: notes[0]
+            };
         }
         
         // 如果没找到，回退到原来的方法
         const visitId = await findLatestVisitId(pageData.url);
         const note = await loadNoteFromDatabase(visitId);
         
-        return note;
+        if (note && note.note) {
+            return {
+                notes: [note],
+                count: 1,
+                latest: note
+            };
+        }
+        
+        return null;
     } catch (error) {
         console.error('Error in loadPageNoteFromContentScript:', error);
         throw error;
