@@ -1300,14 +1300,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true; // 异步响应
     }
     
+    // 检查数据库状态
+    if (request.action === 'checkDbStatus') {
+        sendResponse({ 
+            success: true, 
+            dbReady: !!db,
+            dbVersion: db ? db.version : 0
+        });
+        return true;
+    }
+
     // 获取所有笔记
     if (request.action === 'getAllNotes') {
+        console.log('[TST Background] 处理getAllNotes请求, db状态:', !!db);
         getAllNotesFromDatabase()
             .then((notes) => {
+                console.log('[TST Background] 成功获取笔记数量:', notes.length);
                 sendResponse({ success: true, notes: notes });
             })
             .catch((error) => {
-                console.error('Error getting all notes:', error);
+                console.error('[TST Background] Error getting all notes:', error);
                 sendResponse({ success: false, error: error.message || 'Unknown error' });
             });
         
@@ -1733,9 +1745,23 @@ function loadNoteFromDatabase(visitId) {
  */
 async function getAllNotesFromDatabase() {
     return new Promise((resolve) => {
-        const transaction = db.transaction(['VisitNote'], 'readonly');
-        const objectStore = transaction.objectStore('VisitNote');
-        const request = objectStore.getAll();
+        try {
+            console.log('[TST Background] 开始获取所有笔记，db状态:', !!db);
+            
+            if (!db) {
+                console.error('[TST Background] 数据库未初始化');
+                resolve([]);
+                return;
+            }
+
+            const transaction = db.transaction(['VisitNote'], 'readonly');
+            const objectStore = transaction.objectStore('VisitNote');
+            const request = objectStore.getAll();
+            
+            transaction.onerror = function(error) {
+                console.error('[TST Background] 事务错误:', error);
+                resolve([]);
+            };
         
         request.onsuccess = function() {
             const notes = request.result || [];
@@ -1768,10 +1794,15 @@ async function getAllNotesFromDatabase() {
             resolve(formattedNotes);
         };
         
-        request.onerror = function(error) {
-            console.error('获取所有笔记失败:', error);
+            request.onerror = function(error) {
+                console.error('[TST Background] 获取所有笔记失败:', error);
+                resolve([]);
+            };
+            
+        } catch (error) {
+            console.error('[TST Background] getAllNotesFromDatabase异常:', error);
             resolve([]);
-        };
+        }
     });
 }
 
