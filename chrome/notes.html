@@ -9,6 +9,12 @@
 	<script type="text/javascript" src="scripts/notes.js"></script>
 	<script type="text/javascript" src="scripts/jquery-3.6.0.min.js"></script>
 	<script type="text/javascript" src="scripts/marked.min.js"></script>
+	
+	<!-- Add zTree support for tree structure -->
+	<link rel="stylesheet" href="css/zTreeStyle.css" type="text/css">
+	<script type="text/javascript" src="scripts/jquery.ztree.core.js"></script>
+	<script type="text/javascript" src="scripts/jquery.ztree.exhide.js"></script>
+	<script type="text/javascript" src="scripts/fuzzysearch.js"></script>
 </head>
 <body>
 	<div id="navigation-menu">
@@ -35,7 +41,10 @@
 			<tr>
 				<td colspan="2">
 					<div id="rh-views">
-						<div id="rh-views-tube">
+						<!-- Replace flat structure with tree structure -->
+						<ul id="notesTreeDemo" class="ztree"></ul>
+						<!-- Keep original for fallback -->
+						<div id="rh-views-tube" style="display: none;">
 							<div id="rh-views-insert"></div>
 						</div>
 					</div>
