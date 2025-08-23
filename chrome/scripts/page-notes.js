@@ -1607,16 +1607,24 @@
         const styleElement = document.createElement('style');
         styleElement.id = 'tst-floating-window-css';
         
-        // 基础CSS样式，确保基本布局正常
+        // 完整的降级CSS样式，接近独立窗口的体验
         styleElement.textContent = `
+            /* 全局重置和基础样式 */
+            #tst-floating-note-manager * {
+                box-sizing: border-box;
+            }
+            
             #tst-floating-note-manager .note-manager-container {
                 display: flex;
                 flex-direction: column;
                 height: 100%;
                 background: #f8f9fa;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
             }
             
+            /* 工具栏样式 */
             #tst-floating-note-manager .toolbar {
                 display: flex;
                 align-items: center;
@@ -1625,7 +1633,9 @@
                 background: #fff;
                 border-bottom: 1px solid #e0e0e0;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                z-index: 100;
                 min-height: 60px;
+                flex-shrink: 0;
             }
             
             #tst-floating-note-manager .toolbar-left,
@@ -1636,35 +1646,45 @@
                 gap: 12px;
             }
             
-            #tst-floating-note-manager .main-content {
-                display: flex;
+            #tst-floating-note-manager .toolbar-left {
                 flex: 1;
-                overflow: hidden;
             }
             
-            #tst-floating-note-manager .note-list-panel {
-                width: 350px;
-                border-right: 1px solid #e0e0e0;
-                background: #fff;
+            /* 搜索框样式 */
+            #tst-floating-note-manager .search-box {
+                position: relative;
                 display: flex;
-                flex-direction: column;
-            }
-            
-            #tst-floating-note-manager .editor-panel {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                background: #fff;
+                align-items: center;
             }
             
             #tst-floating-note-manager .search-box input {
                 padding: 8px 12px;
                 border: 1px solid #ddd;
-                border-radius: 4px;
+                border-radius: 6px;
                 font-size: 14px;
-                width: 250px;
+                width: 280px;
+                background: #fff;
+                transition: border-color 0.2s, box-shadow 0.2s;
             }
             
+            #tst-floating-note-manager .search-box input:focus {
+                outline: none;
+                border-color: #007bff;
+                box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+            }
+            
+            /* 过滤器样式 */
+            #tst-floating-note-manager .filters select {
+                padding: 6px 10px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                background: #fff;
+                font-size: 13px;
+                cursor: pointer;
+                min-width: 120px;
+            }
+            
+            /* 按钮样式 */
             #tst-floating-note-manager button {
                 padding: 8px 12px;
                 border: 1px solid #ddd;
@@ -1672,62 +1692,389 @@
                 background: #f8f9fa;
                 cursor: pointer;
                 font-size: 14px;
+                transition: all 0.2s;
+                white-space: nowrap;
             }
             
             #tst-floating-note-manager button:hover {
                 background: #e9ecef;
+                border-color: #adb5bd;
+            }
+            
+            #tst-floating-note-manager button.btn-primary {
+                background: #007bff;
+                color: white;
+                border-color: #007bff;
+            }
+            
+            #tst-floating-note-manager button.btn-primary:hover {
+                background: #0056b3;
+                border-color: #0056b3;
+            }
+            
+            /* 主内容区域 */
+            #tst-floating-note-manager .main-content {
+                display: flex;
+                flex: 1;
+                overflow: hidden;
+                background: #fff;
+            }
+            
+            /* 左侧笔记列表面板 */
+            #tst-floating-note-manager .note-list-panel {
+                width: 350px;
+                min-width: 300px;
+                max-width: 500px;
+                border-right: 1px solid #e0e0e0;
+                background: #fff;
+                display: flex;
+                flex-direction: column;
+                resize: horizontal;
+                overflow: hidden;
+            }
+            
+            #tst-floating-note-manager .list-header {
+                padding: 12px 16px;
+                border-bottom: 1px solid #f0f0f0;
+                background: #fafafa;
+                flex-shrink: 0;
+            }
+            
+            #tst-floating-note-manager .list-stats {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                margin-bottom: 8px;
+                font-size: 13px;
+                color: #666;
+            }
+            
+            #tst-floating-note-manager .list-controls {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+            }
+            
+            #tst-floating-note-manager .list-controls select {
+                padding: 4px 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 12px;
+                background: #fff;
+            }
+            
+            /* 笔记列表 */
+            #tst-floating-note-manager .note-list {
+                flex: 1;
+                overflow-y: auto;
+                overflow-x: hidden;
             }
             
             #tst-floating-note-manager .note-item {
-                padding: 12px;
+                padding: 12px 16px;
                 border-bottom: 1px solid #f0f0f0;
                 cursor: pointer;
+                transition: background-color 0.15s;
+                position: relative;
             }
             
             #tst-floating-note-manager .note-item:hover {
                 background: #f8f9fa;
             }
             
+            #tst-floating-note-manager .note-item.active {
+                background: #e3f2fd;
+                border-left: 3px solid #2196f3;
+            }
+            
+            #tst-floating-note-manager .note-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 6px;
+            }
+            
             #tst-floating-note-manager .note-title {
                 font-weight: 500;
-                margin-bottom: 4px;
+                color: #333;
+                font-size: 14px;
+                line-height: 1.3;
+                flex: 1;
+                margin-right: 8px;
+                word-break: break-word;
+            }
+            
+            #tst-floating-note-manager .note-actions {
+                display: flex;
+                gap: 4px;
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+            
+            #tst-floating-note-manager .note-item:hover .note-actions {
+                opacity: 1;
+            }
+            
+            #tst-floating-note-manager .note-action-btn {
+                padding: 2px 4px;
+                font-size: 12px;
+                border: none;
+                background: rgba(0,0,0,0.1);
+                border-radius: 3px;
+                cursor: pointer;
             }
             
             #tst-floating-note-manager .note-preview {
                 color: #666;
                 font-size: 13px;
                 line-height: 1.4;
-                margin-bottom: 4px;
+                margin-bottom: 6px;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
             }
             
             #tst-floating-note-manager .note-meta {
                 display: flex;
                 justify-content: space-between;
-                font-size: 12px;
+                font-size: 11px;
                 color: #999;
+            }
+            
+            /* 右侧编辑器面板 */
+            #tst-floating-note-manager .editor-panel {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                background: #fff;
+                min-width: 400px;
+            }
+            
+            #tst-floating-note-manager .editor-header {
+                padding: 16px;
+                border-bottom: 1px solid #e0e0e0;
+                background: #fafafa;
+                flex-shrink: 0;
+            }
+            
+            #tst-floating-note-manager .note-meta {
+                margin-bottom: 12px;
+            }
+            
+            #tst-floating-note-manager #note-title {
+                width: 100%;
+                padding: 8px 12px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 16px;
+                font-weight: 500;
+                margin-bottom: 12px;
+                background: #fff;
+            }
+            
+            #tst-floating-note-manager #note-title:focus {
+                outline: none;
+                border-color: #007bff;
+                box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+            }
+            
+            #tst-floating-note-manager .tag-selector {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 8px;
+            }
+            
+            #tst-floating-note-manager .editor-actions {
+                display: flex;
+                gap: 8px;
+                margin-top: 12px;
+            }
+            
+            #tst-floating-note-manager .editor-content {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
             }
             
             #tst-floating-note-manager #note-editor {
                 flex: 1;
                 border: none;
-                padding: 16px;
-                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                padding: 20px;
+                font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', monospace;
                 font-size: 14px;
                 line-height: 1.6;
                 resize: none;
                 outline: none;
+                background: #fff;
+                color: #333;
+                overflow-y: auto;
             }
             
+            #tst-floating-note-manager .editor-status {
+                padding: 8px 16px;
+                background: #f8f9fa;
+                border-top: 1px solid #e0e0e0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 12px;
+                color: #666;
+                flex-shrink: 0;
+            }
+            
+            /* 状态样式 */
             #tst-floating-note-manager .loading {
-                padding: 40px;
+                padding: 60px 20px;
                 text-align: center;
                 color: #666;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            #tst-floating-note-manager .spinner {
+                width: 24px;
+                height: 24px;
+                border: 3px solid #f3f3f3;
+                border-top: 3px solid #007bff;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+            
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
             }
             
             #tst-floating-note-manager .empty-state {
-                padding: 40px;
+                padding: 60px 20px;
                 text-align: center;
                 color: #999;
+            }
+            
+            #tst-floating-note-manager .empty-icon {
+                font-size: 48px;
+                margin-bottom: 16px;
+                opacity: 0.5;
+            }
+            
+            #tst-floating-note-manager .empty-state h3 {
+                margin: 0 0 8px 0;
+                font-size: 18px;
+                color: #666;
+            }
+            
+            #tst-floating-note-manager .empty-state p {
+                margin: 0;
+                font-size: 14px;
+                color: #999;
+            }
+            
+            /* 滚动条样式 */
+            #tst-floating-note-manager .note-list::-webkit-scrollbar,
+            #tst-floating-note-manager #note-editor::-webkit-scrollbar {
+                width: 8px;
+            }
+            
+            #tst-floating-note-manager .note-list::-webkit-scrollbar-track,
+            #tst-floating-note-manager #note-editor::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 4px;
+            }
+            
+            #tst-floating-note-manager .note-list::-webkit-scrollbar-thumb,
+            #tst-floating-note-manager #note-editor::-webkit-scrollbar-thumb {
+                background: #c1c1c1;
+                border-radius: 4px;
+            }
+            
+            #tst-floating-note-manager .note-list::-webkit-scrollbar-thumb:hover,
+            #tst-floating-note-manager #note-editor::-webkit-scrollbar-thumb:hover {
+                background: #a8a8a8;
+            }
+            
+            /* 模态框样式 */
+            #tst-floating-note-manager .modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            }
+            
+            #tst-floating-note-manager .modal-content {
+                background: white;
+                border-radius: 8px;
+                max-width: 500px;
+                width: 90%;
+                max-height: 80%;
+                overflow-y: auto;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            }
+            
+            #tst-floating-note-manager .modal-header {
+                padding: 16px 20px;
+                border-bottom: 1px solid #e0e0e0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            #tst-floating-note-manager .modal-body {
+                padding: 20px;
+            }
+            
+            #tst-floating-note-manager .modal-footer {
+                padding: 16px 20px;
+                border-top: 1px solid #e0e0e0;
+                display: flex;
+                gap: 8px;
+                justify-content: flex-end;
+            }
+            
+            /* 通知样式 */
+            #tst-floating-note-manager .notification {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #007bff;
+                color: white;
+                padding: 12px 16px;
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                z-index: 1001;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                max-width: 300px;
+            }
+            
+            /* 响应式调整 */
+            @media (max-width: 900px) {
+                #tst-floating-note-manager .note-list-panel {
+                    width: 300px;
+                    min-width: 250px;
+                }
+                
+                #tst-floating-note-manager .toolbar-left,
+                #tst-floating-note-manager .toolbar-center,
+                #tst-floating-note-manager .toolbar-right {
+                    gap: 8px;
+                }
+                
+                #tst-floating-note-manager .search-box input {
+                    width: 200px;
+                }
             }
         `;
         
