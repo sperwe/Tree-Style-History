@@ -11,109 +11,28 @@ document.addEvent('domready', function(){
 		listEl.set('html','');
 		if (items.length===0){ listEl.set('html','<div class="no-results"><span>'+returnLang('noResults')+'</span></div>'); return; }
 		
-		// Group notes by URL
-		var groupedItems = {};
-		items.forEach(function(m){
-			var url = m.note.url || 'unknown';
-			if (!groupedItems[url]) {
-				groupedItems[url] = [];
-			}
-			groupedItems[url].push(m);
-		});
-		
-		// Sort URLs by most recent note
-		var sortedUrls = Object.keys(groupedItems).sort(function(a, b) {
-			var aLatest = Math.max.apply(Math, groupedItems[a].map(function(item) { return item.note.updatedAt || 0; }));
-			var bLatest = Math.max.apply(Math, groupedItems[b].map(function(item) { return item.note.updatedAt || 0; }));
-			return bLatest - aLatest;
-		});
-		
-		// Render grouped items
-		sortedUrls.forEach(function(url) {
-			var urlItems = groupedItems[url];
-			renderUrlGroup(url, urlItems);
-		});
-	}
-	
-	function renderUrlGroup(url, items) {
-		// Sort items within group by update time (newest first)
+		// Sort items by update time (newest first)
 		items.sort(function(a, b) {
 			return (b.note.updatedAt || 0) - (a.note.updatedAt || 0);
 		});
 		
-		var isMultiple = items.length > 1;
-		var firstItem = items[0];
-		var hostName = url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
-		
-		// Alternating background colors like in tree-style history
-		var colorIndex = listEl.getChildren().length % 2;
-		var bgColor = colorIndex === 0 ? 'white' : 'grey';
-		
-		if (isMultiple) {
-			// Create tree-style group using exact history structure
-			var toggleId = 'toggle-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
-			var moreId = 'more-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
-			var errorId = 'error-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
-			var groupId = 'group-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
-			
-			var totalSelections = items.reduce(function(sum, item) {
-				var noteText = item.note.note || '';
-				var excerptCount = 0;
-				excerptCount += (noteText.match(/---\n\*Added on /g) || []).length;
-				excerptCount += (noteText.match(/\*摘录自:/g) || []).length;
-				if (excerptCount === 0 && noteText.trim()) excerptCount = 1;
-				return sum + excerptCount;
-			}, 0);
-			
-			// Group header - exact copy of tree-style history structure
-			var groupElement = new Element('div', {
-				'title': hostName,
-				'rel': bgColor,
-				'class': 'item-holder group-title',
-				'html': '<a href="#" class="group-title-toggle" id="' + toggleId + '" data-host="' + hostName + '" rel="' + hostName + '"></a>' +
-				        '<input type="checkbox" class="group-title-checkbox" id="' + moreId + '" value="' + hostName + '">' +
-				        '<img id="' + errorId + '" class="group-title-favicon" alt="Favicon" src="chrome://favicon/' + escapeHtml(url) + '">' +
-				        '<span id="' + groupId + '" data-host="' + hostName + '" class="group-title-host">' + 
-				        escapeHtml(hostName) + ' (' + items.length + ' notes, ' + totalSelections + ' selections)</span>'
-			});
-			groupElement.inject(listEl);
-			
-			// Create collapsible container
-			var notesContainer = new Element('div', {
-				'rel': hostName,
-				'style': 'display: none;'
-			});
-			notesContainer.inject(listEl);
-			
-			// Add toggle functionality
-			$(toggleId).addEvent('click', function() {
-				var host = this.getProperty('data-host');
-				toggleGroup(host);
-			});
-			
-			$(groupId).addEvent('click', function() {
-				var host = this.getProperty('data-host');
-				toggleGroup(host);
-			});
-			
-			// Render individual notes in group
-			items.forEach(function(m, index) {
-				var itemBgColor = index % 2 === 0 ? 'white' : 'grey';
-				renderSingleNote(m, true, index + 1, itemBgColor, notesContainer);
-			});
-			
-		} else {
-			// Single note
-			renderSingleNote(firstItem, false, 1, bgColor, listEl);
-		}
+		// Render each note as individual item like in tree history
+		var colorToggle = true;
+		items.forEach(function(m) {
+			var bgColor = colorToggle ? 'white' : 'grey';
+			colorToggle = !colorToggle;
+			renderSingleNote(m, false, 1, bgColor, listEl);
+		});
 	}
+	
+
 	
 	function renderSingleNote(m, isInGroup, noteIndex, bgColor, container) {
 		var url = m.note.url || '';
 		var title = (m.title && m.title.trim()!=='') ? m.title : url;
 		var noteText = m.note.note || '';
 		var firstLine = noteText.split(/\r?\n/)[0];
-		if (firstLine.length>80) firstLine = firstLine.slice(0,80)+'…';
+		if (firstLine.length>60) firstLine = firstLine.slice(0,60)+'…';
 		
 		// Count selections
 		var excerptCount = 0;
@@ -125,9 +44,13 @@ document.addEvent('domready', function(){
 		
 		// Format timestamp
 		var timeStr = fmt(m.note.updatedAt) || '';
-		var displayTitle = isInGroup ? 
-			'Note #' + noteIndex + ': ' + firstLine + countBadge :
-			title + countBadge;
+		
+		// Display title with first line preview
+		var displayTitle = title;
+		if (firstLine && firstLine !== title) {
+			displayTitle = title + ': ' + firstLine;
+		}
+		displayTitle += countBadge;
 		
 		// Generate unique IDs like tree-style history
 		var selectId = 'select-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
@@ -140,18 +63,11 @@ document.addEvent('domready', function(){
 		item += '<span class="time">' + timeStr + '</span>';
 		item += '<a target="_blank" class="link" href="' + url + '">';
 		item += '<img id="' + errorId + '" class="favicon" alt="Favicon" src="chrome://favicon/' + escapeHtml(url) + '">';
-		item += '<span class="title" title="' + escapeHtml(url) + '">' + escapeHtml(displayTitle) + '</span>';
+		item += '<span class="title" title="' + escapeHtml(url + ' - ' + noteText.substring(0, 200)) + '">' + escapeHtml(displayTitle) + '</span>';
 		item += '</a>';
-		
-		// Add note preview and actions
-		if (firstLine && !isInGroup) {
-			item += '<div style="margin-left: 18px; margin-top: 3px; font-size: 11px; color: #666;">';
-			item += '<div>' + escapeHtml(firstLine) + '</div>';
-		}
-		
 		item += '</div>';
 		
-		// Create element
+		// Create element exactly like tree-style history
 		var noteElement = new Element('div', { 
 			'rel': bgColor, 
 			'class': 'item-holder',
@@ -159,20 +75,14 @@ document.addEvent('domready', function(){
 		});
 		noteElement.inject(container);
 		
-		// Add note-specific actions as floating buttons
-		if (!isInGroup) {
-			var actionsDiv = new Element('div', {
-				'style': 'margin-left: 18px; margin-top: 2px; font-size: 11px;',
-				'html': '<a href="#" id="edit-'+m.note.visitId+'">Edit</a> · ' +
-				        '<a href="#" id="view-'+m.note.visitId+'">View</a> · ' +
-				        '<a href="#" id="del-'+m.note.visitId+'">Delete</a> · ' +
-				        '<a href="#" id="copy-'+m.note.visitId+'">Copy</a>'
-			});
-			actionsDiv.inject(noteElement);
-		}
-		
-		// Add event handlers
+		// Add event handlers for note actions
 		addNoteEventHandlers(m);
+		
+		// Add click to edit functionality 
+		noteElement.addEvent('dblclick', function(e) {
+			e.stop();
+			openEditor(m.note.visitId, m.note.url, m.title, m.note.note||'');
+		});
 	}
 	
 
@@ -327,21 +237,7 @@ document.addEvent('domready', function(){
 		var f=all.filter(function(m){ return (m.note.url||'').toLowerCase().indexOf(q)>=0 || (m.title||'').toLowerCase().indexOf(q)>=0 || (m.note.note||'').toLowerCase().indexOf(q)>=0; });
 		render(f);
 	});
-	function toggleGroup(host) {
-		var tgda = listEl.getElement('a[rel="' + host + '"]');
-		var tgde = listEl.getElement('div[rel="' + host + '"]');
 
-		if (tgda != undefined && tgde != undefined) {
-			var tgdv = tgde.getStyle('display');
-			if (tgdv == 'block') {
-				tgde.setStyle('display', 'none');
-				tgda.setStyle('background-position', 'left center');
-			} else {
-				tgde.setStyle('display', 'block');
-				tgda.setStyle('background-position', 'left bottom');
-			}
-		}
-	}
 	
 	load();
 });

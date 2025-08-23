@@ -354,7 +354,7 @@ var defaultValues = {
 	"load-range4": 150,
 	"less-item": "no",
 	"rh-search": "yes",
-	"rh-list-order": "rh-order,rct-order,rb-order,mv-order,rt-order",
+	"rh-list-order": "rh-order,rct-order,rb-order,mv-order,rt-order,rn-order",
 	"rh-time": "yes",
 	"rh-group": "yes",
 	"rh-orderby": "date",
@@ -434,6 +434,8 @@ function loadOptions(full) {
             new Element('li', { 'id': rhilo[lo], 'html': returnLang('recentBookmarks') }).inject('rhlistorder');
         } else if (rhilo[lo] == 'rt-order') {
             new Element('li', { 'id': rhilo[lo], 'html': returnLang('recentTabs') }).inject('rhlistorder');
+        } else if (rhilo[lo] == 'rn-order') {
+            new Element('li', { 'id': rhilo[lo], 'html': returnLang('recentNotes') }).inject('rhlistorder');
         }
     }
 
@@ -638,7 +640,7 @@ function saveOptions(sync) {
     so['rb-itemsno'] = $('rbitemsno').get('value');
     so['mv-itemsno'] = $('mvitemsno').get('value');
     so['rn-itemsno'] = $('rnitemsno').get('value');
-    so['rh-list-order'] = rhlo[0].get('id') + ',' + rhlo[1].get('id') + ',' + rhlo[2].get('id') + ',' + rhlo[3].get('id') + ',' +  rhlo[4].get('id');
+    so['rh-list-order'] = rhlo[0].get('id') + ',' + rhlo[1].get('id') + ',' + rhlo[2].get('id') + ',' + rhlo[3].get('id') + ',' +  rhlo[4].get('id') + ',' + (rhlo[5] ? rhlo[5].get('id') : '');
     so['rh-historypage'] = $('rhhistorypage').getSelected().get('value');
     so['show-popup'] = $('showPopup').getSelected().get('value');
     so['rh-date'] = $('rhdate').getSelected().get('value');
