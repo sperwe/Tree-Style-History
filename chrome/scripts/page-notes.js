@@ -35,8 +35,13 @@
      * 创建浮动按钮
      */
     function createFloatingButton() {
-        if (floatingButton) return;
+        console.log('[TST Notes] createFloatingButton调用，当前floatingButton:', !!floatingButton);
+        if (floatingButton) {
+            console.log('[TST Notes] 浮动按钮已存在，跳过创建');
+            return;
+        }
 
+        console.log('[TST Notes] 创建新的浮动按钮');
         floatingButton = document.createElement('button');
         floatingButton.id = 'tst-page-note-btn';
         floatingButton.innerHTML = '📝';
@@ -45,7 +50,9 @@
         // 绑定各种事件
         bindFloatingButtonEvents();
         
+        console.log('[TST Notes] 将浮动按钮添加到页面，document.body存在:', !!document.body);
         document.body.appendChild(floatingButton);
+        console.log('[TST Notes] 浮动按钮添加完成，按钮在页面中:', document.getElementById('tst-page-note-btn'));
         
         // 检查是否有历史笔记并更新按钮状态（使用延迟检查确保数据库已初始化）
         delayedCheckHistoryNoteStatus();
@@ -134,15 +141,15 @@
 
         // 监听键盘事件
         document.addEventListener('keydown', (e) => {
-            // Ctrl+Shift+N 打开笔记管理器（独立窗口）
+            // Ctrl+Shift+N 打开笔记管理器（浮动窗口）
             if (e.ctrlKey && e.shiftKey && e.key === 'N') {
                 e.preventDefault();
-                openNoteManager('window');
+                openNoteManager('floating');
             }
-            // Ctrl+Shift+F 打开笔记管理器（浮动窗口）
+            // Ctrl+Shift+F 打开笔记管理器（独立窗口）
             if (e.ctrlKey && e.shiftKey && e.key === 'F') {
                 e.preventDefault();
-                openNoteManager('floating');
+                openNoteManager('window');
             }
             // Ctrl+Shift+Q 快速新建笔记
             if (e.ctrlKey && e.shiftKey && e.key === 'Q') {
@@ -1053,13 +1060,13 @@
                 shortcut: 'Ctrl+Shift+Q'
             },
             {
-                text: '📚 笔记管理器 (独立窗口)',
-                action: () => openNoteManager('window'),
+                text: '🎈 笔记管理器 (浮动窗口)',
+                action: () => openNoteManager('floating'),
                 shortcut: 'Ctrl+Shift+N'
             },
             {
-                text: '🎈 笔记管理器 (浮动窗口)',
-                action: () => openNoteManager('floating'),
+                text: '📚 笔记管理器 (独立窗口)',
+                action: () => openNoteManager('window'),
                 shortcut: 'Ctrl+Shift+F'
             },
             {
@@ -2476,14 +2483,19 @@
      * 初始化
      */
     function initialize() {
+        console.log('[TST Notes] 初始化开始，URL:', window.location.href);
+        
         // 等待页面加载完成
         if (document.readyState === 'loading') {
+            console.log('[TST Notes] DOM未准备好，添加事件监听器');
             document.addEventListener('DOMContentLoaded', initialize);
             return;
         }
 
         // 检查是否应该显示按钮
-        if (!shouldShowFloatingButton()) {
+        const shouldShow = shouldShowFloatingButton();
+        console.log('[TST Notes] 是否应该显示按钮:', shouldShow);
+        if (!shouldShow) {
             return;
         }
 
@@ -2492,6 +2504,7 @@
 
         // 延迟创建，避免影响页面加载
         setTimeout(() => {
+            console.log('[TST Notes] 开始创建浮动按钮');
             createFloatingButton();
         }, 1000);
     }
