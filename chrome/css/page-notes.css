@@ -863,4 +863,15 @@
   #tst-quick-note-modal [style*="background-color: #f5f5f5"] {
     background-color: #4a4a4a !important;
   }
+  
+  /* 修复"最新"笔记项目的不和谐配色 */
+  #tst-quick-note-modal [style*="background: #e3f2fd"],
+  #tst-quick-note-modal [style*="background:#e3f2fd"] {
+    background: #2a4a5c !important;  /* 深蓝灰色背景 */
+  }
+  
+  #tst-quick-note-modal [style*="border: 1px solid #2196f3"],
+  #tst-quick-note-modal [style*="border:1px solid #2196f3"] {
+    border: 1px solid #4a90e2 !important;  /* 调整边框颜色为更柔和的蓝色 */
+  }
 }
