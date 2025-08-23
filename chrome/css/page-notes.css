@@ -76,55 +76,87 @@
 
 #tst-quick-note-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
   border-bottom: 1px solid #eee;
-  background: #f8f9fa;
+  background: rgba(248, 249, 250, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 8px 8px 0 0;
   cursor: move;
   user-select: none;
   flex-shrink: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Helvetica, Arial, sans-serif;
+}
+
+.tst-apple-controls {
+  display: flex;
+  gap: 8px;
+  margin-right: 16px;
+}
+
+.tst-apple-control-btn {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 500;
+  color: transparent;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  flex-shrink: 0;
+}
+
+.tst-apple-control-btn.tst-close {
+  background: #FF5F57;
+}
+
+.tst-apple-control-btn.tst-minimize {
+  background: #FFBD2E;
+}
+
+.tst-apple-control-btn.tst-maximize {
+  background: #28CA42;
+}
+
+.tst-apple-control-btn:hover:not(:disabled) {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.tst-apple-control-btn.tst-close:hover {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.tst-apple-control-btn.tst-minimize:hover {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.tst-apple-controls:hover .tst-close:hover::before {
+  content: '✕';
+}
+
+.tst-apple-controls:hover .tst-minimize:hover::before {
+  content: '−';
 }
 
 #tst-quick-note-title {
   font-size: 14px;
-  font-weight: bold;
-  color: #333;
+  font-weight: 600;
+  color: #1d1d1f;
   margin: 0;
   flex: 1;
+  text-align: center;
+  letter-spacing: -0.01em;
 }
 
-.tst-window-controls {
-  display: flex;
-  gap: 5px;
-}
-
-.tst-window-btn {
-  background: none;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
-  color: #666;
-  padding: 4px;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.tst-window-btn:hover {
-  color: #333;
-  background: #e9ecef;
-}
-
-#tst-quick-note-close:hover {
-  background: #dc3545;
-  color: white;
-}
+/* 旧的窗口控制样式已移除，现在使用苹果风格交通灯 */
 
 #tst-page-info {
   padding: 10px 16px;
@@ -276,6 +308,16 @@
   #tst-quick-note-textarea:focus {
     border-color: #4a90e2;
     box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
+  }
+  
+  /* 苹果风格交通灯在深色模式下 */
+  #tst-quick-note-header {
+    background: rgba(45, 45, 45, 0.8);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+  
+  #tst-quick-note-title {
+    color: #e0e0e0;
   }
 }
 

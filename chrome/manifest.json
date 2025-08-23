@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.8.1",
-  "version_name": "4.8.1 by sperwe - Unified Dark Mode Theme Support",
+  "version": "4.8.2",
+  "version_name": "4.8.2 by sperwe - Apple Traffic Light Controls for Page Notes",
   "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.8.1: Consistent Dark Mode - Fixed theme inconsistencies across all note interfaces",
+  "description": "v4.8.2: Complete UI Consistency - Apple traffic lights across all note windows",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
