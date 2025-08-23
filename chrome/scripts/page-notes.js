@@ -2847,21 +2847,402 @@
         container.dataset.currentNoteId = note.id || '';
     }
 
-    // 其他功能的占位符函数
+    // 浮动管理器核心功能实现（复刻自独立管理器）
+    let floatingNotes = [];
+    let floatingCurrentNote = null;
+    let floatingFilters = { search: '', tag: '', date: '', site: '' };
+
+    /**
+     * 创建新笔记
+     */
     function createNewFloatingNote(container) {
-        console.log('[Floating] 创建新笔记功能待实现');
+        console.log('[Floating] 创建新笔记');
+        
+        const newNote = {
+            id: 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            title: '',
+            note: '',
+            url: window.location.href,
+            tag: '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        
+        floatingCurrentNote = newNote;
+        
+        // 清空编辑器
+        const titleInput = container.querySelector('#floating-note-title');
+        const textarea = container.querySelector('#floating-note-content');
+        
+        if (titleInput) titleInput.value = '';
+        if (textarea) textarea.value = '';
+        
+        // 显示保存和删除按钮
+        const saveBtn = container.querySelector('#save-note');
+        const deleteBtn = container.querySelector('#delete-note');
+        if (saveBtn) saveBtn.style.display = 'inline-block';
+        if (deleteBtn) deleteBtn.style.display = 'inline-block';
+        
+        console.log('[Floating] 新笔记创建完成:', newNote.id);
     }
 
+    /**
+     * 搜索笔记
+     */
     function filterFloatingNotes(container, searchTerm) {
-        console.log('[Floating] 搜索功能待实现:', searchTerm);
+        console.log('[Floating] 搜索笔记:', searchTerm);
+        
+        floatingFilters.search = searchTerm.toLowerCase();
+        applyFloatingFilters(container);
     }
 
+    /**
+     * 按标签过滤笔记
+     */
     function filterFloatingNotesByTag(container, tag) {
-        console.log('[Floating] 标签过滤功能待实现:', tag);
+        console.log('[Floating] 标签过滤:', tag);
+        
+        floatingFilters.tag = tag;
+        applyFloatingFilters(container);
     }
 
-    function saveCurrentFloatingNote(container) {
-        console.log('[Floating] 保存功能待实现');
+    /**
+     * 应用过滤条件
+     */
+    function applyFloatingFilters(container) {
+        let filtered = [...floatingNotes];
+        
+        // 搜索过滤
+        if (floatingFilters.search) {
+            filtered = filtered.filter(note => {
+                const searchText = (note.title + ' ' + note.note + ' ' + note.url).toLowerCase();
+                return searchText.includes(floatingFilters.search);
+            });
+        }
+        
+        // 标签过滤
+        if (floatingFilters.tag) {
+            filtered = filtered.filter(note => note.tag === floatingFilters.tag);
+        }
+        
+        renderFloatingNotesList(container, filtered);
+    }
+
+    /**
+     * 保存当前笔记
+     */
+    async function saveCurrentFloatingNote(container) {
+        console.log('[Floating] 保存笔记');
+        
+        if (!floatingCurrentNote) {
+            console.warn('[Floating] 没有要保存的笔记');
+            return;
+        }
+        
+        const titleInput = container.querySelector('#floating-note-title');
+        const textarea = container.querySelector('#floating-note-content');
+        const tagSelect = container.querySelector('input[name="category"]:checked');
+        const levelSelect = container.querySelector('input[name="level"]:checked');
+        
+        // 收集数据
+        const title = titleInput ? titleInput.value.trim() : '';
+        const content = textarea ? textarea.value.trim() : '';
+        const category = tagSelect ? tagSelect.value : '';
+        const level = levelSelect ? levelSelect.value : '';
+        
+        if (!title && !content) {
+            showFloatingNotification('请输入标题或内容', 'warning');
+            return;
+        }
+        
+        // 构建标签
+        let tag = '';
+        if (category && level) {
+            tag = `${category}_${level}`;
+        }
+        
+        // 更新笔记数据
+        floatingCurrentNote.title = title || '无标题';
+        floatingCurrentNote.note = content;
+        floatingCurrentNote.tag = tag;
+        floatingCurrentNote.updatedAt = new Date().toISOString();
+        
+        try {
+            // 保存到数据库
+            await saveFloatingNoteToDatabase(floatingCurrentNote);
+            
+            // 更新本地数据
+            const existingIndex = floatingNotes.findIndex(note => note.id === floatingCurrentNote.id);
+            if (existingIndex >= 0) {
+                floatingNotes[existingIndex] = { ...floatingCurrentNote };
+            } else {
+                floatingNotes.push({ ...floatingCurrentNote });
+            }
+            
+            // 重新渲染列表
+            renderFloatingNotesList(container, floatingNotes);
+            
+            showFloatingNotification('笔记保存成功', 'success');
+            console.log('[Floating] 笔记保存成功:', floatingCurrentNote.id);
+            
+        } catch (error) {
+            console.error('[Floating] 保存失败:', error);
+            showFloatingNotification('保存失败: ' + error.message, 'error');
+        }
+    }
+
+    /**
+     * 保存笔记到数据库
+     */
+    async function saveFloatingNoteToDatabase(note) {
+        return new Promise((resolve, reject) => {
+            if (chrome && chrome.runtime) {
+                chrome.runtime.sendMessage({
+                    action: 'saveNote',
+                    note: note
+                }, (response) => {
+                    if (response && response.success) {
+                        resolve(response);
+                    } else {
+                        reject(new Error('保存失败'));
+                    }
+                });
+            } else {
+                // 备用方案：使用localStorage
+                try {
+                    const notes = JSON.parse(localStorage.getItem('tst_floating_notes') || '[]');
+                    const existingIndex = notes.findIndex(n => n.id === note.id);
+                    if (existingIndex >= 0) {
+                        notes[existingIndex] = note;
+                    } else {
+                        notes.push(note);
+                    }
+                    localStorage.setItem('tst_floating_notes', JSON.stringify(notes));
+                    resolve({ success: true });
+                } catch (error) {
+                    reject(error);
+                }
+            }
+        });
+    }
+
+    /**
+     * 从数据库加载笔记
+     */
+    async function loadFloatingNotesFromDatabase() {
+        return new Promise((resolve) => {
+            if (chrome && chrome.runtime) {
+                chrome.runtime.sendMessage({
+                    action: 'getAllNotes'
+                }, (response) => {
+                    if (response && response.notes) {
+                        resolve(response.notes);
+                    } else {
+                        resolve([]);
+                    }
+                });
+            } else {
+                // 备用方案：使用localStorage
+                try {
+                    const notes = JSON.parse(localStorage.getItem('tst_floating_notes') || '[]');
+                    resolve(notes);
+                } catch (error) {
+                    console.error('加载笔记失败:', error);
+                    resolve([]);
+                }
+            }
+        });
+    }
+
+    /**
+     * 删除笔记
+     */
+    async function deleteFloatingNote(noteId) {
+        return new Promise((resolve, reject) => {
+            if (chrome && chrome.runtime) {
+                chrome.runtime.sendMessage({
+                    action: 'deleteNote',
+                    noteId: noteId
+                }, (response) => {
+                    if (response && response.success) {
+                        resolve(response);
+                    } else {
+                        reject(new Error('删除失败'));
+                    }
+                });
+            } else {
+                // 备用方案：使用localStorage
+                try {
+                    const notes = JSON.parse(localStorage.getItem('tst_floating_notes') || '[]');
+                    const filtered = notes.filter(n => n.id !== noteId);
+                    localStorage.setItem('tst_floating_notes', JSON.stringify(filtered));
+                    resolve({ success: true });
+                } catch (error) {
+                    reject(error);
+                }
+            }
+        });
+    }
+
+    /**
+     * 渲染笔记列表
+     */
+    function renderFloatingNotesList(container, notes) {
+        const notesContainer = container.querySelector('#floating-notes-container');
+        if (!notesContainer) return;
+
+        if (notes.length === 0) {
+            notesContainer.innerHTML = '<div class="tst-floating-loading" style="text-align: center; padding: 20px; color: #666;">暂无笔记</div>';
+            return;
+        }
+
+        const notesList = notes.map(note => createFloatingNoteListItem(note)).join('');
+        notesContainer.innerHTML = notesList;
+        
+        // 绑定点击事件
+        notes.forEach(note => {
+            const noteElement = notesContainer.querySelector(`[data-note-id="${note.id}"]`);
+            if (noteElement) {
+                noteElement.addEventListener('click', () => selectFloatingNote(note.id, container));
+            }
+        });
+    }
+
+    /**
+     * 创建笔记列表项HTML
+     */
+    function createFloatingNoteListItem(note) {
+        const title = note.title || '无标题';
+        const preview = (note.note || '').substring(0, 100);
+        const time = new Date(note.updatedAt || note.createdAt).toLocaleString();
+        const tagIcon = getTagIcon(note.tag);
+        
+        return `
+            <div class="floating-note-item" data-note-id="${note.id}" style="
+                padding: 12px;
+                border-bottom: 1px solid #eee;
+                cursor: pointer;
+                transition: background-color 0.2s;
+            " onmouseover="this.style.backgroundColor='#f5f5f5'" onmouseout="this.style.backgroundColor='transparent'">
+                <div style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 4px;
+                ">
+                    <div style="
+                        font-weight: bold;
+                        font-size: 14px;
+                        color: #333;
+                        flex: 1;
+                        margin-right: 8px;
+                    ">${tagIcon} ${escapeHtml(title)}</div>
+                    <div style="
+                        font-size: 11px;
+                        color: #999;
+                        white-space: nowrap;
+                    ">${time.split(' ')[1] || time}</div>
+                </div>
+                <div style="
+                    font-size: 12px;
+                    color: #666;
+                    line-height: 1.4;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                ">${escapeHtml(preview)}</div>
+            </div>
+        `;
+    }
+
+    /**
+     * 获取标签图标
+     */
+    function getTagIcon(tag) {
+        if (!tag) return '📝';
+        if (tag.includes('important')) return '🔥';
+        if (tag.includes('interesting')) return '💡';
+        if (tag.includes('needed')) return '⚡';
+        return '📝';
+    }
+
+    /**
+     * 选择笔记进行编辑
+     */
+    function selectFloatingNote(noteId, container) {
+        const note = floatingNotes.find(n => n.id === noteId);
+        if (!note) return;
+
+        floatingCurrentNote = note;
+        
+        // 填充编辑器
+        const titleInput = container.querySelector('#floating-note-title');
+        const textarea = container.querySelector('#floating-note-content');
+        
+        if (titleInput) titleInput.value = note.title || '';
+        if (textarea) textarea.value = note.note || '';
+        
+        // 设置标签
+        if (note.tag) {
+            const [category, level] = note.tag.split('_');
+            const categoryRadio = container.querySelector(`input[name="category"][value="${category}"]`);
+            const levelRadio = container.querySelector(`input[name="level"][value="${level}"]`);
+            if (categoryRadio) categoryRadio.checked = true;
+            if (levelRadio) levelRadio.checked = true;
+        }
+        
+        // 显示保存和删除按钮
+        const saveBtn = container.querySelector('#save-note');
+        const deleteBtn = container.querySelector('#delete-note');
+        if (saveBtn) saveBtn.style.display = 'inline-block';
+        if (deleteBtn) deleteBtn.style.display = 'inline-block';
+        
+        console.log('[Floating] 选择笔记:', noteId);
+    }
+
+    /**
+     * 显示浮动通知
+     */
+    function showFloatingNotification(message, type = 'info') {
+        // 创建通知元素
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 16px;
+            border-radius: 4px;
+            color: white;
+            font-size: 14px;
+            z-index: 10000;
+            max-width: 300px;
+            word-wrap: break-word;
+        `;
+        
+        // 设置颜色
+        switch (type) {
+            case 'success':
+                notification.style.backgroundColor = '#4CAF50';
+                break;
+            case 'error':
+                notification.style.backgroundColor = '#f44336';
+                break;
+            case 'warning':
+                notification.style.backgroundColor = '#ff9800';
+                break;
+            default:
+                notification.style.backgroundColor = '#2196F3';
+        }
+        
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        // 自动消失
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 3000);
     }
 
     /**
@@ -3397,20 +3778,26 @@
 
 
 
-    // 全局函数供HTML调用
+    // 全局函数供HTML调用 - 现在已实现
     window.selectFloatingNote = function(noteId) {
-        console.log('选择笔记:', noteId);
-        // TODO: 实现笔记选择和编辑功能
+        const container = document.getElementById('tst-floating-note-manager');
+        if (container) {
+            selectFloatingNote(noteId, container);
+        }
     };
 
     window.createFloatingNewNote = function() {
-        console.log('创建新笔记');
-        // TODO: 实现新建笔记功能
+        const container = document.getElementById('tst-floating-note-manager');
+        if (container) {
+            createNewFloatingNote(container);
+        }
     };
 
     window.filterFloatingNotes = function(query) {
-        console.log('过滤笔记:', query);
-        // TODO: 实现笔记过滤功能
+        const container = document.getElementById('tst-floating-note-manager');
+        if (container) {
+            filterFloatingNotes(container, query);
+        }
     };
 
     /**
