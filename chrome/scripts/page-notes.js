@@ -1532,17 +1532,21 @@
         console.log('[Floating] 开始注入CSS样式...');
 
         try {
-            // 获取CSS内容
-            const cssUrl = chrome.runtime.getURL('css/note-manager.css');
-            const response = await fetch(cssUrl);
-            const cssText = await response.text();
+            // 通过background script获取CSS内容
+            const cssContent = await getCSSContentFromBackground();
+            
+            if (!cssContent) {
+                console.warn('[Floating] 无法获取完整CSS，使用降级方案');
+                injectBasicFloatingCSS();
+                return;
+            }
 
             // 创建style标签并添加CSS作用域
             const styleElement = document.createElement('style');
             styleElement.id = 'tst-floating-window-css';
             
             // 为CSS添加作用域，避免污染主页面
-            const scopedCSS = cssText.replace(/([^{}]+)\s*{/g, (match, selector) => {
+            const scopedCSS = cssContent.replace(/([^{}]+)\s*{/g, (match, selector) => {
                 const cleanSelector = selector.trim();
                 
                 // 跳过@规则、伪元素和特殊选择器
@@ -1569,7 +1573,166 @@
             console.log('[Floating] CSS样式注入完成');
         } catch (error) {
             console.error('[Floating] CSS注入失败:', error);
+            // 降级方案：使用基础内联样式
+            injectBasicFloatingCSS();
         }
+    }
+
+    /**
+     * 通过background script获取CSS内容
+     */
+    function getCSSContentFromBackground() {
+        return new Promise((resolve) => {
+            chrome.runtime.sendMessage({
+                action: 'getNoteManagerCSS'
+            }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error('[Floating] 获取CSS失败:', chrome.runtime.lastError);
+                    resolve(null);
+                } else if (response && response.success) {
+                    resolve(response.css);
+                } else {
+                    resolve(null);
+                }
+            });
+        });
+    }
+
+    /**
+     * 降级方案：注入基础的浮动窗口样式
+     */
+    function injectBasicFloatingCSS() {
+        console.log('[Floating] 使用降级CSS方案...');
+        
+        const styleElement = document.createElement('style');
+        styleElement.id = 'tst-floating-window-css';
+        
+        // 基础CSS样式，确保基本布局正常
+        styleElement.textContent = `
+            #tst-floating-note-manager .note-manager-container {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                background: #f8f9fa;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            }
+            
+            #tst-floating-note-manager .toolbar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 12px 16px;
+                background: #fff;
+                border-bottom: 1px solid #e0e0e0;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                min-height: 60px;
+            }
+            
+            #tst-floating-note-manager .toolbar-left,
+            #tst-floating-note-manager .toolbar-center,
+            #tst-floating-note-manager .toolbar-right {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            #tst-floating-note-manager .main-content {
+                display: flex;
+                flex: 1;
+                overflow: hidden;
+            }
+            
+            #tst-floating-note-manager .note-list-panel {
+                width: 350px;
+                border-right: 1px solid #e0e0e0;
+                background: #fff;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            #tst-floating-note-manager .editor-panel {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                background: #fff;
+            }
+            
+            #tst-floating-note-manager .search-box input {
+                padding: 8px 12px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+                width: 250px;
+            }
+            
+            #tst-floating-note-manager button {
+                padding: 8px 12px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                background: #f8f9fa;
+                cursor: pointer;
+                font-size: 14px;
+            }
+            
+            #tst-floating-note-manager button:hover {
+                background: #e9ecef;
+            }
+            
+            #tst-floating-note-manager .note-item {
+                padding: 12px;
+                border-bottom: 1px solid #f0f0f0;
+                cursor: pointer;
+            }
+            
+            #tst-floating-note-manager .note-item:hover {
+                background: #f8f9fa;
+            }
+            
+            #tst-floating-note-manager .note-title {
+                font-weight: 500;
+                margin-bottom: 4px;
+            }
+            
+            #tst-floating-note-manager .note-preview {
+                color: #666;
+                font-size: 13px;
+                line-height: 1.4;
+                margin-bottom: 4px;
+            }
+            
+            #tst-floating-note-manager .note-meta {
+                display: flex;
+                justify-content: space-between;
+                font-size: 12px;
+                color: #999;
+            }
+            
+            #tst-floating-note-manager #note-editor {
+                flex: 1;
+                border: none;
+                padding: 16px;
+                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                font-size: 14px;
+                line-height: 1.6;
+                resize: none;
+                outline: none;
+            }
+            
+            #tst-floating-note-manager .loading {
+                padding: 40px;
+                text-align: center;
+                color: #666;
+            }
+            
+            #tst-floating-note-manager .empty-state {
+                padding: 40px;
+                text-align: center;
+                color: #999;
+            }
+        `;
+        
+        document.head.appendChild(styleElement);
+        console.log('[Floating] 基础CSS样式注入完成');
     }
 
     /**
