@@ -6,6 +6,14 @@ document.addEvent('domready', function(){
 	var listEl = $('rh-views-insert');
 	var searchEl = $('notes-search');
 	
+	// Date filtering variables
+	var selectedDateRange = null;
+	var currentSearchQuery = '';
+	
+	// Initialize calendar and search functionality
+	initializeDateFilter();
+	initializeSearch();
+	
 	// Tree structure variables (similar to history2.js)
 	var treeObj;
 	var zNodes = [];
@@ -17,11 +25,13 @@ document.addEvent('domready', function(){
 				var aObj = $jq("#" + treeNode.tId + "_a");
 				if ($jq("#editBtn_" + treeNode.id).length > 0) return;
 				
-				// Add edit and delete buttons for note items (not domain groups)
+				// Add edit, copy and delete buttons for note items (not domain groups)
 				if (treeNode.isNote) {
 					var editBtn = $jq('<span class="note-edit-btn" id="editBtn_' + treeNode.id + '" title="Edit Note" style="margin-left:6px; cursor:pointer;">✏️</span>');
+					var copyBtn = $jq('<span class="note-copy-btn" id="copyBtn_' + treeNode.id + '" title="Copy Note" style="margin-left:3px; cursor:pointer;">📋</span>');
 					var deleteBtn = $jq('<span class="note-delete-btn" id="deleteBtn_' + treeNode.id + '" title="Delete Note" style="margin-left:3px; cursor:pointer;">🗑️</span>');
 					editBtn.appendTo(aObj);
+					copyBtn.appendTo(aObj);
 					deleteBtn.appendTo(aObj);
 					
 					// Add event handlers
@@ -29,6 +39,28 @@ document.addEvent('domready', function(){
 						e.stopPropagation();
 						var note = treeNode.noteData;
 						openEditor(note.visitId, note.url, treeNode.title, note.note||'');
+					});
+					
+					copyBtn.click(function(e) {
+						e.stopPropagation();
+						var note = treeNode.noteData;
+						var title = treeNode.title || '';
+						var url = note.url || '';
+						var noteText = note.note || '';
+						var text = (title ? ('Title: ' + title + '\n') : '') + 
+								  (url ? ('URL: ' + url + '\n') : '') + 
+								  '\n' + noteText;
+						if (typeof Clipboard !== 'undefined' && Clipboard.copy) {
+							Clipboard.copy(text);
+							alert('Note copied to clipboard!');
+						} else {
+							// Fallback for modern browsers
+							navigator.clipboard.writeText(text).then(function() {
+								alert('Note copied to clipboard!');
+							}).catch(function() {
+								alert('Failed to copy note to clipboard');
+							});
+						}
 					});
 					
 					deleteBtn.click(function(e) {
@@ -188,7 +220,12 @@ document.addEvent('domready', function(){
 		
 		// Setup search functionality for tree
 		if (typeof fuzzySearch === 'function') {
-			fuzzySearch('notesTreeDemo', '#notes-search', null, false);
+			fuzzySearch('notesTreeDemo', '#rh-search', null, false);
+		}
+		
+		// Update total count
+		if ($('calendar-total-value')) {
+			$('calendar-total-value').set('text', items.length);
 		}
 	}
 	
@@ -236,6 +273,7 @@ document.addEvent('domready', function(){
 			item += '</a>';
 			item += '<span class="note-actions" style="float:right;">';
 			item += '<a href="#" onclick="openEditor(\''+m.note.visitId+'\', \''+escapeHtml(url)+'\', \''+escapeHtml(title)+'\', \''+escapeHtml(noteText)+'\'); return false;">✏️</a>';
+			item += '<a href="#" onclick="copyNoteToClipboard(\''+escapeHtml(title)+'\', \''+escapeHtml(url)+'\', \''+escapeHtml(noteText)+'\'); return false;">📋</a>';
 			item += '<a href="#" onclick="if(confirm(\'Delete note?\')) deleteNote(\''+m.note.visitId+'\', function(){load();}); return false;">🗑️</a>';
 			item += '</span>';
 			item += '</div>';
@@ -251,6 +289,24 @@ document.addEvent('domready', function(){
 		}
 	}
 
+	// Global copy function for fallback rendering
+	window.copyNoteToClipboard = function(title, url, noteText) {
+		var text = (title ? ('Title: ' + title + '\n') : '') + 
+				  (url ? ('URL: ' + url + '\n') : '') + 
+				  '\n' + noteText;
+		if (typeof Clipboard !== 'undefined' && Clipboard.copy) {
+			Clipboard.copy(text);
+			alert('Note copied to clipboard!');
+		} else {
+			// Fallback for modern browsers
+			navigator.clipboard.writeText(text).then(function() {
+				alert('Note copied to clipboard!');
+			}).catch(function() {
+				alert('Failed to copy note to clipboard');
+			});
+		}
+	};
+	
 	// Removed addNoteEventHandlers - now handled in tree structure
 	function load(){
 		if (!db){ render([]); return; }
@@ -272,7 +328,8 @@ document.addEvent('domready', function(){
 			if (i>=list.length){ 
 				console.log('enrichment complete, final all array has', all.length, 'items');
 				all.sort(function(a,b){ return (b.note.updatedAt||0)-(a.note.updatedAt||0); }); 
-				render(all); 
+				// Apply any active filters
+				applyFilters(); 
 				return; 
 			}
 			var n=list[i++];
@@ -390,21 +447,221 @@ document.addEvent('domready', function(){
 		tx.oncomplete=function(){ cb&&cb(true); };
 		tx.onerror=function(){ cb&&cb(false); };
 	}
-	// Search functionality is now handled by fuzzySearch in tree structure
-	searchEl && searchEl.addEvent('keyup', function(){
-		var q=this.get('value').toLowerCase();
-		if (!q){ 
-			render(all); 
-			return; 
-		}
-		var f=all.filter(function(m){ 
-			return (m.note.url||'').toLowerCase().indexOf(q)>=0 || 
-				   (m.title||'').toLowerCase().indexOf(q)>=0 || 
-				   (m.note.note||'').toLowerCase().indexOf(q)>=0; 
-		});
-		render(f);
-	});
+	// Search functionality is now handled by the unified filter system
+	// Original search event handler removed - now handled in initializeSearch()
 
+	
+	// Date filtering functionality
+	function initializeDateFilter() {
+		// Show calendar toggle
+		if ($('showCalendar')) {
+			$('showCalendar').addEvent('click', function(e) {
+				e.stop();
+				showCalendar();
+			});
+		}
+		
+		// Initialize date selectors
+		var dateFormat = localStorage['rh-date'] || 'dd/mm/yyyy';
+		if (dateFormat) {
+			var derhdf = dateFormat;
+			derhdf = derhdf.replace('dd', 'dsdi').replace('mm', 'dsmi').replace('yyyy', 'dsyi');
+			derhdf = derhdf.split('/');
+			
+			if ($(derhdf[0])) $(derhdf[0]).set('html', '<select class="select" id="date-select-day"></select>');
+			if ($(derhdf[1])) $(derhdf[1]).set('html', '<select class="select" id="date-select-month"><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option></select>');
+			if ($(derhdf[2])) $(derhdf[2]).set('html', '<select class="select" id="date-select-year"></select>');
+			
+			// Add change events
+			if ($('date-select-day')) {
+				$('date-select-day').addEvent('change', function () {
+					updateDateFilter();
+				});
+			}
+			if ($('date-select-month')) {
+				$('date-select-month').addEvent('change', function () {
+					updateDateFilter();
+				});
+			}
+			if ($('date-select-year')) {
+				$('date-select-year').addEvent('change', function () {
+					updateDateFilter();
+				});
+			}
+			
+			// Initialize calendar
+			initializeCalendar();
+		}
+	}
+	
+	function initializeCalendar() {
+		var currentDate = new Date();
+		var currentYear = currentDate.getFullYear();
+		
+		// Populate year selector
+		if ($('date-select-year')) {
+			$('date-select-year').set('html', '');
+			for (var i = 0; i <= 1; i++) {
+				var year = currentYear - i;
+				var option = new Element('option', {
+					'value': year,
+					'text': year
+				});
+				if (i === 0) option.set('selected', 'selected');
+				option.inject($('date-select-year'));
+			}
+		}
+		
+		// Set current month
+		if ($('date-select-month')) {
+			var currentMonth = currentDate.getMonth() + 1;
+			$$('#date-select-month option').each(function(el) {
+				if (parseInt(el.get('value')) === currentMonth) {
+					el.set('selected', 'selected');
+				}
+			});
+		}
+		
+		// Populate day selector and set current day
+		updateDaySelector();
+	}
+	
+	function updateDaySelector() {
+		if (!$('date-select-day') || !$('date-select-month') || !$('date-select-year')) return;
+		
+		var year = parseInt($('date-select-year').getSelected().get('value'));
+		var month = parseInt($('date-select-month').getSelected().get('value'));
+		var currentDate = new Date();
+		var currentDay = currentDate.getDate();
+		
+		// Days in month
+		var daysInMonth = new Date(year, month, 0).getDate();
+		
+		$('date-select-day').set('html', '');
+		for (var day = 1; day <= daysInMonth; day++) {
+			var dayStr = day < 10 ? '0' + day : '' + day;
+			var option = new Element('option', {
+				'value': dayStr,
+				'text': dayStr
+			});
+			if (day === currentDay && month === (currentDate.getMonth() + 1) && year === currentDate.getFullYear()) {
+				option.set('selected', 'selected');
+			}
+			option.inject($('date-select-day'));
+		}
+	}
+	
+	function updateDateFilter() {
+		if (!$('date-select-day') || !$('date-select-month') || !$('date-select-year')) return;
+		
+		var year = parseInt($('date-select-year').getSelected().get('value'));
+		var month = parseInt($('date-select-month').getSelected().get('value')) - 1; // JavaScript months are 0-based
+		var day = parseInt($('date-select-day').getSelected().get('value'));
+		
+		var startDate = new Date(year, month, day, 0, 0, 0, 0);
+		var endDate = new Date(year, month, day, 23, 59, 59, 999);
+		
+		selectedDateRange = {
+			start: startDate.getTime(),
+			end: endDate.getTime()
+		};
+		
+		// Update day selector in case month/year changed
+		updateDaySelector();
+		
+		// Refilter notes
+		applyFilters();
+	}
+	
+	// Search functionality
+	function initializeSearch() {
+		// Main search box
+		if (searchEl) {
+			searchEl.addEvent('keyup', function() {
+				currentSearchQuery = this.get('value').toLowerCase();
+				applyFilters();
+			});
+		}
+		
+		// Advanced search box
+		if ($('rh-search')) {
+			$('rh-search').addEvent('keyup', function() {
+				currentSearchQuery = this.get('value').toLowerCase();
+				applyFilters();
+			});
+		}
+		
+		// Search tags
+		$$('#search-tag a').each(function(tag) {
+			tag.addEvent('click', function(e) {
+				e.stop();
+				var tagText = this.get('text');
+				if ($('rh-search')) {
+					$('rh-search').set('value', tagText);
+					currentSearchQuery = tagText.toLowerCase();
+					applyFilters();
+				}
+			});
+		});
+	}
+	
+	function applyFilters() {
+		var filteredNotes = all.slice(); // Copy all notes
+		
+		// Apply date filter
+		if (selectedDateRange) {
+			filteredNotes = filteredNotes.filter(function(item) {
+				var noteTime = item.note.updatedAt || 0;
+				return noteTime >= selectedDateRange.start && noteTime <= selectedDateRange.end;
+			});
+		}
+		
+		// Apply search filter
+		if (currentSearchQuery) {
+			filteredNotes = filteredNotes.filter(function(item) {
+				var url = (item.note.url || '').toLowerCase();
+				var title = (item.title || '').toLowerCase();
+				var noteText = (item.note.note || '').toLowerCase();
+				return url.indexOf(currentSearchQuery) >= 0 || 
+					   title.indexOf(currentSearchQuery) >= 0 || 
+					   noteText.indexOf(currentSearchQuery) >= 0;
+			});
+		}
+		
+		render(filteredNotes);
+		
+		// Update total count
+		if ($('calendar-total-value')) {
+			$('calendar-total-value').set('text', filteredNotes.length);
+		}
+	}
+	
+	// Calendar display toggle
+	function showCalendar() {
+		if ($('calendar')) {
+			var calendar = $('calendar');
+			var currentDisplay = calendar.getStyle('display');
+			if (currentDisplay === 'none' || currentDisplay === '') {
+				calendar.setStyle('display', 'block');
+			} else {
+				calendar.setStyle('display', 'none');
+			}
+		}
+	}
+	
+	// Clear all filters
+	function clearFilters() {
+		selectedDateRange = null;
+		currentSearchQuery = '';
+		
+		if ($('rh-search')) $('rh-search').set('value', '');
+		if (searchEl) searchEl.set('value', '');
+		
+		applyFilters();
+	}
+	
+	// Export clear function globally for possible UI use
+	window.clearNotesFilters = clearFilters;
 	
 	load();
 });
