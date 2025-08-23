@@ -2454,12 +2454,12 @@
             `;
         }).join('');
         container.innerHTML = notesHTML;
-     }
-     */
-     
-     // 以上代码已弃用 - 浮动窗口现在使用iframe + srcdoc直接复用note-manager.html
+    }
+    */
+    
+    // 以上代码已弃用 - 浮动窗口现在使用iframe + srcdoc直接复用note-manager.html
 
-     /**
+    /**
       * 打开设置
       */
     function openSettings() {
