@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.7.0",
-  "version_name": "4.7.0 by sperwe - Global Always-On-Top Floating Window",
+  "version": "4.7.1",
+  "version_name": "4.7.1 by sperwe - Critical Syntax Fix + Global Floating Window",
   "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.7.0: Revolutionary Global Floating Window - Always-on-top across all tabs & apps",
+  "description": "v4.7.1: Critical JavaScript Fix - Restored note loading & history functionality",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
