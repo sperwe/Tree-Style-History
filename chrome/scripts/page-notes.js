@@ -1591,15 +1591,36 @@
 
             container.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">加载中...</div>';
 
+            // 首先检查数据库状态
+            const dbStatus = await checkDatabaseStatus();
+            if (!dbStatus.dbReady) {
+                console.log('[TST Floating] 数据库未就绪，等待初始化...');
+                container.innerHTML = '<div style="text-align: center; padding: 20px; color: #ffa500;">数据库初始化中，请稍候...</div>';
+                
+                // 等待一段时间后重试
+                setTimeout(() => {
+                    loadFloatingNotesList();
+                }, 2000);
+                return;
+            }
+
             // 从background获取笔记
             const notes = await new Promise((resolve) => {
                 if (chrome && chrome.runtime) {
+                    console.log('[TST Floating] 请求获取所有笔记');
                     chrome.runtime.sendMessage({
                         action: 'getAllNotes'
                     }, (response) => {
-                        resolve(response && response.notes ? response.notes : []);
+                        console.log('[TST Floating] 获取笔记响应:', response);
+                        if (chrome.runtime.lastError) {
+                            console.error('[TST Floating] Runtime错误:', chrome.runtime.lastError);
+                            resolve([]);
+                        } else {
+                            resolve(response && response.notes ? response.notes : []);
+                        }
                     });
                 } else {
+                    console.log('[TST Floating] Chrome runtime不可用');
                     resolve([]);
                 }
             });
@@ -1726,6 +1747,28 @@
             clearTimeout(timeout);
             timeout = setTimeout(later, wait);
         };
+    }
+
+    /**
+     * 检查数据库状态
+     */
+    async function checkDatabaseStatus() {
+        return new Promise((resolve) => {
+            if (chrome && chrome.runtime) {
+                chrome.runtime.sendMessage({
+                    action: 'checkDbStatus'
+                }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error('[TST Floating] 检查数据库状态失败:', chrome.runtime.lastError);
+                        resolve({ dbReady: false });
+                    } else {
+                        resolve(response || { dbReady: false });
+                    }
+                });
+            } else {
+                resolve({ dbReady: false });
+            }
+        });
     }
 
     // 全局函数供HTML调用
