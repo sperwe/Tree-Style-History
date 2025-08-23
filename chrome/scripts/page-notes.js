@@ -42,12 +42,121 @@
         floatingButton.innerHTML = '📝';
         floatingButton.title = '新建页面笔记';
         
-        floatingButton.addEventListener('click', openQuickNoteModal);
+        // 绑定各种事件
+        bindFloatingButtonEvents();
         
         document.body.appendChild(floatingButton);
         
         // 检查是否有历史笔记并更新按钮状态（使用延迟检查确保数据库已初始化）
         delayedCheckHistoryNoteStatus();
+    }
+
+    /**
+     * 绑定浮动按钮的所有事件
+     */
+    function bindFloatingButtonEvents() {
+        let longPressTimer = null;
+        let isLongPress = false;
+        let contextMenuVisible = false;
+
+        // 单击事件
+        floatingButton.addEventListener('click', (e) => {
+            if (!isLongPress && !contextMenuVisible) {
+                openQuickNoteModal();
+            }
+            isLongPress = false;
+        });
+
+        // 长按开始
+        floatingButton.addEventListener('mousedown', (e) => {
+            if (e.button === 0) { // 左键
+                isLongPress = false;
+                longPressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    showContextMenu(e);
+                }, 800); // 800ms长按
+            }
+        });
+
+        // 长按结束
+        floatingButton.addEventListener('mouseup', () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        });
+
+        // 鼠标离开时清除长按
+        floatingButton.addEventListener('mouseleave', () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        });
+
+        // 右键菜单
+        floatingButton.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            showContextMenu(e);
+        });
+
+        // 触摸设备支持
+        let touchStartTime = 0;
+        
+        floatingButton.addEventListener('touchstart', (e) => {
+            touchStartTime = Date.now();
+            isLongPress = false;
+            longPressTimer = setTimeout(() => {
+                isLongPress = true;
+                showContextMenu(e.touches[0]);
+            }, 800);
+        });
+
+        floatingButton.addEventListener('touchend', (e) => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+            
+            const touchDuration = Date.now() - touchStartTime;
+            if (touchDuration < 800 && !isLongPress && !contextMenuVisible) {
+                openQuickNoteModal();
+            }
+            isLongPress = false;
+        });
+
+        // 监听点击其他地方关闭上下文菜单
+        document.addEventListener('click', (e) => {
+            if (contextMenuVisible && !e.target.closest('#tst-context-menu')) {
+                hideContextMenu();
+            }
+        });
+
+        // 监听键盘事件
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+Shift+N 打开笔记管理器
+            if (e.ctrlKey && e.shiftKey && e.key === 'N') {
+                e.preventDefault();
+                openNoteManager();
+            }
+            // Ctrl+Shift+Q 快速新建笔记
+            if (e.ctrlKey && e.shiftKey && e.key === 'Q') {
+                e.preventDefault();
+                openQuickNoteModal();
+            }
+            // ESC 关闭上下文菜单
+            if (e.key === 'Escape' && contextMenuVisible) {
+                hideContextMenu();
+            }
+        });
+
+        // 更新上下文菜单可见性状态的辅助函数
+        function updateContextMenuVisibility(visible) {
+            contextMenuVisible = visible;
+        }
+
+        // 将函数绑定到全局作用域以便其他函数使用
+        window.updateContextMenuVisibility = updateContextMenuVisibility;
     }
 
     /**
@@ -917,6 +1026,210 @@
         }
 
         return true;
+    }
+
+    /**
+     * 显示上下文菜单
+     */
+    function showContextMenu(event) {
+        // 移除现有的上下文菜单
+        hideContextMenu();
+
+        // 创建上下文菜单
+        const contextMenu = document.createElement('div');
+        contextMenu.id = 'tst-context-menu';
+        contextMenu.className = 'tst-context-menu';
+        
+        // 菜单项数据
+        const menuItems = [
+            {
+                text: '📝 新建笔记',
+                action: openQuickNoteModal,
+                shortcut: 'Ctrl+Shift+Q'
+            },
+            {
+                text: '📚 笔记管理器',
+                action: openNoteManager,
+                shortcut: 'Ctrl+Shift+N'
+            },
+            {
+                text: '🔍 搜索笔记',
+                action: () => openNoteManager('search'),
+                shortcut: ''
+            },
+            'separator',
+            {
+                text: '⚙️ 设置',
+                action: openSettings,
+                shortcut: ''
+            }
+        ];
+
+        // 创建菜单项
+        menuItems.forEach(item => {
+            if (item === 'separator') {
+                const separator = document.createElement('div');
+                separator.className = 'menu-separator';
+                contextMenu.appendChild(separator);
+            } else {
+                const menuItem = document.createElement('div');
+                menuItem.className = 'menu-item';
+                
+                const text = document.createElement('span');
+                text.textContent = item.text;
+                menuItem.appendChild(text);
+                
+                if (item.shortcut) {
+                    const shortcut = document.createElement('span');
+                    shortcut.className = 'menu-shortcut';
+                    shortcut.textContent = item.shortcut;
+                    menuItem.appendChild(shortcut);
+                }
+                
+                menuItem.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    hideContextMenu();
+                    item.action();
+                });
+                
+                contextMenu.appendChild(menuItem);
+            }
+        });
+
+        // 设置菜单位置
+        const x = event.clientX || event.pageX;
+        const y = event.clientY || event.pageY;
+        
+        contextMenu.style.cssText = `
+            position: fixed;
+            left: ${x}px;
+            top: ${y}px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 999999;
+            min-width: 200px;
+            padding: 4px 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-size: 14px;
+        `;
+
+        // 添加菜单项样式
+        const style = document.createElement('style');
+        style.textContent = `
+            .tst-context-menu .menu-item {
+                padding: 8px 16px;
+                cursor: pointer;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                transition: background-color 0.2s;
+            }
+            .tst-context-menu .menu-item:hover {
+                background-color: #f5f5f5;
+            }
+            .tst-context-menu .menu-separator {
+                height: 1px;
+                background-color: #eee;
+                margin: 4px 0;
+            }
+            .tst-context-menu .menu-shortcut {
+                color: #666;
+                font-size: 12px;
+                margin-left: 16px;
+            }
+        `;
+        
+        document.head.appendChild(style);
+        document.body.appendChild(contextMenu);
+        
+        // 调整菜单位置以确保在视窗内
+        const rect = contextMenu.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        if (rect.right > viewportWidth) {
+            contextMenu.style.left = (viewportWidth - rect.width - 10) + 'px';
+        }
+        if (rect.bottom > viewportHeight) {
+            contextMenu.style.top = (viewportHeight - rect.height - 10) + 'px';
+        }
+
+        // 更新可见性状态
+        if (window.updateContextMenuVisibility) {
+            window.updateContextMenuVisibility(true);
+        }
+    }
+
+    /**
+     * 隐藏上下文菜单
+     */
+    function hideContextMenu() {
+        const existingMenu = document.getElementById('tst-context-menu');
+        if (existingMenu) {
+            existingMenu.remove();
+        }
+        
+        // 更新可见性状态
+        if (window.updateContextMenuVisibility) {
+            window.updateContextMenuVisibility(false);
+        }
+    }
+
+    /**
+     * 打开笔记管理器
+     */
+    function openNoteManager(mode = null) {
+        try {
+            if (chrome && chrome.runtime) {
+                // 通过background script打开笔记管理器
+                chrome.runtime.sendMessage({
+                    action: 'openNoteManager',
+                    mode: mode
+                }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error('打开笔记管理器失败:', chrome.runtime.lastError);
+                        // 降级方案：直接打开页面
+                        fallbackOpenNoteManager();
+                    } else if (response && response.success) {
+                        console.log('笔记管理器已打开');
+                    }
+                });
+            } else {
+                fallbackOpenNoteManager();
+            }
+        } catch (error) {
+            console.error('打开笔记管理器出错:', error);
+            fallbackOpenNoteManager();
+        }
+    }
+
+    /**
+     * 降级方案：直接打开笔记管理器页面
+     */
+    function fallbackOpenNoteManager() {
+        const url = chrome.runtime ? chrome.runtime.getURL('note-manager.html') : '/note-manager.html';
+        window.open(url, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    }
+
+    /**
+     * 打开设置
+     */
+    function openSettings() {
+        try {
+            if (chrome && chrome.runtime) {
+                chrome.runtime.sendMessage({
+                    action: 'openSettings'
+                }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error('打开设置失败:', chrome.runtime.lastError);
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('打开设置出错:', error);
+        }
     }
 
     /**
