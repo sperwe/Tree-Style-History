@@ -16,6 +16,20 @@
     let floatingButton = null;
     let quickNoteModal = null;
     let isModalOpen = false;
+    
+    // 窗口状态
+    let windowState = {
+        isDragging: false,
+        isResizing: false,
+        dragStartX: 0,
+        dragStartY: 0,
+        windowStartX: 0,
+        windowStartY: 0,
+        resizeStartWidth: 0,
+        resizeStartHeight: 0,
+        position: { x: 20, y: 100 },
+        size: { width: 380, height: 500 }
+    };
 
     /**
      * 创建浮动按钮
@@ -48,8 +62,11 @@
         quickNoteModal.innerHTML = `
             <div id="tst-quick-note-content">
                 <div id="tst-quick-note-header">
-                    <h3 id="tst-quick-note-title">新建页面笔记</h3>
-                    <button id="tst-quick-note-close">×</button>
+                    <h3 id="tst-quick-note-title">📝 页面笔记</h3>
+                    <div class="tst-window-controls">
+                        <button class="tst-window-btn" id="tst-minimize-btn" title="最小化">−</button>
+                        <button class="tst-window-btn" id="tst-quick-note-close" title="关闭">×</button>
+                    </div>
                 </div>
                 
                 <div id="tst-page-info">
@@ -57,31 +74,48 @@
                     <div id="tst-page-info-url">${escapeHtml(pageUrl)}</div>
                 </div>
                 
-                <textarea id="tst-quick-note-textarea" 
-                          placeholder="在这里输入笔记内容...支持 Markdown 格式"></textarea>
+                <div id="tst-note-content-area">
+                    <textarea id="tst-quick-note-textarea" 
+                              placeholder="在这里输入笔记内容...支持 Markdown 格式
+
+💡 提示：
+• 拖拽页面文本到此处自动添加引用摘录
+• 支持多次摘录和想法交替编辑
+• Ctrl+Enter 快速保存"></textarea>
+                    <div class="tst-drag-hint">📝 松开鼠标添加摘录</div>
+                </div>
                 
                 <div id="tst-quick-note-actions">
-                    <button class="tst-btn tst-btn-secondary" id="tst-cancel-btn">取消</button>
+                    <button class="tst-btn tst-btn-secondary" id="tst-clear-btn">清空</button>
                     <button class="tst-btn tst-btn-primary" id="tst-save-btn">保存笔记</button>
                 </div>
+                
+                <!-- 调整大小控制点 -->
+                <div class="tst-resizer tst-resizer-se"></div>
+                <div class="tst-resizer tst-resizer-s"></div>
+                <div class="tst-resizer tst-resizer-e"></div>
             </div>
         `;
 
-        // 绑定事件
+        // 绑定基础事件
         const closeBtn = quickNoteModal.querySelector('#tst-quick-note-close');
-        const cancelBtn = quickNoteModal.querySelector('#tst-cancel-btn');
+        const minimizeBtn = quickNoteModal.querySelector('#tst-minimize-btn');
+        const clearBtn = quickNoteModal.querySelector('#tst-clear-btn');
         const saveBtn = quickNoteModal.querySelector('#tst-save-btn');
         const textarea = quickNoteModal.querySelector('#tst-quick-note-textarea');
+        const header = quickNoteModal.querySelector('#tst-quick-note-header');
 
         closeBtn.addEventListener('click', closeQuickNoteModal);
-        cancelBtn.addEventListener('click', closeQuickNoteModal);
+        minimizeBtn.addEventListener('click', minimizeWindow);
+        clearBtn.addEventListener('click', clearNote);
         saveBtn.addEventListener('click', saveQuickNote);
+
+        // 窗口拖拽
+        header.addEventListener('mousedown', startDragging);
         
-        // 点击背景关闭
-        quickNoteModal.addEventListener('click', (e) => {
-            if (e.target === quickNoteModal) {
-                closeQuickNoteModal();
-            }
+        // 窗口调整大小
+        quickNoteModal.querySelectorAll('.tst-resizer').forEach(resizer => {
+            resizer.addEventListener('mousedown', startResizing);
         });
 
         // ESC键关闭
@@ -98,38 +132,310 @@
             }
         });
 
+        // 拖拽摘录功能
+        setupDragAndDrop();
+
         document.body.appendChild(quickNoteModal);
     }
 
     /**
-     * 打开快速笔记弹窗
+     * 打开快速笔记窗口
      */
     function openQuickNoteModal() {
         if (isModalOpen) return;
 
         createQuickNoteModal();
-        quickNoteModal.style.display = 'flex';
+        
+        // 恢复窗口位置和大小
+        updateWindowTransform();
+        quickNoteModal.style.display = 'block';
         isModalOpen = true;
 
         // 聚焦到文本框
         const textarea = quickNoteModal.querySelector('#tst-quick-note-textarea');
         setTimeout(() => {
             textarea.focus();
+            // 将光标移到末尾，方便继续编辑
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
         }, 100);
     }
 
     /**
-     * 关闭快速笔记弹窗
+     * 关闭快速笔记窗口
      */
     function closeQuickNoteModal() {
         if (!isModalOpen || !quickNoteModal) return;
 
         quickNoteModal.style.display = 'none';
         isModalOpen = false;
+        
+        // 保存窗口状态
+        saveWindowState();
+    }
 
-        // 清空文本框
+    /**
+     * 最小化窗口
+     */
+    function minimizeWindow() {
+        if (!quickNoteModal) return;
+        quickNoteModal.style.display = 'none';
+        isModalOpen = false;
+        
+        // 显示通知
+        showNotification('笔记窗口已最小化，点击按钮重新打开', 'info');
+    }
+
+    /**
+     * 清空笔记内容
+     */
+    function clearNote() {
+        if (!quickNoteModal) return;
+        
         const textarea = quickNoteModal.querySelector('#tst-quick-note-textarea');
+        if (textarea.value.trim() && !confirm('确定要清空所有笔记内容吗？')) {
+            return;
+        }
+        
         textarea.value = '';
+        textarea.focus();
+        showNotification('笔记内容已清空', 'info');
+    }
+
+    /**
+     * 窗口拖拽开始
+     */
+    function startDragging(e) {
+        if (e.target.closest('.tst-window-btn')) return; // 避免按钮区域触发拖拽
+        
+        windowState.isDragging = true;
+        windowState.dragStartX = e.clientX;
+        windowState.dragStartY = e.clientY;
+        windowState.windowStartX = windowState.position.x;
+        windowState.windowStartY = windowState.position.y;
+        
+        quickNoteModal.classList.add('dragging');
+        
+        document.addEventListener('mousemove', handleDragging);
+        document.addEventListener('mouseup', stopDragging);
+        
+        e.preventDefault();
+    }
+
+    /**
+     * 处理窗口拖拽
+     */
+    function handleDragging(e) {
+        if (!windowState.isDragging) return;
+        
+        const deltaX = e.clientX - windowState.dragStartX;
+        const deltaY = e.clientY - windowState.dragStartY;
+        
+        windowState.position.x = windowState.windowStartX + deltaX;
+        windowState.position.y = windowState.windowStartY + deltaY;
+        
+        // 限制窗口不能拖拽出屏幕
+        const maxX = window.innerWidth - windowState.size.width;
+        const maxY = window.innerHeight - windowState.size.height;
+        
+        windowState.position.x = Math.max(0, Math.min(maxX, windowState.position.x));
+        windowState.position.y = Math.max(0, Math.min(maxY, windowState.position.y));
+        
+        updateWindowTransform();
+    }
+
+    /**
+     * 停止窗口拖拽
+     */
+    function stopDragging() {
+        windowState.isDragging = false;
+        quickNoteModal.classList.remove('dragging');
+        
+        document.removeEventListener('mousemove', handleDragging);
+        document.removeEventListener('mouseup', stopDragging);
+        
+        saveWindowState();
+    }
+
+    /**
+     * 开始调整窗口大小
+     */
+    function startResizing(e) {
+        windowState.isResizing = true;
+        windowState.dragStartX = e.clientX;
+        windowState.dragStartY = e.clientY;
+        windowState.resizeStartWidth = windowState.size.width;
+        windowState.resizeStartHeight = windowState.size.height;
+        
+        const resizer = e.target;
+        windowState.resizeDirection = resizer.classList.contains('tst-resizer-se') ? 'se' :
+                                    resizer.classList.contains('tst-resizer-s') ? 's' : 'e';
+        
+        quickNoteModal.classList.add('resizing');
+        
+        document.addEventListener('mousemove', handleResizing);
+        document.addEventListener('mouseup', stopResizing);
+        
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    /**
+     * 处理窗口大小调整
+     */
+    function handleResizing(e) {
+        if (!windowState.isResizing) return;
+        
+        const deltaX = e.clientX - windowState.dragStartX;
+        const deltaY = e.clientY - windowState.dragStartY;
+        
+        if (windowState.resizeDirection.includes('e')) {
+            windowState.size.width = Math.max(300, windowState.resizeStartWidth + deltaX);
+        }
+        
+        if (windowState.resizeDirection.includes('s')) {
+            windowState.size.height = Math.max(400, windowState.resizeStartHeight + deltaY);
+        }
+        
+        updateWindowTransform();
+    }
+
+    /**
+     * 停止调整窗口大小
+     */
+    function stopResizing() {
+        windowState.isResizing = false;
+        quickNoteModal.classList.remove('resizing');
+        
+        document.removeEventListener('mousemove', handleResizing);
+        document.removeEventListener('mouseup', stopResizing);
+        
+        saveWindowState();
+    }
+
+    /**
+     * 更新窗口变换
+     */
+    function updateWindowTransform() {
+        if (!quickNoteModal) return;
+        
+        quickNoteModal.style.transform = `translate(${windowState.position.x}px, ${windowState.position.y}px)`;
+        quickNoteModal.style.width = `${windowState.size.width}px`;
+        quickNoteModal.style.height = `${windowState.size.height}px`;
+    }
+
+    /**
+     * 保存窗口状态
+     */
+    function saveWindowState() {
+        try {
+            localStorage.setItem('tstPageNoteWindow', JSON.stringify({
+                position: windowState.position,
+                size: windowState.size
+            }));
+        } catch (e) {
+            console.log('无法保存窗口状态:', e);
+        }
+    }
+
+    /**
+     * 加载窗口状态
+     */
+    function loadWindowState() {
+        try {
+            const saved = localStorage.getItem('tstPageNoteWindow');
+            if (saved) {
+                const state = JSON.parse(saved);
+                windowState.position = state.position || windowState.position;
+                windowState.size = state.size || windowState.size;
+                
+                // 确保窗口在屏幕内
+                const maxX = window.innerWidth - windowState.size.width;
+                const maxY = window.innerHeight - windowState.size.height;
+                
+                windowState.position.x = Math.max(0, Math.min(maxX, windowState.position.x));
+                windowState.position.y = Math.max(0, Math.min(maxY, windowState.position.y));
+            }
+        } catch (e) {
+            console.log('无法加载窗口状态:', e);
+        }
+    }
+
+    /**
+     * 设置拖拽摘录功能
+     */
+    function setupDragAndDrop() {
+        const contentArea = quickNoteModal.querySelector('#tst-note-content-area');
+        const dragHint = quickNoteModal.querySelector('.tst-drag-hint');
+        
+        // 防止默认拖拽行为
+        contentArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            quickNoteModal.classList.add('drag-over');
+            dragHint.style.display = 'block';
+        });
+
+        contentArea.addEventListener('dragleave', (e) => {
+            if (!contentArea.contains(e.relatedTarget)) {
+                quickNoteModal.classList.remove('drag-over');
+                dragHint.style.display = 'none';
+            }
+        });
+
+        contentArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            quickNoteModal.classList.remove('drag-over');
+            dragHint.style.display = 'none';
+            
+            const droppedText = e.dataTransfer.getData('text/plain');
+            if (droppedText) {
+                insertExcerpt(droppedText);
+            }
+        });
+
+        // 监听页面选中文本的拖拽
+        document.addEventListener('dragstart', (e) => {
+            const selection = window.getSelection();
+            if (selection.toString().trim()) {
+                e.dataTransfer.setData('text/plain', selection.toString());
+            }
+        });
+    }
+
+    /**
+     * 插入摘录内容
+     */
+    function insertExcerpt(text) {
+        const textarea = quickNoteModal.querySelector('#tst-quick-note-textarea');
+        const pageTitle = document.title || '无标题页面';
+        const pageUrl = window.location.href;
+        
+        // 格式化摘录内容
+        const timestamp = new Date().toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        const excerpt = `> ${text.trim()}\n> \n> *摘录自: [${pageTitle}](${pageUrl}) - ${timestamp}*\n\n`;
+        
+        // 插入到光标位置
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const currentValue = textarea.value;
+        
+        // 如果光标不在末尾，且前面有内容，添加换行
+        const prefix = (start > 0 && !currentValue.substring(start - 2, start).includes('\n\n')) ? '\n\n' : '';
+        
+        textarea.value = currentValue.substring(0, start) + prefix + excerpt + currentValue.substring(end);
+        
+        // 将光标移到插入内容的末尾
+        const newPosition = start + prefix.length + excerpt.length;
+        textarea.setSelectionRange(newPosition, newPosition);
+        textarea.focus();
+        
+        showNotification('摘录已添加到笔记', 'success');
     }
 
     /**
@@ -269,6 +575,9 @@
         if (!shouldShowFloatingButton()) {
             return;
         }
+
+        // 加载窗口状态
+        loadWindowState();
 
         // 延迟创建，避免影响页面加载
         setTimeout(() => {
