@@ -2483,6 +2483,7 @@
      */
     function initialize() {
         console.log('[TST Notes] 初始化开始，URL:', window.location.href);
+        console.log('[TST Notes] Document ready state:', document.readyState);
         
         // 等待页面加载完成
         if (document.readyState === 'loading') {
@@ -2495,20 +2496,29 @@
         const shouldShow = shouldShowFloatingButton();
         console.log('[TST Notes] 是否应该显示按钮:', shouldShow);
         if (!shouldShow) {
+            console.log('[TST Notes] shouldShowFloatingButton返回false，跳过按钮创建');
             return;
         }
 
         // 加载窗口状态
+        console.log('[TST Notes] 开始加载窗口状态');
         loadWindowState();
 
-        // 延迟创建，避免影响页面加载
+        // 立即创建按钮，不延迟（排除timing问题）
+        console.log('[TST Notes] 立即创建浮动按钮');
+        createFloatingButton();
+        
+        // 备用延迟创建，以防第一次失败
         setTimeout(() => {
-            console.log('[TST Notes] 开始创建浮动按钮');
-            createFloatingButton();
-        }, 1000);
+            if (!document.getElementById('tst-page-note-btn')) {
+                console.log('[TST Notes] 第一次创建失败，重试创建浮动按钮');
+                createFloatingButton();
+            }
+        }, 2000);
     }
 
     // 启动初始化
+    console.log('[TST Notes] 脚本加载完成，开始初始化');
     initialize();
 
 })();
