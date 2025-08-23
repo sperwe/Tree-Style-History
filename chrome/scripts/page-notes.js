@@ -35,13 +35,8 @@
      * 创建浮动按钮
      */
     function createFloatingButton() {
-        console.log('[TST Notes] createFloatingButton调用，当前floatingButton:', !!floatingButton);
-        if (floatingButton) {
-            console.log('[TST Notes] 浮动按钮已存在，跳过创建');
-            return;
-        }
+        if (floatingButton) return;
 
-        console.log('[TST Notes] 创建新的浮动按钮');
         floatingButton = document.createElement('button');
         floatingButton.id = 'tst-page-note-btn';
         floatingButton.innerHTML = '📝';
@@ -50,9 +45,7 @@
         // 绑定各种事件
         bindFloatingButtonEvents();
         
-        console.log('[TST Notes] 将浮动按钮添加到页面，document.body存在:', !!document.body);
         document.body.appendChild(floatingButton);
-        console.log('[TST Notes] 浮动按钮添加完成，按钮在页面中:', document.getElementById('tst-page-note-btn'));
         
         // 检查是否有历史笔记并更新按钮状态（使用延迟检查确保数据库已初始化）
         delayedCheckHistoryNoteStatus();
@@ -141,15 +134,15 @@
 
         // 监听键盘事件
         document.addEventListener('keydown', (e) => {
-            // Ctrl+Shift+N 打开笔记管理器（浮动窗口）
+            // Ctrl+Shift+N 打开笔记管理器（独立窗口）
             if (e.ctrlKey && e.shiftKey && e.key === 'N') {
                 e.preventDefault();
-                openNoteManager('floating');
+                openNoteManager('window');
             }
-            // Ctrl+Shift+F 打开笔记管理器（独立窗口）
+            // Ctrl+Shift+F 打开笔记管理器（浮动窗口）
             if (e.ctrlKey && e.shiftKey && e.key === 'F') {
                 e.preventDefault();
-                openNoteManager('window');
+                openNoteManager('floating');
             }
             // Ctrl+Shift+Q 快速新建笔记
             if (e.ctrlKey && e.shiftKey && e.key === 'Q') {
@@ -1060,13 +1053,13 @@
                 shortcut: 'Ctrl+Shift+Q'
             },
             {
-                text: '🎈 笔记管理器 (浮动窗口)',
-                action: () => openNoteManager('floating'),
+                text: '📚 笔记管理器 (独立窗口)',
+                action: () => openNoteManager('window'),
                 shortcut: 'Ctrl+Shift+N'
             },
             {
-                text: '📚 笔记管理器 (独立窗口)',
-                action: () => openNoteManager('window'),
+                text: '🎈 笔记管理器 (浮动窗口)',
+                action: () => openNoteManager('floating'),
                 shortcut: 'Ctrl+Shift+F'
             },
             {
@@ -1330,26 +1323,29 @@
         controls.appendChild(closeBtn);
         titleBar.appendChild(controls);
 
-        // 创建iframe使用srcdoc（避免Chromium src限制，复用完整的note-manager代码）
-        const iframe = document.createElement('iframe');
-        iframe.id = 'floating-note-iframe';
-        iframe.style.cssText = `
+        // 创建内容容器而非iframe（避免Chromium安全策略限制）
+        const content = document.createElement('div');
+        content.id = 'floating-note-content';
+        content.style.cssText = `
             flex: 1;
-            border: none;
             background: white;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         `;
-        
-        // 获取完整的note-manager.html内容并内联到srcdoc
-        const noteManagerContent = getNoteManagerHTML();
-        iframe.srcdoc = noteManagerContent;
 
         // 组装窗口
         floatingManager.appendChild(titleBar);
-        floatingManager.appendChild(iframe);
+        floatingManager.appendChild(content);
         document.body.appendChild(floatingManager);
 
         // 添加拖拽功能
         makeDraggable(floatingManager, titleBar);
+
+        // 确保DOM更新后再加载内容
+        setTimeout(() => {
+            loadFloatingManagerContent(content);
+        }, 50);
 
         // 添加键盘快捷键
         document.addEventListener('keydown', (e) => {
@@ -1431,280 +1427,8 @@
     }
 
     /**
-     * 获取完整的笔记管理器HTML内容
+     * 加载浮动管理器内容
      */
-    function getNoteManagerHTML() {
-        const baseUrl = chrome.runtime ? chrome.runtime.getURL('') : '/';
-        
-        return `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>笔记管理器 (浮动窗口)</title>
-    <link rel="stylesheet" href="${baseUrl}css/note-manager.css">
-    <script src="${baseUrl}scripts/MooTools.js"></script>
-    <script src="${baseUrl}scripts/common.js"></script>
-    <script src="${baseUrl}scripts/jquery.min.js"></script>
-    <style>
-        /* 浮动窗口适配样式 */
-        body { margin: 0; height: 100vh; overflow: hidden; }
-        .note-manager-container { height: 100vh; }
-        .toolbar-right .actions button[title="在新窗口中打开"] { display: none; }
-    </style>
-</head>
-<body>
-    <div class="note-manager-container">
-        <!-- 顶部工具栏 -->
-        <div class="toolbar">
-            <div class="toolbar-left">
-                <div class="search-box">
-                    <input type="text" id="global-search" placeholder="🔍 搜索笔记标题和内容..." maxlength="100">
-                    <button id="clear-search" class="clear-btn" style="display: none;">✖️</button>
-                </div>
-            </div>
-            
-            <div class="toolbar-center">
-                <div class="filters">
-                    <select id="tag-filter" title="按标签过滤">
-                        <option value="">🏷️ 全部标签</option>
-                        <option value="important_very">🔥 非常重要</option>
-                        <option value="important_somewhat">🔥 比较重要</option>
-                        <option value="important_general">🔥 一般重要</option>
-                        <option value="interesting_very">💡 非常有趣</option>
-                        <option value="interesting_somewhat">💡 比较有趣</option>
-                        <option value="interesting_general">💡 一般有趣</option>
-                        <option value="needed_very">⚡ 非常需要</option>
-                        <option value="needed_somewhat">⚡ 比较需要</option>
-                        <option value="needed_general">⚡ 一般需要</option>
-                    </select>
-                    
-                    <select id="date-filter" title="按时间过滤">
-                        <option value="">📅 全部时间</option>
-                        <option value="today">今天</option>
-                        <option value="week">本周</option>
-                        <option value="month">本月</option>
-                        <option value="quarter">三个月内</option>
-                        <option value="year">一年内</option>
-                    </select>
-                    
-                    <select id="site-filter" title="按网站过滤">
-                        <option value="">🌐 全部网站</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="toolbar-right">
-                <div class="actions">
-                    <button id="refresh-notes" title="刷新笔记列表">🔄</button>
-                    <button id="batch-export" title="批量导出选中的笔记">📦 导出</button>
-                    <button id="new-note" title="新建笔记">📝 新建</button>
-                    <button id="settings" title="设置">⚙️</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 主内容区 -->
-        <div class="main-content">
-            <!-- 左侧笔记列表 -->
-            <div class="note-list-panel">
-                <div class="list-header">
-                    <div class="list-stats">
-                        <span class="note-count">共 <span id="total-notes">0</span> 条笔记</span>
-                        <span class="selected-count" id="selected-count" style="display: none;">已选 <span id="selected-number">0</span> 条</span>
-                    </div>
-                    <div class="list-controls">
-                        <label class="select-all-container">
-                            <input type="checkbox" id="select-all-notes">
-                            <span>全选</span>
-                        </label>
-                        <select id="sort-by" title="排序方式">
-                            <option value="priority">按优先级</option>
-                            <option value="updated">按更新时间</option>
-                            <option value="created">按创建时间</option>
-                            <option value="title">按标题</option>
-                            <option value="site">按网站</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="note-list" id="note-list">
-                    <div class="loading" id="loading-notes">
-                        <div class="spinner"></div>
-                        <span>正在加载笔记...</span>
-                    </div>
-                    <div class="empty-state" id="empty-state" style="display: none;">
-                        <div class="empty-icon">📝</div>
-                        <h3>暂无笔记</h3>
-                        <p>点击右上角"新建"按钮开始记录</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 右侧编辑/预览区 -->
-            <div class="editor-panel">
-                <div class="editor-header">
-                    <div class="note-meta">
-                        <input type="text" id="note-title" placeholder="请输入笔记标题..." maxlength="200">
-                        <div class="tag-selector">
-                            <button id="tag-button" class="tag-btn">🏷️ 选择标签</button>
-                            <span id="current-tag" class="current-tag">无标签</span>
-                        </div>
-                        <div class="note-info">
-                            <span id="note-url" class="note-url"></span>
-                            <span id="note-dates" class="note-dates"></span>
-                        </div>
-                    </div>
-                    <div class="editor-actions">
-                        <button id="preview-mode" class="mode-btn" title="预览模式">👁️ 预览</button>
-                        <button id="edit-mode" class="mode-btn active" title="编辑模式">✏️ 编辑</button>
-                        <button id="reference-note" class="action-btn" title="生成引用链接">📌 引用</button>
-                        <button id="copy-note" class="action-btn" title="复制笔记内容">📋 复制</button>
-                        <button id="delete-note" class="action-btn danger" title="删除当前笔记" style="display: none;">🗑️ 删除</button>
-                        <button id="save-note" class="action-btn primary" title="保存笔记">💾 保存</button>
-                    </div>
-                </div>
-                
-                <div class="editor-content">
-                    <textarea id="note-editor" placeholder="开始编写你的笔记... 
-                    
-💡 支持 Markdown 格式
-📝 自动保存功能
-🔍 支持全文搜索
-🏷️ 使用标签分类管理"></textarea>
-                    <div id="note-preview" class="markdown-preview" style="display: none;">
-                        <div class="preview-placeholder">
-                            <div class="preview-icon">👁️</div>
-                            <p>在左侧选择笔记查看预览</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="editor-status">
-                    <span id="word-count">0 字符</span>
-                    <span id="save-status"></span>
-                    <span id="security-status" title="数据安全状态">🔒 安全</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 标签选择器模态框 -->
-    <div id="tag-selector-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>🏷️ 选择笔记标签</h3>
-                <button class="modal-close">✖️</button>
-            </div>
-            <div class="modal-body">
-                <div class="tag-categories">
-                    <div class="tag-category">
-                        <h4>📋 分类维度</h4>
-                        <div class="tag-options">
-                            <label><input type="radio" name="category" value="important"> 🔥 重要</label>
-                            <label><input type="radio" name="category" value="interesting"> 💡 有趣</label>
-                            <label><input type="radio" name="category" value="needed"> ⚡ 需要</label>
-                        </div>
-                    </div>
-                    <div class="tag-category">
-                        <h4>📊 程度维度</h4>
-                        <div class="tag-options">
-                            <label><input type="radio" name="priority" value="very"> 非常</label>
-                            <label><input type="radio" name="priority" value="somewhat"> 比较</label>
-                            <label><input type="radio" name="priority" value="general"> 一般</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="tag-preview">
-                    <span>预览：</span>
-                    <span id="tag-preview-display" class="tag-badge">请选择标签</span>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="tag-confirm" class="btn-primary">确定</button>
-                <button id="tag-cancel" class="btn-secondary">取消</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 引用选择器模态框 -->
-    <div id="reference-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>📌 生成笔记引用</h3>
-                <button class="modal-close">✖️</button>
-            </div>
-            <div class="modal-body">
-                <div class="reference-formats">
-                    <label><input type="radio" name="ref-format" value="full" checked> 完整引用（标题+链接+日期）</label>
-                    <label><input type="radio" name="ref-format" value="quote"> 内容片段（带来源标注）</label>
-                    <label><input type="radio" name="ref-format" value="simple"> 快速引用（仅标题）</label>
-                    <label><input type="radio" name="ref-format" value="link"> 纯链接</label>
-                </div>
-                <div class="reference-preview">
-                    <h4>预览：</h4>
-                    <pre id="reference-preview-text"></pre>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="copy-reference" class="btn-primary">📋 复制引用</button>
-                <button id="reference-cancel" class="btn-secondary">取消</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 导出确认模态框 -->
-    <div id="export-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>📦 批量导出笔记</h3>
-                <button class="modal-close">✖️</button>
-            </div>
-            <div class="modal-body">
-                <div class="export-summary">
-                    <p>准备导出 <strong id="export-count">0</strong> 条笔记</p>
-                    <div id="sensitive-warning" class="warning" style="display: none;">
-                        ⚠️ 检测到可能包含敏感信息的笔记，请确认是否继续导出。
-                    </div>
-                </div>
-                <div class="export-formats">
-                    <label><input type="radio" name="export-format" value="json" checked> JSON格式（完整数据）</label>
-                    <label><input type="radio" name="export-format" value="markdown"> Markdown格式（纯文本）</label>
-                </div>
-                <div class="export-options">
-                    <label><input type="checkbox" id="include-metadata" checked> 包含元数据（标签、时间等）</label>
-                    <label><input type="checkbox" id="mask-sensitive"> 自动遮盖敏感信息</label>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="confirm-export" class="btn-primary">📥 确认导出</button>
-                <button id="export-cancel" class="btn-secondary">取消</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 通知提示 -->
-    <div id="notification" class="notification" style="display: none;">
-        <span id="notification-text"></span>
-        <button id="notification-close">✖️</button>
-    </div>
-
-    <!-- 加载安全模块和主脚本 -->
-    <script src="${baseUrl}scripts/security/data-sanitizer.js"></script>
-    <script src="${baseUrl}scripts/security/xss-protection.js"></script>
-    <script src="${baseUrl}scripts/security/permission-manager.js"></script>
-    <script src="${baseUrl}scripts/security/backup-manager.js"></script>
-    <script src="${baseUrl}scripts/note-manager.js"></script>
-</body>
-</html>`;
-    }
-
-    /**
-     * 以下函数已弃用 - 浮动窗口现在直接复用完整的note-manager.html
-     * 保留代码以防回退需要
-     */
-    
-    /* 已弃用 - 改为使用iframe + srcdoc复用独立窗口代码
     async function loadFloatingManagerContent(container) {
         try {
             // 创建简化的笔记管理器界面
@@ -2020,448 +1744,23 @@
 
     // 全局函数供HTML调用
     window.selectFloatingNote = function(noteId) {
-        const note = window.floatingNotes?.find(n => n.id === noteId);
-        if (note) {
-            showFloatingNoteEditor(note);
-        }
+        console.log('选择笔记:', noteId);
+        // TODO: 实现笔记选择和编辑功能
     };
 
     window.createFloatingNewNote = function() {
-        const newNote = {
-            id: 'new-' + Date.now(),
-            title: '',
-            note: '',
-            url: window.location.href,
-            tag: 'general_general',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            isNew: true
-        };
-        showFloatingNoteEditor(newNote);
+        console.log('创建新笔记');
+        // TODO: 实现新建笔记功能
     };
 
     window.filterFloatingNotes = function(query) {
-        if (!window.floatingNotes) return;
-        
-        const container = document.querySelector('#floating-notes-container');
-        if (!container) return;
-        
-        const filteredNotes = window.floatingNotes.filter(note => {
-            const title = (note.title || '').toLowerCase();
-            const content = (note.note || '').toLowerCase();
-            const searchText = query.toLowerCase();
-            
-            return title.includes(searchText) || content.includes(searchText);
-        });
-        
-        renderFloatingNotesList(filteredNotes);
+        console.log('过滤笔记:', query);
+        // TODO: 实现笔记过滤功能
     };
 
     /**
-     * 显示笔记编辑器
+     * 打开设置
      */
-    function showFloatingNoteEditor(note) {
-        const editorHeader = document.querySelector('#floating-editor-header');
-        const editorContent = document.querySelector('#floating-editor-content');
-        const titleInput = document.querySelector('#floating-note-title');
-        
-        if (!editorHeader || !editorContent || !titleInput) return;
-        
-        // 显示编辑器头部
-        editorHeader.style.display = 'block';
-        
-        // 设置标题
-        titleInput.value = note.title || '';
-        
-        // 创建编辑器内容
-        editorContent.innerHTML = `
-            <div style="
-                display: flex;
-                flex-direction: column;
-                height: 100%;
-                padding: 16px;
-            ">
-                <div style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 12px;
-                ">
-                    <div style="
-                        display: flex;
-                        gap: 8px;
-                        align-items: center;
-                    ">
-                        <button id="floating-save-btn" style="
-                            background: #007bff;
-                            color: white;
-                            border: none;
-                            padding: 6px 12px;
-                            border-radius: 4px;
-                            cursor: pointer;
-                            font-size: 12px;
-                        ">💾 保存</button>
-                        <button id="floating-copy-btn" style="
-                            background: #28a745;
-                            color: white;
-                            border: none;
-                            padding: 6px 12px;
-                            border-radius: 4px;
-                            cursor: pointer;
-                            font-size: 12px;
-                        ">📋 复制</button>
-                        ${!note.isNew ? `<button id="floating-delete-btn" style="
-                            background: #dc3545;
-                            color: white;
-                            border: none;
-                            padding: 6px 12px;
-                            border-radius: 4px;
-                            cursor: pointer;
-                            font-size: 12px;
-                        ">🗑️ 删除</button>` : ''}
-                    </div>
-                    <div style="font-size: 12px; color: #666;">
-                        ${note.isNew ? '新建笔记' : '最后更新: ' + formatFloatingTime(note.updatedAt)}
-                    </div>
-                </div>
-                
-                <textarea id="floating-note-textarea" style="
-                    flex: 1;
-                    width: 100%;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    padding: 12px;
-                    font-family: 'Monaco', 'Consolas', monospace;
-                    font-size: 13px;
-                    line-height: 1.4;
-                    resize: none;
-                    outline: none;
-                " placeholder="在此输入笔记内容...">${escapeHtmlContent(note.note || '')}</textarea>
-                
-                <div style="
-                    margin-top: 8px;
-                    font-size: 11px;
-                    color: #999;
-                    text-align: right;
-                " id="floating-char-count">
-                    字符数: ${(note.note || '').length}
-                </div>
-            </div>
-        `;
-        
-        // 绑定事件
-        bindFloatingEditorEvents(note);
-        
-        // 高亮选中的笔记项
-        document.querySelectorAll('.floating-note-item').forEach(item => {
-            item.style.backgroundColor = 'white';
-        });
-        
-        const selectedItem = document.querySelector(`[data-note-id="${note.id}"]`);
-        if (selectedItem) {
-            selectedItem.style.backgroundColor = '#e3f2fd';
-        }
-    }
-
-    /**
-     * 绑定编辑器事件
-     */
-    function bindFloatingEditorEvents(note) {
-        const titleInput = document.querySelector('#floating-note-title');
-        const textarea = document.querySelector('#floating-note-textarea');
-        const saveBtn = document.querySelector('#floating-save-btn');
-        const copyBtn = document.querySelector('#floating-copy-btn');
-        const deleteBtn = document.querySelector('#floating-delete-btn');
-        const charCount = document.querySelector('#floating-char-count');
-        
-        // 更新字符数
-        if (textarea && charCount) {
-            textarea.addEventListener('input', () => {
-                charCount.textContent = `字符数: ${textarea.value.length}`;
-            });
-        }
-        
-        // 保存按钮
-        if (saveBtn) {
-            saveBtn.addEventListener('click', () => saveFloatingNote(note));
-        }
-        
-        // 复制按钮
-        if (copyBtn) {
-            copyBtn.addEventListener('click', () => copyFloatingNote(note));
-        }
-        
-        // 删除按钮
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', () => deleteFloatingNote(note));
-        }
-        
-        // Ctrl+S 保存快捷键
-        if (textarea) {
-            textarea.addEventListener('keydown', (e) => {
-                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                    e.preventDefault();
-                    saveFloatingNote(note);
-                }
-            });
-        }
-    }
-
-    /**
-     * 保存浮动窗口笔记
-     */
-    async function saveFloatingNote(note) {
-        const titleInput = document.querySelector('#floating-note-title');
-        const textarea = document.querySelector('#floating-note-textarea');
-        
-        if (!titleInput || !textarea) return;
-        
-        const noteData = {
-            id: note.isNew ? undefined : note.id,
-            visitId: note.isNew ? undefined : note.id,
-            title: titleInput.value.trim() || '未命名笔记',
-            note: textarea.value,
-            url: note.url || window.location.href,
-            tag: note.tag || 'general_general',
-            updatedAt: new Date().toISOString()
-        };
-        
-        try {
-            const result = await new Promise((resolve) => {
-                chrome.runtime.sendMessage({
-                    action: 'saveNote',
-                    note: noteData
-                }, (response) => {
-                    if (chrome.runtime.lastError) {
-                        console.error('保存失败:', chrome.runtime.lastError);
-                        resolve({ success: false });
-                    } else {
-                        resolve(response || { success: false });
-                    }
-                });
-            });
-            
-            if (result.success) {
-                showFloatingNotification('✅ 笔记保存成功');
-                
-                // 刷新笔记列表
-                setTimeout(() => {
-                    loadFloatingNotesList();
-                }, 500);
-            } else {
-                showFloatingNotification('❌ 保存失败，请重试', 'error');
-            }
-        } catch (error) {
-            console.error('保存笔记时出错:', error);
-            showFloatingNotification('❌ 保存失败', 'error');
-        }
-    }
-
-    /**
-     * 复制笔记内容
-     */
-    function copyFloatingNote(note) {
-        const titleInput = document.querySelector('#floating-note-title');
-        const textarea = document.querySelector('#floating-note-textarea');
-        
-        if (!textarea) return;
-        
-        const title = titleInput?.value || note.title || '未命名笔记';
-        const content = textarea.value;
-        const url = note.url || '';
-        
-        const textToCopy = `标题: ${title}\n网址: ${url}\n内容:\n${content}`;
-        
-        navigator.clipboard.writeText(textToCopy).then(() => {
-            showFloatingNotification('📋 内容已复制到剪贴板');
-        }).catch(() => {
-            // 降级方案
-            textarea.select();
-            document.execCommand('copy');
-            showFloatingNotification('📋 内容已复制');
-        });
-    }
-
-    /**
-     * 删除笔记
-     */
-    async function deleteFloatingNote(note) {
-        if (!confirm(`确定要删除笔记"${note.title || '未命名笔记'}"吗？`)) {
-            return;
-        }
-        
-        try {
-            const result = await new Promise((resolve) => {
-                chrome.runtime.sendMessage({
-                    action: 'deleteNote',
-                    noteId: note.id
-                }, (response) => {
-                    if (chrome.runtime.lastError) {
-                        console.error('删除失败:', chrome.runtime.lastError);
-                        resolve({ success: false });
-                    } else {
-                        resolve(response || { success: false });
-                    }
-                });
-            });
-            
-            if (result.success) {
-                showFloatingNotification('🗑️ 笔记已删除');
-                
-                // 刷新笔记列表并清空编辑器
-                setTimeout(() => {
-                    loadFloatingNotesList();
-                    clearFloatingEditor();
-                }, 500);
-            } else {
-                showFloatingNotification('❌ 删除失败，请重试', 'error');
-            }
-        } catch (error) {
-            console.error('删除笔记时出错:', error);
-            showFloatingNotification('❌ 删除失败', 'error');
-        }
-    }
-
-    /**
-     * 清空编辑器
-     */
-    function clearFloatingEditor() {
-        const editorHeader = document.querySelector('#floating-editor-header');
-        const editorContent = document.querySelector('#floating-editor-content');
-        
-        if (editorHeader) {
-            editorHeader.style.display = 'none';
-        }
-        
-        if (editorContent) {
-            editorContent.innerHTML = `
-                <div style="
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    height: 100%;
-                    text-align: center;
-                    color: #666;
-                ">
-                    <div>
-                        <div style="font-size: 48px; margin-bottom: 16px;">📝</div>
-                        <div style="font-size: 18px; margin-bottom: 8px;">选择笔记开始编辑</div>
-                        <div style="font-size: 14px;">或点击"新建"创建新笔记</div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // 取消笔记项高亮
-        document.querySelectorAll('.floating-note-item').forEach(item => {
-            item.style.backgroundColor = 'white';
-        });
-    }
-
-    /**
-     * 显示浮动通知
-     */
-    function showFloatingNotification(message, type = 'success') {
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: ${type === 'error' ? '#dc3545' : '#28a745'};
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-size: 14px;
-            z-index: 1000000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            opacity: 0;
-            transform: translateX(100%);
-            transition: all 0.3s ease;
-        `;
-        notification.textContent = message;
-        
-        document.body.appendChild(notification);
-        
-        // 动画显示
-        setTimeout(() => {
-            notification.style.opacity = '1';
-            notification.style.transform = 'translateX(0)';
-        }, 10);
-        
-        // 自动隐藏
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            notification.style.transform = 'translateX(100%)';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }, 3000);
-    }
-
-    /**
-     * 渲染笔记列表
-     */
-    function renderFloatingNotesList(notes) {
-        const container = document.querySelector('#floating-notes-container');
-        if (!container || !notes) return;
-
-        if (notes.length === 0) {
-            container.innerHTML = `
-                <div style="text-align: center; padding: 20px; color: #666;">
-                    <div style="font-size: 24px; margin-bottom: 8px;">📝</div>
-                    <div>未找到匹配的笔记</div>
-                </div>
-            `;
-            return;
-        }
-
-        // 渲染笔记列表 (复用现有的渲染逻辑)
-        const notesHTML = notes.map(note => {
-            const title = note.title || '未命名笔记';
-            const preview = getFloatingNotePreview(note.note);
-            const time = formatFloatingTime(note.createdAt || note.updatedAt);
-            
-            return `
-                <div class="floating-note-item" data-note-id="${note.id}" style="
-                    padding: 12px;
-                    border-bottom: 1px solid #eee;
-                    cursor: pointer;
-                    transition: background-color 0.2s;
-                " onmouseover="this.style.backgroundColor='#f8f9fa'" 
-                   onmouseout="this.style.backgroundColor='white'"
-                   onclick="selectFloatingNote('${note.id}')">
-                    <div style="
-                        font-weight: 500;
-                        font-size: 14px;
-                        margin-bottom: 4px;
-                        color: #333;
-                        word-break: break-word;
-                    ">${escapeHtmlContent(title)}</div>
-                    <div style="
-                        font-size: 12px;
-                        color: #666;
-                        margin-bottom: 4px;
-                        line-height: 1.4;
-                        word-break: break-word;
-                    ">${escapeHtmlContent(preview)}</div>
-                    <div style="
-                        font-size: 11px;
-                        color: #999;
-                    ">${time}</div>
-                </div>
-            `;
-        }).join('');
-        container.innerHTML = notesHTML;
-    }
-    */
-    
-    // 以上代码已弃用 - 浮动窗口现在使用iframe + srcdoc直接复用note-manager.html
-
-    /**
-      * 打开设置
-      */
     function openSettings() {
         try {
             if (chrome && chrome.runtime) {
@@ -2482,43 +1781,27 @@
      * 初始化
      */
     function initialize() {
-        console.log('[TST Notes] 初始化开始，URL:', window.location.href);
-        console.log('[TST Notes] Document ready state:', document.readyState);
-        
         // 等待页面加载完成
         if (document.readyState === 'loading') {
-            console.log('[TST Notes] DOM未准备好，添加事件监听器');
             document.addEventListener('DOMContentLoaded', initialize);
             return;
         }
 
         // 检查是否应该显示按钮
-        const shouldShow = shouldShowFloatingButton();
-        console.log('[TST Notes] 是否应该显示按钮:', shouldShow);
-        if (!shouldShow) {
-            console.log('[TST Notes] shouldShowFloatingButton返回false，跳过按钮创建');
+        if (!shouldShowFloatingButton()) {
             return;
         }
 
         // 加载窗口状态
-        console.log('[TST Notes] 开始加载窗口状态');
         loadWindowState();
 
-        // 立即创建按钮，不延迟（排除timing问题）
-        console.log('[TST Notes] 立即创建浮动按钮');
-        createFloatingButton();
-        
-        // 备用延迟创建，以防第一次失败
+        // 延迟创建，避免影响页面加载
         setTimeout(() => {
-            if (!document.getElementById('tst-page-note-btn')) {
-                console.log('[TST Notes] 第一次创建失败，重试创建浮动按钮');
-                createFloatingButton();
-            }
-        }, 2000);
+            createFloatingButton();
+        }, 1000);
     }
 
     // 启动初始化
-    console.log('[TST Notes] 脚本加载完成，开始初始化');
     initialize();
 
 })();
