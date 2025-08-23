@@ -102,22 +102,56 @@ class DataSanitizer {
         if (!text) return '';
 
         try {
-            // 检查是否是UTF-8编码的字符串被错误解码为ISO-8859-1
-            // 这是常见的中文乱码原因
-            const encoded = encodeURIComponent(text);
-            if (encoded.includes('%C3%') || encoded.includes('%E2%')) {
-                // 可能存在编码问题，尝试修复
-                const buffer = new TextEncoder().encode(text);
-                const fixed = new TextDecoder('utf-8').decode(buffer);
-                
-                // 验证修复是否有效
-                if (this.isValidText(fixed)) {
-                    return fixed;
+            // 检测常见的UTF-8乱码模式并修复
+            if (text.includes('æ') || text.includes('å') || text.includes('ç') || text.includes('è')) {
+                // 方法1: 尝试直接字节转换
+                try {
+                    const bytes = new Uint8Array(text.length);
+                    for (let i = 0; i < text.length; i++) {
+                        bytes[i] = text.charCodeAt(i) & 0xFF;
+                    }
+                    const fixed = new TextDecoder('utf-8').decode(bytes);
+                    
+                    if (this.isValidText(fixed)) {
+                        console.log('[DataSanitizer] 编码修复成功:', text.substring(0, 20), '->', fixed.substring(0, 20));
+                        return fixed;
+                    }
+                } catch (e) {
+                    // 忽略转换错误，继续下一种方法
                 }
             }
+
+            // 方法2: 处理已知的乱码模式
+            const patterns = {
+                'æœªå'½åç¬"è®°': '未命名笔记',
+                'Proofâ€"of': 'Proof-of',
+                'â€"': '—',
+                'â€™': ''',
+                'â€œ': '"',
+                'â€': '"',
+                'Â®': '®',
+                'Ã¡': 'á',
+                'Ã©': 'é',
+                'Ã­': 'í',
+                'Ã³': 'ó',
+                'Ãº': 'ú'
+            };
+
+            let result = text;
+            for (const [corrupt, correct] of Object.entries(patterns)) {
+                if (result.includes(corrupt)) {
+                    result = result.replace(new RegExp(corrupt, 'g'), correct);
+                }
+            }
+
+            // 检查是否有改进
+            if (result !== text && this.isValidText(result)) {
+                console.log('[DataSanitizer] 模式修复成功:', text.substring(0, 20), '->', result.substring(0, 20));
+                return result;
+            }
+
         } catch (error) {
-            // 修复失败，返回原文本
-            console.warn('编码修复失败:', error);
+            console.warn('[DataSanitizer] 编码修复失败:', error);
         }
 
         return text;
