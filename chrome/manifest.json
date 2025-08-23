@@ -8,7 +8,7 @@
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.8.4: Perfect Theme Alignment - Fixed history notes & all editing areas",
+  "description": "v4.8.5: Perfect Theme Alignment - Fixed history notes & all editing areas + Note Modal Theme Fix",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
