@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.8.7",
-  "version_name": "4.8.7 by sperwe - Deep Theme Consistency - History & Editor Areas + Page Notes Latest Fix",
+  "version": "4.8.8",
+  "version_name": "4.8.8 by sperwe - Deep Theme Consistency - History & Editor Areas + Page Notes Contrast Fix",
   "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.8.7: Perfect Theme Alignment - Fixed history notes & all editing areas + Page Notes Latest Item Fix",
+  "description": "v4.8.8: Perfect Theme Alignment - Fixed history notes & all editing areas + Page Notes Text Contrast Fix",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
