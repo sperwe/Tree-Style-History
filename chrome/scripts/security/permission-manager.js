@@ -246,10 +246,20 @@ class PermissionManager {
      */
     static async confirmDeletion(note) {
         return new Promise((resolve) => {
-            const title = note.title || '未命名笔记';
-            const truncatedTitle = title.length > 50 ? title.substring(0, 50) + '...' : title;
-            
-            const confirmed = confirm(`确定要删除笔记"${truncatedTitle}"吗？\n\n此操作不可撤销。`);
+                    // 智能获取标题
+        let title = note.title;
+        if (!title || title.trim() === '') {
+            const content = note.note || '';
+            if (content.trim()) {
+                title = content.trim().substring(0, 30).replace(/\n/g, ' ');
+                if (content.length > 30) title += '...';
+            } else {
+                title = 'Untitled Note';
+            }
+        }
+        const truncatedTitle = title.length > 50 ? title.substring(0, 50) + '...' : title;
+        
+        const confirmed = confirm(`确定要删除笔记"${truncatedTitle}"吗？\n\n此操作不可撤销。`);
             resolve(confirmed);
         });
     }
