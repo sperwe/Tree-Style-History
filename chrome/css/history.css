@@ -984,4 +984,23 @@ div[rel="grey"] {
     #note-viewer-modal {
         background: rgba(0,0,0,0.7) !important;
     }
+    
+    /* Additional styles for dynamically generated elements */
+    #note-modal-content * {
+        color: inherit;
+    }
+    
+    #note-viewer-content * {
+        color: inherit;
+    }
+    
+    /* Help text in editor */
+    #note-modal-content div[style*="font-size:11px"] {
+        color: #b0b0b0 !important;
+    }
+    
+    /* Title separator in viewer */
+    #note-viewer-content div[style*="border-bottom"] {
+        border-bottom-color: #555 !important;
+    }
 }
