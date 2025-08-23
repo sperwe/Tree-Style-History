@@ -2453,8 +2453,7 @@
                 </div>
             `;
         }).join('');
-
-                 container.innerHTML = notesHTML;
+        container.innerHTML = notesHTML;
      }
      */
      
