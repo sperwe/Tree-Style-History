@@ -1203,8 +1203,11 @@
                             // 降级方案：使用页面内浮动窗口
                             createFloatingNoteManager();
                         } else if (response && response.success) {
-                            const alwaysOnTopStatus = response.alwaysOnTop ? '(置顶模式)' : '(普通模式)';
-                            console.log(`[Page Notes] 全局浮动窗口创建成功: ${response.action} ${alwaysOnTopStatus}`);
+                            const modeText = response.alwaysOnTop ? '置顶模式' : '智能可见模式';
+                            console.log(`[Page Notes] 全局浮动窗口创建成功: ${response.action} (${modeText})`);
+                            if (response.note) {
+                                console.log(`[Page Notes] 模式说明: ${response.note}`);
+                            }
                         } else {
                             console.error('全局浮动窗口创建失败:', response?.error);
                             // 降级方案：使用页面内浮动窗口

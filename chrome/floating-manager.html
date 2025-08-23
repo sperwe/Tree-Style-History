@@ -329,40 +329,86 @@
             }
         });
         
-        // 定期检查窗口状态，确保保持可见性（针对不支持alwaysOnTop的情况）
-        let keepOnTopInterval = null;
-        
-        function startKeepOnTop() {
-            if (keepOnTopInterval) return;
+        // 智能窗口可见性管理（Chrome Extension模式）
+        let visibilityManager = {
+            interval: null,
+            isActive: false,
+            lastFocusTime: Date.now(),
             
-            keepOnTopInterval = setInterval(() => {
-                // 每30秒尝试将窗口带到前台
+            start() {
+                if (this.interval) return;
+                
+                console.log('[Floating] 启动智能可见性管理');
+                this.isActive = true;
+                
+                // 较频繁的检查以保持窗口可见
+                this.interval = setInterval(() => {
+                    this.checkAndMaintainVisibility();
+                }, 15000); // 15秒检查一次
+            },
+            
+            stop() {
+                if (this.interval) {
+                    clearInterval(this.interval);
+                    this.interval = null;
+                    this.isActive = false;
+                    console.log('[Floating] 停止智能可见性管理');
+                }
+            },
+            
+            checkAndMaintainVisibility() {
                 chrome.windows.getCurrent((currentWindow) => {
-                    if (!currentWindow.focused) {
-                        chrome.windows.update(currentWindow.id, { focused: true }, () => {
-                            if (chrome.runtime.lastError) {
-                                console.log('[Floating] 无法聚焦窗口:', chrome.runtime.lastError.message);
+                    if (chrome.runtime.lastError) {
+                        console.log('[Floating] 窗口检查失败:', chrome.runtime.lastError.message);
+                        return;
+                    }
+                    
+                    // 如果窗口长时间未获得焦点，尝试重新聚焦
+                    const timeSinceLastFocus = Date.now() - this.lastFocusTime;
+                    if (timeSinceLastFocus > 60000) { // 1分钟未聚焦
+                        chrome.windows.update(currentWindow.id, { 
+                            focused: true,
+                            drawAttention: true 
+                        }, () => {
+                            if (!chrome.runtime.lastError) {
+                                console.log('[Floating] 重新聚焦窗口以保持可见性');
+                                this.lastFocusTime = Date.now();
                             }
                         });
                     }
                 });
-            }, 30000); // 30秒检查一次
-        }
-        
-        function stopKeepOnTop() {
-            if (keepOnTopInterval) {
-                clearInterval(keepOnTopInterval);
-                keepOnTopInterval = null;
             }
-        }
+        };
         
-        // 当窗口获得焦点时启动保持置顶，失去焦点时停止（节省资源）
-        window.addEventListener('focus', startKeepOnTop);
-        window.addEventListener('blur', stopKeepOnTop);
+        // 监听窗口焦点变化
+        window.addEventListener('focus', () => {
+            visibilityManager.lastFocusTime = Date.now();
+            if (!visibilityManager.isActive) {
+                visibilityManager.start();
+            }
+        });
         
-        // 页面加载完成时启动一次
+        window.addEventListener('blur', () => {
+            // 窗口失去焦点后延迟停止管理（避免频繁启停）
+            setTimeout(() => {
+                if (document.hidden) {
+                    visibilityManager.stop();
+                }
+            }, 5000);
+        });
+        
+        // 页面可见性变化监听
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                visibilityManager.stop();
+            } else {
+                visibilityManager.start();
+            }
+        });
+        
+        // 页面加载完成时启动
         document.addEventListener('DOMContentLoaded', () => {
-            startKeepOnTop();
+            visibilityManager.start();
         });
     </script>
 </body>
