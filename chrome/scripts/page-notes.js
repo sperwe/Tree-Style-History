@@ -1532,7 +1532,12 @@
         console.log('[Floating] 开始注入CSS样式...');
 
         try {
-            // 通过background script获取CSS内容
+            // 直接使用降级CSS方案，确保苹果风格应用
+            console.log('[Floating] 使用优化的苹果风格降级CSS');
+            injectBasicFloatingCSS();
+            return;
+            
+            // 备用：通过background script获取CSS内容
             const cssContent = await getCSSContentFromBackground();
             
             if (!cssContent) {
@@ -2137,16 +2142,20 @@
         const titleBar = document.createElement('div');
         titleBar.className = 'floating-title-bar';
         titleBar.style.cssText = `
-            background: linear-gradient(90deg, #007bff, #0056b3);
-            color: white;
-            padding: 8px 12px;
+            background: rgba(246, 246, 246, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: #1d1d1f;
+            padding: 12px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             cursor: move;
             user-select: none;
-            border-radius: 6px 6px 0 0;
-            font-weight: 500;
+            border-radius: 12px 12px 0 0;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
         `;
 
         const titleText = document.createElement('span');
@@ -2663,25 +2672,27 @@
         floatingManager.id = 'tst-floating-note-manager';
         floatingManager.className = 'tst-floating-manager';
         
-        // 设置基础容器样式
+        // 设置苹果风格容器样式
         floatingManager.style.cssText = `
             position: fixed;
-            top: 50px;
-            right: 50px;
-            width: 900px;
-            height: 700px;
-            background: white;
-            border: 2px solid #007bff;
-            border-radius: 8px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            top: 60px;
+            right: 60px;
+            width: 920px;
+            height: 720px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 0.5px solid rgba(0, 0, 0, 0.08);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 20px rgba(0, 0, 0, 0.08);
             z-index: 999999;
             display: flex;
             flex-direction: column;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Helvetica, Arial, sans-serif;
             resize: both;
             overflow: hidden;
-            min-width: 600px;
-            min-height: 400px;
+            min-width: 680px;
+            min-height: 480px;
         `;
 
         // 3. 创建标题栏
@@ -2724,24 +2735,27 @@
         btn.textContent = text;
         btn.title = title;
         btn.style.cssText = `
-            background: rgba(255,255,255,0.2);
+            background: rgba(142, 142, 147, 0.12);
             border: none;
-            color: white;
-            width: 24px;
-            height: 24px;
-            border-radius: 4px;
+            color: #1d1d1f;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
-            transition: background-color 0.2s;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
         `;
         btn.addEventListener('mouseenter', () => {
-            btn.style.backgroundColor = 'rgba(255,255,255,0.3)';
+            btn.style.backgroundColor = 'rgba(142, 142, 147, 0.2)';
+            btn.style.transform = 'scale(0.95)';
         });
         btn.addEventListener('mouseleave', () => {
-            btn.style.backgroundColor = 'rgba(255,255,255,0.2)';
+            btn.style.backgroundColor = 'rgba(142, 142, 147, 0.12)';
+            btn.style.transform = 'scale(1)';
         });
         btn.addEventListener('click', onclick);
         return btn;
