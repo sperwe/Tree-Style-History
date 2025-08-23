@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.8.3",
-  "version_name": "4.8.3 by sperwe - Comprehensive Dark Mode Fix & Theme Consistency",
+  "version": "4.8.4",
+  "version_name": "4.8.4 by sperwe - Deep Theme Consistency - History & Editor Areas",
   "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.8.3: Perfect Theme Consistency - Fixed all dark/light mode mixing issues",
+  "description": "v4.8.4: Perfect Theme Alignment - Fixed history notes & all editing areas",
   "options_page": "options.html",
   "background": {
     "page": "background.html"

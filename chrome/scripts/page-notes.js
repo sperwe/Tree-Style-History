@@ -241,8 +241,8 @@
                 <!-- 历史笔记加载区域 -->
                 <div id="tst-history-notes-panel" class="tst-history-panel" style="display: none; margin: 0 10px 10px 10px; padding: 8px; border-radius: 6px;">
                     <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                        <span style="font-weight: bold; color: #007bff; font-size: 13px;">📚 历史笔记</span>
-                        <button id="tst-hide-history" style="margin-left: auto; background: none; border: none; color: #666; cursor: pointer; font-size: 16px;" title="隐藏">&times;</button>
+                        <span class="tst-history-title" style="font-weight: bold; font-size: 13px;">📚 历史笔记</span>
+                        <button id="tst-hide-history" class="tst-history-close-btn" style="margin-left: auto; background: none; border: none; cursor: pointer; font-size: 16px;" title="隐藏">&times;</button>
                     </div>
                     <div id="tst-history-notes-list" style="max-height: 120px; overflow-y: auto;"></div>
                 </div>
@@ -723,10 +723,10 @@
             
             noteItem.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                    <span style="font-weight: bold; color: ${index === 0 ? '#1976d2' : '#666'};">${index === 0 ? '💡 最新' : `#${index + 1}`}</span>
-                    <span style="font-size: 10px; color: #999;">${updateTime.split(' ')[1] || updateTime}</span>
+                    <span class="tst-history-item-label ${index === 0 ? 'current' : ''}" style="font-weight: bold;">${index === 0 ? '💡 最新' : `#${index + 1}`}</span>
+                    <span class="tst-history-item-time" style="font-size: 10px;">${updateTime.split(' ')[1] || updateTime}</span>
                 </div>
-                <div style="color: #555; line-height: 1.3; font-size: 11px;">${escapeHtml(preview)}</div>
+                <div class="tst-history-item-preview" style="line-height: 1.3; font-size: 11px;">${escapeHtml(preview)}</div>
             `;
             
             noteItem.addEventListener('click', () => {
@@ -735,11 +735,11 @@
             });
             
             noteItem.addEventListener('mouseenter', () => {
-                if (index !== 0) noteItem.style.backgroundColor = '#f5f5f5';
+                if (index !== 0) noteItem.classList.add('tst-history-item-hover');
             });
             
             noteItem.addEventListener('mouseleave', () => {
-                if (index !== 0) noteItem.style.backgroundColor = '';
+                if (index !== 0) noteItem.classList.remove('tst-history-item-hover');
             });
             
             notesList.appendChild(noteItem);
@@ -1996,14 +1996,27 @@
             
             #tst-floating-note-manager .editor-status {
                 padding: 8px 16px;
-                background: #f8f9fa;
-                border-top: 1px solid #e0e0e0;
+                background: var(--floating-bg-secondary);
+                border-top: 1px solid var(--floating-border);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
                 font-size: 12px;
-                color: #666;
+                color: var(--floating-text-secondary);
                 flex-shrink: 0;
+            }
+            
+            /* 浮动窗口状态提示 */
+            #tst-floating-note-manager .tst-floating-loading {
+                color: var(--floating-text-secondary);
+            }
+            
+            #tst-floating-note-manager .tst-floating-empty {
+                color: var(--floating-text-secondary);
+            }
+            
+            #tst-floating-note-manager .tst-floating-error {
+                color: #dc3545;
             }
             
             /* 状态样式 */
@@ -2203,6 +2216,11 @@
                 #tst-floating-note-manager .note-item:hover,
                 #tst-floating-note-manager .floating-note-item-hover:hover {
                     background: #3a3a3a;
+                }
+                
+                /* 深色模式下的状态提示 */
+                #tst-floating-note-manager .tst-floating-error {
+                    color: #ff6b6b;
                 }
                 
                 #tst-floating-note-manager .note-item.active {
@@ -3050,8 +3068,8 @@
             const managerHTML = `
                 <div class="floating-manager-header" style="
                     padding: 12px 16px;
-                    background: #f8f9fa;
-                    border-bottom: 1px solid #dee2e6;
+                    background: var(--floating-bg-secondary);
+                    border-bottom: 1px solid var(--floating-border);
                     display: flex;
                     gap: 12px;
                     align-items: center;
@@ -3094,7 +3112,7 @@
                         background: white;
                     ">
                         <div id="floating-notes-container" style="padding: 8px;">
-                            <div style="text-align: center; padding: 20px; color: #666;">
+                            <div class="tst-floating-loading" style="text-align: center; padding: 20px;">
                                 <div style="font-size: 24px; margin-bottom: 8px;">📋</div>
                                 <div>加载笔记中...</div>
                             </div>
@@ -3108,8 +3126,8 @@
                     ">
                         <div id="floating-editor-header" style="
                             padding: 12px 16px;
-                            background: #f8f9fa;
-                            border-bottom: 1px solid #dee2e6;
+                            background: var(--floating-bg-secondary);
+                            border-bottom: 1px solid var(--floating-border);
                             display: none;
                         ">
                             <input type="text" id="floating-note-title" placeholder="笔记标题..." style="
@@ -3208,7 +3226,7 @@
             const container = document.querySelector('#floating-notes-container');
             if (!container) return;
 
-            container.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">加载中...</div>';
+            container.innerHTML = '<div class="tst-floating-loading" style="text-align: center; padding: 20px;">加载中...</div>';
 
             // 从background获取笔记
             const notes = await new Promise((resolve) => {
@@ -3233,7 +3251,7 @@
 
             if (notes.length === 0) {
                 container.innerHTML = `
-                    <div style="text-align: center; padding: 20px; color: #666;">
+                    <div class="tst-floating-empty" style="text-align: center; padding: 20px;">
                         <div style="font-size: 24px; margin-bottom: 8px;">📝</div>
                         <div>暂无笔记</div>
                         <div style="font-size: 12px; margin-top: 4px;">点击"新建"创建第一条笔记</div>
@@ -3288,7 +3306,7 @@
             const container = document.querySelector('#floating-notes-container');
             if (container) {
                 container.innerHTML = `
-                    <div style="text-align: center; padding: 20px; color: #dc3545;">
+                    <div class="tst-floating-error" style="text-align: center; padding: 20px;">
                         <div style="font-size: 20px; margin-bottom: 8px;">⚠️</div>
                         <div>加载失败</div>
                     </div>
