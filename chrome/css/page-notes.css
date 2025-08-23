@@ -1,0 +1,220 @@
+/* Tree Style Tab - Page Notes 浮动按钮和弹窗样式 */
+
+/* 浮动按钮 */
+#tst-page-note-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  background: #4a90e2;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 9998;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: white;
+}
+
+#tst-page-note-btn:hover {
+  background: #357abd;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+#tst-page-note-btn:active {
+  transform: translateY(0);
+}
+
+/* 快速笔记弹窗 */
+#tst-quick-note-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+#tst-quick-note-content {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+#tst-quick-note-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+#tst-quick-note-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+}
+
+#tst-quick-note-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#tst-quick-note-close:hover {
+  color: #333;
+  background: #f5f5f5;
+  border-radius: 50%;
+}
+
+#tst-page-info {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #666;
+}
+
+#tst-page-info-title {
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+#tst-page-info-url {
+  color: #666;
+  word-break: break-all;
+}
+
+#tst-quick-note-textarea {
+  width: 100%;
+  height: 200px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+}
+
+#tst-quick-note-textarea:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+#tst-quick-note-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.tst-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.tst-btn-primary {
+  background: #4a90e2;
+  color: white;
+}
+
+.tst-btn-primary:hover {
+  background: #357abd;
+}
+
+.tst-btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.tst-btn-secondary:hover {
+  background: #545b62;
+}
+
+/* 暗色模式支持 */
+@media (prefers-color-scheme: dark) {
+  #tst-quick-note-content {
+    background: #2d2d2d;
+    color: #e0e0e0;
+  }
+  
+  #tst-quick-note-title {
+    color: #e0e0e0;
+  }
+  
+  #tst-quick-note-close {
+    color: #ccc;
+  }
+  
+  #tst-quick-note-close:hover {
+    color: #fff;
+    background: #404040;
+  }
+  
+  #tst-page-info {
+    background: #3a3a3a;
+    color: #ccc;
+  }
+  
+  #tst-page-info-title {
+    color: #e0e0e0;
+  }
+  
+  #tst-quick-note-textarea {
+    background: #1e1e1e;
+    border-color: #555;
+    color: #e0e0e0;
+  }
+  
+  #tst-quick-note-textarea:focus {
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
+  }
+}
+
+/* 确保不影响页面现有内容 */
+#tst-page-note-btn,
+#tst-quick-note-modal {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+#tst-quick-note-modal *,
+#tst-page-note-btn * {
+  box-sizing: border-box;
+}

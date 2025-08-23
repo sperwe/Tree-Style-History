@@ -1195,3 +1195,57 @@ function saveNoteToDatabase(visitId, pageUrl, selectedText) {
         }
     });
 }
+
+// Handle messages from content scripts (for page notes feature)
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'savePageNote') {
+        savePageNoteFromContentScript(request.data)
+            .then((result) => {
+                sendResponse({ success: true, result: result });
+            })
+            .catch((error) => {
+                console.error('Error saving page note:', error);
+                sendResponse({ success: false, error: error.message || 'Unknown error' });
+            });
+        
+        // Return true to indicate we will send a response asynchronously
+        return true;
+    }
+});
+
+/**
+ * Save page note from content script
+ */
+async function savePageNoteFromContentScript(pageData) {
+    try {
+        // Find or create a visitId for this URL
+        const visitId = await findLatestVisitId(pageData.url);
+        
+        // Save the note to database
+        const isDuplicate = await saveNoteToDatabase(visitId, pageData.url, pageData.note);
+        
+        if (isDuplicate) {
+            console.log('Duplicate note content, not saved');
+            return 'duplicate';
+        }
+        
+        // Send notification
+        const notificationId = 'page-note-saved-' + Date.now();
+        chrome.notifications.create(notificationId, {
+            type: 'basic',
+            iconUrl: chrome.extension.getURL('images/tree-48.png'),
+            title: '页面笔记',
+            message: `已保存笔记: ${pageData.title}`
+        });
+        
+        // Clear notification after 3 seconds
+        setTimeout(() => {
+            chrome.notifications.clear(notificationId);
+        }, 3000);
+        
+        return 'success';
+    } catch (error) {
+        console.error('Error in savePageNoteFromContentScript:', error);
+        throw error;
+    }
+}

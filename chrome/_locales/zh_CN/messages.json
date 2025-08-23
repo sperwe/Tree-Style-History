@@ -697,5 +697,29 @@
     },
     "notesMergeReplace": {
         "message": "替换现有笔记"
+    },
+    "pageNote": {
+        "message": "页面笔记"
+    },
+    "pageNoteCreate": {
+        "message": "新建页面笔记"
+    },
+    "pageNotePlaceholder": {
+        "message": "在这里输入笔记内容...支持 Markdown 格式"
+    },
+    "pageNoteSave": {
+        "message": "保存笔记"
+    },
+    "pageNoteCancel": {
+        "message": "取消"
+    },
+    "pageNoteSaved": {
+        "message": "笔记保存成功！"
+    },
+    "pageNoteSaving": {
+        "message": "保存中..."
+    },
+    "pageNoteFailed": {
+        "message": "保存失败"
     }
 }
