@@ -864,27 +864,41 @@
     background-color: #4a4a4a !important;
   }
   
-  /* 修复"最新"笔记项目的不和谐配色 */
-  #tst-quick-note-modal [style*="background: #e3f2fd"],
-  #tst-quick-note-modal [style*="background:#e3f2fd"] {
+  /* 修复"最新"笔记项目的不和谐配色 - 加强选择器优先级 */
+  #tst-quick-note-modal div[style*="background: #e3f2fd"],
+  #tst-quick-note-modal div[style*="background:#e3f2fd"] {
     background: #2a4a5c !important;  /* 深蓝灰色背景 */
     color: #ffffff !important;  /* 同时设置文字颜色 */
+    z-index: 1 !important;  /* 确保层级 */
+    position: relative !important;  /* 建立定位上下文 */
   }
   
-  #tst-quick-note-modal [style*="border: 1px solid #2196f3"],
-  #tst-quick-note-modal [style*="border:1px solid #2196f3"] {
+  #tst-quick-note-modal div[style*="border: 1px solid #2196f3"],
+  #tst-quick-note-modal div[style*="border:1px solid #2196f3"] {
     border: 1px solid #4a90e2 !important;  /* 调整边框颜色为更柔和的蓝色 */
   }
   
-  /* 确保最新笔记项目内所有文字都有足够对比度 */
-  #tst-quick-note-modal [style*="background: #e3f2fd"] *,
-  #tst-quick-note-modal [style*="background:#e3f2fd"] * {
-    color: inherit !important;  /* 继承父元素的白色 */
+  /* 强制设置最新笔记内的所有文字颜色 */
+  #tst-quick-note-modal div[style*="background: #e3f2fd"] span,
+  #tst-quick-note-modal div[style*="background:#e3f2fd"] span,
+  #tst-quick-note-modal div[style*="background: #e3f2fd"] div,
+  #tst-quick-note-modal div[style*="background:#e3f2fd"] div {
+    color: #ffffff !important;  /* 强制白色文字 */
+    background: transparent !important;  /* 确保没有背景遮挡 */
   }
   
-  /* 特别设置预览文字为稍微暗一点的颜色以区分层次 */
-  #tst-quick-note-modal [style*="background: #e3f2fd"] .tst-history-item-preview,
-  #tst-quick-note-modal [style*="background:#e3f2fd"] .tst-history-item-preview {
+  /* 特别设置预览文字颜色 */
+  #tst-quick-note-modal div[style*="background: #e3f2fd"] .tst-history-item-preview,
+  #tst-quick-note-modal div[style*="background:#e3f2fd"] .tst-history-item-preview {
     color: #e0e0e0 !important;  /* 浅色文字，确保预览文本清晰可见但有层次 */
+    background: transparent !important;  /* 确保没有背景遮挡 */
+  }
+  
+  /* 移除可能的白色遮罩或伪元素 */
+  #tst-quick-note-modal div[style*="background: #e3f2fd"]::before,
+  #tst-quick-note-modal div[style*="background:#e3f2fd"]::before,
+  #tst-quick-note-modal div[style*="background: #e3f2fd"]::after,
+  #tst-quick-note-modal div[style*="background:#e3f2fd"]::after {
+    display: none !important;
   }
 }
