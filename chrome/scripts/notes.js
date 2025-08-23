@@ -25,7 +25,7 @@ document.addEvent('domready', function(){
 				var aObj = $jq("#" + treeNode.tId + "_a");
 				if ($jq("#editBtn_" + treeNode.id).length > 0) return;
 				
-				// Add edit, copy and delete buttons for note items (not domain groups)
+				// Add edit, copy and delete buttons only for note items (not domain or page groups)
 				if (treeNode.isNote) {
 					var editBtn = $jq('<span class="note-edit-btn" id="editBtn_' + treeNode.id + '" title="Edit Note" style="margin-left:6px; cursor:pointer;">✏️</span>');
 					var copyBtn = $jq('<span class="note-copy-btn" id="copyBtn_' + treeNode.id + '" title="Copy Note" style="margin-left:3px; cursor:pointer;">📋</span>');
@@ -38,13 +38,13 @@ document.addEvent('domready', function(){
 					editBtn.click(function(e) {
 						e.stopPropagation();
 						var note = treeNode.noteData;
-						openEditor(note.visitId, note.url, treeNode.title, note.note||'');
+						openEditor(note.visitId, note.url, treeNode.pageTitle || treeNode.title, note.note||'');
 					});
 					
 					copyBtn.click(function(e) {
 						e.stopPropagation();
 						var note = treeNode.noteData;
-						var title = treeNode.title || '';
+						var title = treeNode.pageTitle || treeNode.title || '';
 						var url = note.url || '';
 						var noteText = note.note || '';
 						var text = (title ? ('Title: ' + title + '\n') : '') + 
@@ -83,9 +83,12 @@ document.addEvent('domready', function(){
 				if (treeNode.isNote && treeNode.noteData) {
 					// Open note in viewer for reading
 					var note = treeNode.noteData;
-					openViewer(note.visitId, note.url, treeNode.title, note.note||'');
-				} else if (treeNode.t) {
-					// Open URL for domain groups
+					openViewer(note.visitId, note.url, treeNode.pageTitle || treeNode.title, note.note||'');
+				} else if (treeNode.isPage) {
+					// Open page URL for page groups
+					window.open(treeNode.t, "_blank");
+				} else if (treeNode.isDomain) {
+					// Open domain URL for domain groups
 					window.open(treeNode.t, "_blank");
 				}
 			}
@@ -137,9 +140,10 @@ document.addEvent('domready', function(){
 			return; 
 		}
 		
-		// Group notes by domain and organize in tree structure
+		// Group notes by domain -> page -> notes (3-level structure)
 		zNodes = [];
 		var domainGroups = {};
+		var pageGroups = {};
 		var nodeId = 1;
 		
 		// Sort items by updatedAt desc first
@@ -171,13 +175,42 @@ document.addEvent('domready', function(){
 					pId: 0,
 					name: '🌐 ' + domain,
 					isNote: false,
+					isDomain: true,
 					open: true,
 					t: 'https://' + domain
 				};
 				zNodes.push(domainGroups[domain]);
 			}
 			
-			var title = (m.title && m.title.trim()!=='') ? m.title : url;
+			// Create page group (second level)
+			var pageTitle = (m.title && m.title.trim()!=='') ? m.title : url;
+			var pageKey = domain + '||' + url; // Unique key for each page
+			
+			if (!pageGroups[pageKey]) {
+				// Truncate long page titles
+				var displayPageTitle = pageTitle;
+				if (displayPageTitle.length > 80) {
+					displayPageTitle = displayPageTitle.slice(0, 80) + '…';
+				}
+				
+				pageGroups[pageKey] = {
+					id: 'page_' + nodeId++,
+					pId: domainGroups[domain].id,
+					name: '📄 ' + escapeHtml(displayPageTitle),
+					isNote: false,
+					isPage: true,
+					open: true,
+					t: url,
+					icon: 'chrome://favicon/' + escapeHtml(url),
+					fullTitle: pageTitle,
+					notesCount: 0
+				};
+				zNodes.push(pageGroups[pageKey]);
+			}
+			
+			// Update notes count for this page
+			pageGroups[pageKey].notesCount++;
+			
 			var noteText = m.note.note || '';
 			var firstLine = noteText.split(/\r?\n/)[0];
 			if (firstLine.length > 60) firstLine = firstLine.slice(0,60)+'…';
@@ -191,26 +224,39 @@ document.addEvent('domready', function(){
 			var countBadge = excerptCount > 1 ? ' [' + excerptCount + ' selections]' : '';
 			var timeStr = fmt(m.note.updatedAt) || '';
 			
-			var displayTitle = title;
-			if (firstLine && firstLine !== title) {
-				displayTitle = title + ': ' + firstLine;
+			var displayNoteTitle = firstLine || 'Note';
+			if (firstLine && firstLine !== pageTitle) {
+				displayNoteTitle = firstLine;
+			} else if (!firstLine) {
+				// If no first line, show excerpt from content
+				var excerpt = noteText.replace(/\n/g, ' ').trim();
+				if (excerpt.length > 50) excerpt = excerpt.slice(0, 50) + '…';
+				displayNoteTitle = excerpt || 'Empty note';
 			}
-			displayTitle += countBadge;
 			
-			// Create note node
+			// Create note node (third level)
 			var noteNode = {
 				id: 'note_' + nodeId++,
-				pId: domainGroups[domain].id,
-				name: '📝 ' + timeStr + ' - ' + escapeHtml(displayTitle),
+				pId: pageGroups[pageKey].id,
+				name: '📝 ' + timeStr + ' - ' + escapeHtml(displayNoteTitle) + countBadge,
 				isNote: true,
 				open: false,
 				noteData: m.note,
-				title: title,
+				title: pageTitle,
+				pageTitle: pageTitle,
 				t: url,
 				icon: 'chrome://favicon/' + escapeHtml(url)
 			};
 			
 			zNodes.push(noteNode);
+		}
+		
+		// Update page names to include note counts
+		for (var pageKey in pageGroups) {
+			var page = pageGroups[pageKey];
+			if (page.notesCount > 1) {
+				page.name = page.name + ' (' + page.notesCount + ' notes)';
+			}
 		}
 		
 		// Add nodes to tree
@@ -229,7 +275,7 @@ document.addEvent('domready', function(){
 		}
 	}
 	
-	// Fallback flat rendering function (original logic)
+	// Fallback flat rendering function with hierarchical grouping
 	function renderFlat(items) {
 		if (!listEl) return;
 		
@@ -240,52 +286,109 @@ document.addEvent('domready', function(){
 			return; 
 		}
 		
-		// Render each note as individual item (original logic)
-		var rel = 'white';
-		for (var i = 0; i < items.length; i++) {
-			var m = items[i];
+		// Group items by domain and page
+		var grouped = {};
+		items.forEach(function(m) {
 			var url = m.note.url || '';
-			var title = (m.title && m.title.trim()!=='') ? m.title : url;
-			var noteText = m.note.note || '';
-			var firstLine = noteText.split(/\r?\n/)[0];
-			if (firstLine.length > 60) firstLine = firstLine.slice(0,60)+'…';
+			var domain = '';
 			
-			var excerptCount = 0;
-			excerptCount += (noteText.match(/---\n\*Added on /g) || []).length;
-			excerptCount += (noteText.match(/\*摘录自:/g) || []).length;
-			if (excerptCount === 0 && noteText.trim()) excerptCount = 1;
-			
-			var countBadge = excerptCount > 1 ? ' [' + excerptCount + ' selections]' : '';
-			var timeStr = fmt(m.note.updatedAt) || '';
-			
-			var displayTitle = title;
-			if (firstLine && firstLine !== title) {
-				displayTitle = title + ': ' + firstLine;
+			try {
+				if (url && url.trim()) {
+					var urlObj = new URL(url);
+					domain = urlObj.hostname || url;
+				} else {
+					domain = 'Unknown';
+				}
+			} catch (e) {
+				domain = url.split('/')[0] || 'Unknown';
 			}
-			displayTitle += countBadge;
 			
-			var item = '';
-			item += '<div class="item">';
-			item += '<span class="time">' + timeStr + '</span>';
-			item += '<a target="_blank" class="link" href="' + url + '">';
-			item += '<img class="favicon" alt="Favicon" src="chrome://favicon/' + escapeHtml(url) + '">';
-			item += '<span class="title" title="' + escapeHtml(url + ' - ' + noteText.substring(0, 200)) + '">' + escapeHtml(displayTitle) + '</span>';
-			item += '</a>';
-			item += '<span class="note-actions" style="float:right;">';
-			item += '<a href="#" onclick="openEditor(\''+m.note.visitId+'\', \''+escapeHtml(url)+'\', \''+escapeHtml(title)+'\', \''+escapeHtml(noteText)+'\'); return false;">✏️</a>';
-			item += '<a href="#" onclick="copyNoteToClipboard(\''+escapeHtml(title)+'\', \''+escapeHtml(url)+'\', \''+escapeHtml(noteText)+'\'); return false;">📋</a>';
-			item += '<a href="#" onclick="if(confirm(\'Delete note?\')) deleteNote(\''+m.note.visitId+'\', function(){load();}); return false;">🗑️</a>';
-			item += '</span>';
-			item += '</div>';
+			var pageTitle = (m.title && m.title.trim()!=='') ? m.title : url;
+			var pageKey = domain + '||' + url;
 			
-			var noteElement = new Element('div', { 
-				'rel': rel, 
-				'class': 'item-holder',
-				'html': item + '<div class="clearitem" style="clear:both;"></div>'
+			if (!grouped[domain]) {
+				grouped[domain] = {};
+			}
+			if (!grouped[domain][pageKey]) {
+				grouped[domain][pageKey] = {
+					pageTitle: pageTitle,
+					url: url,
+					notes: []
+				};
+			}
+			grouped[domain][pageKey].notes.push(m);
+		});
+		
+		// Render grouped structure
+		var rel = 'white';
+		for (var domain in grouped) {
+			// Domain header
+			var domainHeader = new Element('div', {
+				'class': 'domain-group',
+				'html': '<h3 style="margin:8px 0; color:#666;">🌐 ' + escapeHtml(domain) + '</h3>'
 			});
-			noteElement.inject(listEl);
+			domainHeader.inject(listEl);
 			
-			rel = (rel === 'white') ? 'grey' : 'white';
+			for (var pageKey in grouped[domain]) {
+				var page = grouped[domain][pageKey];
+				
+				// Page header
+				var pageTitle = page.pageTitle;
+				if (pageTitle.length > 80) pageTitle = pageTitle.slice(0, 80) + '…';
+				var pageHeader = new Element('div', {
+					'class': 'page-group',
+					'html': '<h4 style="margin:4px 0 4px 20px; color:#888;">📄 ' + escapeHtml(pageTitle) + 
+							(page.notes.length > 1 ? ' (' + page.notes.length + ' notes)' : '') + '</h4>'
+				});
+				pageHeader.inject(listEl);
+				
+				// Notes under this page
+				page.notes.forEach(function(m) {
+					var url = m.note.url || '';
+					var noteText = m.note.note || '';
+					var firstLine = noteText.split(/\r?\n/)[0];
+					if (firstLine.length > 60) firstLine = firstLine.slice(0,60)+'…';
+					
+					var excerptCount = 0;
+					excerptCount += (noteText.match(/---\n\*Added on /g) || []).length;
+					excerptCount += (noteText.match(/\*摘录自:/g) || []).length;
+					if (excerptCount === 0 && noteText.trim()) excerptCount = 1;
+					
+					var countBadge = excerptCount > 1 ? ' [' + excerptCount + ' selections]' : '';
+					var timeStr = fmt(m.note.updatedAt) || '';
+					
+					var displayNoteTitle = firstLine || 'Note';
+					if (!firstLine) {
+						var excerpt = noteText.replace(/\n/g, ' ').trim();
+						if (excerpt.length > 50) excerpt = excerpt.slice(0, 50) + '…';
+						displayNoteTitle = excerpt || 'Empty note';
+					}
+					displayNoteTitle += countBadge;
+					
+					var item = '';
+					item += '<div class="item" style="margin-left:40px;">';
+					item += '<span class="time">' + timeStr + '</span>';
+					item += '<a target="_blank" class="link" href="' + url + '">';
+					item += '<img class="favicon" alt="Favicon" src="chrome://favicon/' + escapeHtml(url) + '">';
+					item += '<span class="title" title="' + escapeHtml(url + ' - ' + noteText.substring(0, 200)) + '">📝 ' + escapeHtml(displayNoteTitle) + '</span>';
+					item += '</a>';
+					item += '<span class="note-actions" style="float:right;">';
+					item += '<a href="#" onclick="openEditor(\''+m.note.visitId+'\', \''+escapeHtml(url)+'\', \''+escapeHtml(page.pageTitle)+'\', \''+escapeHtml(noteText)+'\'); return false;">✏️</a>';
+					item += '<a href="#" onclick="copyNoteToClipboard(\''+escapeHtml(page.pageTitle)+'\', \''+escapeHtml(url)+'\', \''+escapeHtml(noteText)+'\'); return false;">📋</a>';
+					item += '<a href="#" onclick="if(confirm(\'Delete note?\')) deleteNote(\''+m.note.visitId+'\', function(){load();}); return false;">🗑️</a>';
+					item += '</span>';
+					item += '</div>';
+					
+					var noteElement = new Element('div', { 
+						'rel': rel, 
+						'class': 'item-holder',
+						'html': item + '<div class="clearitem" style="clear:both;"></div>'
+					});
+					noteElement.inject(listEl);
+					
+					rel = (rel === 'white') ? 'grey' : 'white';
+				});
+			}
 		}
 	}
 
