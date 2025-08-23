@@ -134,15 +134,15 @@
 
         // 监听键盘事件
         document.addEventListener('keydown', (e) => {
-            // Ctrl+Shift+N 打开笔记管理器（独立窗口）
+            // Ctrl+Shift+N 打开笔记管理器（浮动窗口）
             if (e.ctrlKey && e.shiftKey && e.key === 'N') {
                 e.preventDefault();
-                openNoteManager('window');
+                openNoteManager('floating');
             }
-            // Ctrl+Shift+F 打开笔记管理器（浮动窗口）
+            // Ctrl+Shift+F 打开笔记管理器（独立窗口）
             if (e.ctrlKey && e.shiftKey && e.key === 'F') {
                 e.preventDefault();
-                openNoteManager('floating');
+                openNoteManager('window');
             }
             // Ctrl+Shift+Q 快速新建笔记
             if (e.ctrlKey && e.shiftKey && e.key === 'Q') {
@@ -1053,13 +1053,13 @@
                 shortcut: 'Ctrl+Shift+Q'
             },
             {
-                text: '📚 笔记管理器 (独立窗口)',
-                action: () => openNoteManager('window'),
+                text: '🎈 笔记管理器 (浮动窗口)',
+                action: () => openNoteManager('floating'),
                 shortcut: 'Ctrl+Shift+N'
             },
             {
-                text: '🎈 笔记管理器 (浮动窗口)',
-                action: () => openNoteManager('floating'),
+                text: '📚 笔记管理器 (独立窗口)',
+                action: () => openNoteManager('window'),
                 shortcut: 'Ctrl+Shift+F'
             },
             {
@@ -1233,9 +1233,9 @@
     function getNoteManagerHTML() {
         // 获取extension资源的完整URL
         const cssUrl = chrome.runtime ? chrome.runtime.getURL('css/note-manager.css') : '';
-        const mooToolsUrl = chrome.runtime ? chrome.runtime.getURL('scripts/MooTools.js') : '';
-        const commonUrl = chrome.runtime ? chrome.runtime.getURL('scripts/common.js') : '';
-        const jqueryUrl = chrome.runtime ? chrome.runtime.getURL('scripts/jquery.min.js') : '';
+        const mooToolsUrl = chrome.runtime ? chrome.runtime.getURL('scripts/moo.js') : '';
+        const funcUrl = chrome.runtime ? chrome.runtime.getURL('scripts/func.js') : '';
+        const jqueryUrl = chrome.runtime ? chrome.runtime.getURL('scripts/jquery-3.6.0.min.js') : '';
         const dataSanitizerUrl = chrome.runtime ? chrome.runtime.getURL('scripts/security/data-sanitizer.js') : '';
         const xssProtectionUrl = chrome.runtime ? chrome.runtime.getURL('scripts/security/xss-protection.js') : '';
         const permissionManagerUrl = chrome.runtime ? chrome.runtime.getURL('scripts/security/permission-manager.js') : '';
@@ -1253,7 +1253,7 @@
     <title>笔记管理器</title>
     <link rel="stylesheet" href="${cssUrl}">
     <script src="${mooToolsUrl}"></script>
-    <script src="${commonUrl}"></script>
+    <script src="${funcUrl}"></script>
     <script src="${jqueryUrl}"></script>
     <style>
         /* 浮动窗口专用样式调整 */
