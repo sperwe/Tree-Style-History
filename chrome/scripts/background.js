@@ -1247,6 +1247,116 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Return true to indicate we will send a response asynchronously
         return true;
     }
+    
+    // 打开笔记管理器
+    if (request.action === 'openNoteManager') {
+        try {
+            const url = chrome.runtime.getURL('note-manager.html');
+            const mode = request.mode || '';
+            const fullUrl = mode ? `${url}?mode=${mode}` : url;
+            
+            // 检查是否已有笔记管理器窗口打开
+            chrome.windows.getAll({ populate: true }, (windows) => {
+                let managerWindow = null;
+                
+                for (const window of windows) {
+                    for (const tab of window.tabs) {
+                        if (tab.url && tab.url.includes('note-manager.html')) {
+                            managerWindow = window;
+                            break;
+                        }
+                    }
+                    if (managerWindow) break;
+                }
+                
+                if (managerWindow) {
+                    // 如果已有窗口，聚焦到该窗口
+                    chrome.windows.update(managerWindow.id, { focused: true }, () => {
+                        sendResponse({ success: true, action: 'focused' });
+                    });
+                } else {
+                    // 创建新窗口
+                    chrome.windows.create({
+                        url: fullUrl,
+                        type: 'popup',
+                        width: 1200,
+                        height: 800,
+                        focused: true
+                    }, (window) => {
+                        if (chrome.runtime.lastError) {
+                            console.error('Error creating note manager window:', chrome.runtime.lastError);
+                            sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                        } else {
+                            sendResponse({ success: true, action: 'created', windowId: window.id });
+                        }
+                    });
+                }
+            });
+        } catch (error) {
+            console.error('Error opening note manager:', error);
+            sendResponse({ success: false, error: error.message });
+        }
+        
+        return true; // 异步响应
+    }
+    
+    // 获取所有笔记
+    if (request.action === 'getAllNotes') {
+        getAllNotesFromDatabase()
+            .then((notes) => {
+                sendResponse({ success: true, notes: notes });
+            })
+            .catch((error) => {
+                console.error('Error getting all notes:', error);
+                sendResponse({ success: false, error: error.message || 'Unknown error' });
+            });
+        
+        return true;
+    }
+    
+    // 保存笔记（从笔记管理器）
+    if (request.action === 'saveNote') {
+        saveNoteFromManager(request.note)
+            .then((result) => {
+                sendResponse({ success: true, result: result });
+            })
+            .catch((error) => {
+                console.error('Error saving note from manager:', error);
+                sendResponse({ success: false, error: error.message || 'Unknown error' });
+            });
+        
+        return true;
+    }
+    
+    // 删除笔记
+    if (request.action === 'deleteNote') {
+        deleteNoteFromDatabase(request.noteId)
+            .then((result) => {
+                sendResponse({ success: true, result: result });
+            })
+            .catch((error) => {
+                console.error('Error deleting note:', error);
+                sendResponse({ success: false, error: error.message || 'Unknown error' });
+            });
+        
+        return true;
+    }
+    
+    // 打开设置
+    if (request.action === 'openSettings') {
+        try {
+            chrome.tabs.create({
+                url: chrome.runtime.getURL('options.html')
+            }, (tab) => {
+                sendResponse({ success: true, tabId: tab.id });
+            });
+        } catch (error) {
+            console.error('Error opening settings:', error);
+            sendResponse({ success: false, error: error.message });
+        }
+        
+        return true;
+    }
 });
 
 /**
@@ -1614,6 +1724,109 @@ function loadNoteFromDatabase(visitId) {
         } catch (error) {
             console.error('Exception in loadNoteFromDatabase:', error);
             resolve(null);
+        }
+    });
+}
+
+/**
+ * 获取所有笔记
+ */
+async function getAllNotesFromDatabase() {
+    return new Promise((resolve) => {
+        const transaction = db.transaction(['VisitNote'], 'readonly');
+        const objectStore = transaction.objectStore('VisitNote');
+        const request = objectStore.getAll();
+        
+        request.onsuccess = function() {
+            const notes = request.result || [];
+            
+            // 转换数据格式，确保兼容性
+            const formattedNotes = notes.map(note => ({
+                id: note.id || note.visitId,
+                title: note.title || '未命名笔记',
+                note: note.note || '',
+                tag: note.tag || 'general_general',
+                url: note.url || '',
+                createdAt: note.createdAt || note.time,
+                updatedAt: note.updatedAt || note.time
+            }));
+            
+            console.log('[TST Background] 获取所有笔记:', formattedNotes.length);
+            resolve(formattedNotes);
+        };
+        
+        request.onerror = function(error) {
+            console.error('获取所有笔记失败:', error);
+            resolve([]);
+        };
+    });
+}
+
+/**
+ * 从笔记管理器保存笔记
+ */
+async function saveNoteFromManager(noteData) {
+    return new Promise((resolve, reject) => {
+        try {
+            const transaction = db.transaction(['VisitNote'], 'readwrite');
+            const objectStore = transaction.objectStore('VisitNote');
+            
+            // 准备笔记数据
+            const note = {
+                id: noteData.id,
+                visitId: noteData.id, // 兼容性
+                title: noteData.title || '未命名笔记',
+                note: noteData.note || '',
+                tag: noteData.tag || 'general_general',
+                url: noteData.url || '',
+                time: noteData.updatedAt || new Date().toISOString(),
+                createdAt: noteData.createdAt || new Date().toISOString(),
+                updatedAt: noteData.updatedAt || new Date().toISOString()
+            };
+            
+            const request = objectStore.put(note);
+            
+            request.onsuccess = function() {
+                console.log('[TST Background] 笔记保存成功:', note.id);
+                resolve({ noteId: note.id, action: 'saved' });
+            };
+            
+            request.onerror = function(error) {
+                console.error('保存笔记失败:', error);
+                reject(new Error('保存笔记失败'));
+            };
+            
+        } catch (error) {
+            console.error('保存笔记异常:', error);
+            reject(error);
+        }
+    });
+}
+
+/**
+ * 删除笔记
+ */
+async function deleteNoteFromDatabase(noteId) {
+    return new Promise((resolve, reject) => {
+        try {
+            const transaction = db.transaction(['VisitNote'], 'readwrite');
+            const objectStore = transaction.objectStore('VisitNote');
+            
+            const request = objectStore.delete(noteId);
+            
+            request.onsuccess = function() {
+                console.log('[TST Background] 笔记删除成功:', noteId);
+                resolve({ noteId: noteId, action: 'deleted' });
+            };
+            
+            request.onerror = function(error) {
+                console.error('删除笔记失败:', error);
+                reject(new Error('删除笔记失败'));
+            };
+            
+        } catch (error) {
+            console.error('删除笔记异常:', error);
+            reject(error);
         }
     });
 }
