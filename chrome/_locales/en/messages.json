@@ -644,6 +644,30 @@
     "notesMergeReplace": {
         "message": "Replace existing note"
     },
+    "pageNote": {
+        "message": "Page Note"
+    },
+    "pageNoteCreate": {
+        "message": "Create Page Note"
+    },
+    "pageNotePlaceholder": {
+        "message": "Enter note content here... Markdown format supported"
+    },
+    "pageNoteSave": {
+        "message": "Save Note"
+    },
+    "pageNoteCancel": {
+        "message": "Cancel"
+    },
+    "pageNoteSaved": {
+        "message": "Note saved successfully!"
+    },
+    "pageNoteSaving": {
+        "message": "Saving..."
+    },
+    "pageNoteFailed": {
+        "message": "Failed to save note"
+    },
     "notesDeleteConfirmLabel": {
         "message": "Are you sure you want to delete this note?"
     },

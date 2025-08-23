@@ -13,6 +13,14 @@
   "background": {
     "page": "background.html"
   },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["scripts/page-notes.js"],
+      "css": ["css/page-notes.css"],
+      "run_at": "document_end"
+    }
+  ],
   "permissions": [
     "storage",
     "tabs",
