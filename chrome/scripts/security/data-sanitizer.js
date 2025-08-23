@@ -19,6 +19,13 @@ class DataSanitizer {
             return '';
         }
 
+        // 修复编码问题
+        try {
+            content = this.fixEncoding(content);
+        } catch (error) {
+            console.warn('笔记内容编码修复失败:', error);
+        }
+
         // 长度限制检查
         if (content.length > this.MAX_CONTENT_LENGTH) {
             throw new Error(`笔记内容过大，请缩减至 ${Math.round(this.MAX_CONTENT_LENGTH / 1000)}KB 以内`);
@@ -60,12 +67,20 @@ class DataSanitizer {
             return '';
         }
 
+        // 确保字符串是正确编码的
+        try {
+            // 检查是否有编码问题并修复
+            title = this.fixEncoding(title);
+        } catch (error) {
+            console.warn('标题编码修复失败:', error);
+        }
+
         // 长度限制
         if (title.length > this.MAX_TITLE_LENGTH) {
             title = title.substring(0, this.MAX_TITLE_LENGTH - 3) + '...';
         }
 
-        // HTML实体编码危险字符
+        // HTML实体编码危险字符（但保留中文字符）
         return title.replace(/[<>'"&]/g, (match) => {
             const entities = {
                 '<': '&lt;',
@@ -76,6 +91,47 @@ class DataSanitizer {
             };
             return entities[match];
         });
+    }
+
+    /**
+     * 修复字符编码问题
+     * @param {string} text - 原始文本
+     * @returns {string} 修复后的文本
+     */
+    static fixEncoding(text) {
+        if (!text) return '';
+
+        try {
+            // 检查是否是UTF-8编码的字符串被错误解码为ISO-8859-1
+            // 这是常见的中文乱码原因
+            const encoded = encodeURIComponent(text);
+            if (encoded.includes('%C3%') || encoded.includes('%E2%')) {
+                // 可能存在编码问题，尝试修复
+                const buffer = new TextEncoder().encode(text);
+                const fixed = new TextDecoder('utf-8').decode(buffer);
+                
+                // 验证修复是否有效
+                if (this.isValidText(fixed)) {
+                    return fixed;
+                }
+            }
+        } catch (error) {
+            // 修复失败，返回原文本
+            console.warn('编码修复失败:', error);
+        }
+
+        return text;
+    }
+
+    /**
+     * 验证文本是否有效（无乱码）
+     * @param {string} text - 文本
+     * @returns {boolean} 是否有效
+     */
+    static isValidText(text) {
+        // 检查是否包含常见的乱码字符
+        const invalidChars = /[\uFFFD\u00C3\u00A0-\u00FF]{2,}/;
+        return !invalidChars.test(text);
     }
 
     /**

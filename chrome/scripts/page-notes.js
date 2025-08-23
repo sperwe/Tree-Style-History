@@ -134,10 +134,15 @@
 
         // 监听键盘事件
         document.addEventListener('keydown', (e) => {
-            // Ctrl+Shift+N 打开笔记管理器
+            // Ctrl+Shift+N 打开笔记管理器（独立窗口）
             if (e.ctrlKey && e.shiftKey && e.key === 'N') {
                 e.preventDefault();
-                openNoteManager();
+                openNoteManager('window');
+            }
+            // Ctrl+Shift+F 打开笔记管理器（浮动窗口）
+            if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+                e.preventDefault();
+                openNoteManager('floating');
             }
             // Ctrl+Shift+Q 快速新建笔记
             if (e.ctrlKey && e.shiftKey && e.key === 'Q') {
@@ -1048,9 +1053,14 @@
                 shortcut: 'Ctrl+Shift+Q'
             },
             {
-                text: '📚 笔记管理器',
-                action: openNoteManager,
+                text: '📚 笔记管理器 (独立窗口)',
+                action: () => openNoteManager('window'),
                 shortcut: 'Ctrl+Shift+N'
+            },
+            {
+                text: '🎈 笔记管理器 (浮动窗口)',
+                action: () => openNoteManager('floating'),
+                shortcut: 'Ctrl+Shift+F'
             },
             {
                 text: '🔍 搜索笔记',
@@ -1180,10 +1190,13 @@
     /**
      * 打开笔记管理器
      */
-    function openNoteManager(mode = null) {
+    function openNoteManager(mode = 'window') {
         try {
-            if (chrome && chrome.runtime) {
-                // 通过background script打开笔记管理器
+            if (mode === 'floating') {
+                // 创建浮动窗口模式
+                createFloatingNoteManager();
+            } else if (chrome && chrome.runtime) {
+                // 通过background script打开独立窗口
                 chrome.runtime.sendMessage({
                     action: 'openNoteManager',
                     mode: mode
@@ -1211,6 +1224,201 @@
     function fallbackOpenNoteManager() {
         const url = chrome.runtime ? chrome.runtime.getURL('note-manager.html') : '/note-manager.html';
         window.open(url, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    }
+
+    /**
+     * 创建浮动笔记管理器
+     */
+    function createFloatingNoteManager() {
+        // 检查是否已有浮动管理器
+        const existingManager = document.getElementById('tst-floating-note-manager');
+        if (existingManager) {
+            // 如果已存在，显示并聚焦
+            existingManager.style.display = 'block';
+            existingManager.style.zIndex = '999999';
+            return;
+        }
+
+        // 创建浮动容器
+        const floatingManager = document.createElement('div');
+        floatingManager.id = 'tst-floating-note-manager';
+        floatingManager.className = 'tst-floating-manager';
+        
+        // 设置样式
+        floatingManager.style.cssText = `
+            position: fixed;
+            top: 50px;
+            right: 50px;
+            width: 900px;
+            height: 700px;
+            background: white;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            resize: both;
+            overflow: hidden;
+            min-width: 600px;
+            min-height: 400px;
+        `;
+
+        // 创建标题栏
+        const titleBar = document.createElement('div');
+        titleBar.className = 'floating-title-bar';
+        titleBar.style.cssText = `
+            background: linear-gradient(90deg, #007bff, #0056b3);
+            color: white;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            user-select: none;
+            border-radius: 6px 6px 0 0;
+            font-weight: 500;
+        `;
+
+        const titleText = document.createElement('span');
+        titleText.textContent = '🎈 笔记管理器 (浮动窗口)';
+        titleBar.appendChild(titleText);
+
+        // 窗口控制按钮
+        const controls = document.createElement('div');
+        controls.style.cssText = 'display: flex; gap: 8px;';
+
+        const minimizeBtn = createControlButton('−', '最小化', () => {
+            floatingManager.style.display = 'none';
+        });
+
+        const maximizeBtn = createControlButton('□', '最大化', () => {
+            if (floatingManager.dataset.maximized === 'true') {
+                // 还原
+                floatingManager.style.width = '900px';
+                floatingManager.style.height = '700px';
+                floatingManager.style.top = '50px';
+                floatingManager.style.right = '50px';
+                floatingManager.dataset.maximized = 'false';
+                maximizeBtn.textContent = '□';
+            } else {
+                // 最大化
+                floatingManager.style.width = '100vw';
+                floatingManager.style.height = '100vh';
+                floatingManager.style.top = '0';
+                floatingManager.style.left = '0';
+                floatingManager.style.right = 'auto';
+                floatingManager.dataset.maximized = 'true';
+                maximizeBtn.textContent = '❐';
+            }
+        });
+
+        const closeBtn = createControlButton('✖', '关闭', () => {
+            floatingManager.remove();
+        });
+
+        controls.appendChild(minimizeBtn);
+        controls.appendChild(maximizeBtn);
+        controls.appendChild(closeBtn);
+        titleBar.appendChild(controls);
+
+        // 创建iframe加载笔记管理器
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = `
+            flex: 1;
+            border: none;
+            background: white;
+        `;
+        
+        const managerUrl = chrome.runtime ? chrome.runtime.getURL('note-manager.html') : '/note-manager.html';
+        iframe.src = managerUrl + '?mode=floating';
+
+        // 组装窗口
+        floatingManager.appendChild(titleBar);
+        floatingManager.appendChild(iframe);
+        document.body.appendChild(floatingManager);
+
+        // 添加拖拽功能
+        makeDraggable(floatingManager, titleBar);
+
+        // 添加键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && floatingManager.style.display !== 'none') {
+                floatingManager.style.display = 'none';
+            }
+        });
+
+        console.log('浮动笔记管理器已创建');
+    }
+
+    /**
+     * 创建控制按钮
+     */
+    function createControlButton(text, title, onclick) {
+        const btn = document.createElement('button');
+        btn.textContent = text;
+        btn.title = title;
+        btn.style.cssText = `
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        `;
+        btn.addEventListener('mouseenter', () => {
+            btn.style.backgroundColor = 'rgba(255,255,255,0.3)';
+        });
+        btn.addEventListener('mouseleave', () => {
+            btn.style.backgroundColor = 'rgba(255,255,255,0.2)';
+        });
+        btn.addEventListener('click', onclick);
+        return btn;
+    }
+
+    /**
+     * 使元素可拖拽
+     */
+    function makeDraggable(element, handle) {
+        let isDragging = false;
+        let startX, startY, startLeft, startTop;
+
+        handle.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            const rect = element.getBoundingClientRect();
+            startLeft = rect.left;
+            startTop = rect.top;
+            
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            const newLeft = startLeft + (e.clientX - startX);
+            const newTop = startTop + (e.clientY - startY);
+
+            // 限制在视窗内
+            const maxLeft = window.innerWidth - element.offsetWidth;
+            const maxTop = window.innerHeight - element.offsetHeight;
+
+            element.style.left = Math.max(0, Math.min(newLeft, maxLeft)) + 'px';
+            element.style.top = Math.max(0, Math.min(newTop, maxTop)) + 'px';
+            element.style.right = 'auto'; // 移除right定位
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
     }
 
     /**
