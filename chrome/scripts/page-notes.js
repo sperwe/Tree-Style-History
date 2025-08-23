@@ -2129,6 +2129,159 @@
                     width: 200px;
                 }
             }
+            
+            /* 深色模式支持 */
+            @media (prefers-color-scheme: dark) {
+                #tst-floating-note-manager .note-manager-container,
+                #tst-floating-note-manager .main-content {
+                    background: #1a1a1a;
+                    color: #e0e0e0;
+                }
+                
+                #tst-floating-note-manager .toolbar {
+                    background: rgba(45, 45, 45, 0.8);
+                    border-bottom-color: rgba(255, 255, 255, 0.08);
+                }
+                
+                #tst-floating-note-manager .note-list-panel {
+                    background: rgba(35, 35, 35, 0.6);
+                    border-right-color: rgba(255, 255, 255, 0.08);
+                }
+                
+                #tst-floating-note-manager .list-header {
+                    background: rgba(45, 45, 45, 0.4);
+                    border-bottom-color: rgba(255, 255, 255, 0.08);
+                }
+                
+                #tst-floating-note-manager .list-stats {
+                    color: rgba(180, 180, 180, 0.8);
+                }
+                
+                #tst-floating-note-manager .note-item {
+                    background: #2d2d2d;
+                    color: #e0e0e0;
+                    border-bottom-color: rgba(255, 255, 255, 0.06);
+                }
+                
+                #tst-floating-note-manager .note-item:hover {
+                    background: #3a3a3a;
+                }
+                
+                #tst-floating-note-manager .note-item.active {
+                    background: #1e3a5f;
+                    border-left-color: #4a90e2;
+                }
+                
+                #tst-floating-note-manager .note-title {
+                    color: #e0e0e0;
+                }
+                
+                #tst-floating-note-manager .note-preview {
+                    color: #b0b0b0;
+                }
+                
+                #tst-floating-note-manager .note-meta {
+                    color: #888;
+                }
+                
+                #tst-floating-note-manager .editor-panel {
+                    background: #1a1a1a;
+                }
+                
+                #tst-floating-note-manager .editor-header {
+                    background: #2d2d2d;
+                    border-bottom-color: rgba(255, 255, 255, 0.08);
+                }
+                
+                #tst-floating-note-manager #note-title,
+                #tst-floating-note-manager #note-editor {
+                    background: #1e1e1e;
+                    color: #e0e0e0;
+                    border-color: #404040;
+                }
+                
+                #tst-floating-note-manager #note-title:focus,
+                #tst-floating-note-manager #note-editor:focus {
+                    border-color: #4a90e2;
+                    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
+                }
+                
+                #tst-floating-note-manager .search-box input,
+                #tst-floating-note-manager .filters select {
+                    background: rgba(255, 255, 255, 0.1);
+                    color: #e0e0e0;
+                    border-color: #404040;
+                }
+                
+                #tst-floating-note-manager .search-box input::placeholder {
+                    color: rgba(180, 180, 180, 0.6);
+                }
+                
+                #tst-floating-note-manager .search-box input:focus,
+                #tst-floating-note-manager .filters select:focus {
+                    background: rgba(255, 255, 255, 0.15);
+                    box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.3);
+                }
+                
+                #tst-floating-note-manager button {
+                    background: rgba(255, 255, 255, 0.1);
+                    color: #4a90e2;
+                }
+                
+                #tst-floating-note-manager button:hover {
+                    background: rgba(255, 255, 255, 0.15);
+                }
+                
+                #tst-floating-note-manager button.btn-primary {
+                    background: #4a90e2;
+                    color: white;
+                }
+                
+                #tst-floating-note-manager button.btn-primary:hover {
+                    background: #357abd;
+                }
+                
+                #tst-floating-note-manager button.danger {
+                    color: #ff6b6b;
+                }
+                
+                #tst-floating-note-manager button.danger:hover {
+                    background: rgba(255, 107, 107, 0.1);
+                }
+                
+                #tst-floating-note-manager .modal-content {
+                    background: #2d2d2d;
+                    color: #e0e0e0;
+                }
+                
+                #tst-floating-note-manager .modal-header,
+                #tst-floating-note-manager .modal-footer {
+                    border-color: rgba(255, 255, 255, 0.08);
+                }
+                
+                #tst-floating-note-manager .empty-state {
+                    color: #666;
+                }
+                
+                #tst-floating-note-manager .empty-state h3 {
+                    color: #888;
+                }
+                
+                #tst-floating-note-manager .empty-state p {
+                    color: #666;
+                }
+                
+                /* 深色模式下的滚动条 */
+                #tst-floating-note-manager .note-list::-webkit-scrollbar-thumb,
+                #tst-floating-note-manager #note-editor::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.2);
+                }
+                
+                #tst-floating-note-manager .note-list::-webkit-scrollbar-thumb:hover,
+                #tst-floating-note-manager #note-editor::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.3);
+                }
+            }
         `;
         
         document.head.appendChild(styleElement);
