@@ -44,9 +44,10 @@ document.addEvent('domready', function(){
 		var isMultiple = items.length > 1;
 		var firstItem = items[0];
 		var title = (firstItem.title && firstItem.title.trim()!=='') ? firstItem.title : url;
+		var hostName = url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
 		
 		if (isMultiple) {
-			// Create collapsible group for multiple notes
+			// Create tree-style group using history CSS classes
 			var groupId = 'group-' + btoa(url).replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
 			var totalSelections = items.reduce(function(sum, item) {
 				var noteText = item.note.note || '';
@@ -57,42 +58,60 @@ document.addEvent('domready', function(){
 				return sum + excerptCount;
 			}, 0);
 			
-			// Group header
+			// Tree-style group header using history CSS structure
+			var groupElement = new Element('div', {
+				'class': 'item-holder group-title',
+				'title': groupId,
+				'rel': 'white'
+			});
+			
+			var toggleId = 'toggle-' + groupId;
+			var groupTitleId = 'grouptitle-' + groupId;
+			
 			var groupHtml = '';
-			groupHtml += '<div class="note-group">';
-			groupHtml += '<div class="note-group-header" data-group="' + groupId + '">';
-			groupHtml += '<div class="note-group-toggle">▶</div>';
-			groupHtml += '<div class="note-group-favicon"><img src="chrome://favicon/' + escapeHtml(url) + '" width="16" height="16" onerror="this.style.display=\'none\'"></div>';
-			groupHtml += '<div class="note-group-title">' + escapeHtml(title) + '</div>';
-			groupHtml += '<div class="note-group-count">' + items.length + ' notes · ' + totalSelections + ' selections</div>';
-			groupHtml += '</div>';
-			groupHtml += '<div class="note-group-items" id="' + groupId + '" style="display: none;">';
+			groupHtml += '<a href="#" class="group-title-toggle" id="' + toggleId + '" data-host="' + url + '" rel="' + url + '"></a>';
+			groupHtml += '<input type="checkbox" class="group-title-checkbox" value="' + url + '" style="display:none;">';
+			groupHtml += '<img class="group-title-favicon" alt="Favicon" src="chrome://favicon/' + escapeHtml(url) + '" onerror="this.style.display=\'none\'">';
+			groupHtml += '<span id="' + groupTitleId + '" data-host="' + url + '" class="group-title-host">';
+			groupHtml += escapeHtml(hostName) + ' (' + items.length + ' notes, ' + totalSelections + ' selections)';
+			groupHtml += '</span>';
+			
+			groupElement.set('html', groupHtml);
+			groupElement.inject(listEl);
+			
+			// Create collapsible container for notes
+			var notesContainer = new Element('div', {
+				'id': groupId,
+				'style': 'display: none; margin-left: 20px;'
+			});
+			notesContainer.inject(listEl);
 			
 			// Render individual notes in group
 			items.forEach(function(m, index) {
-				groupHtml += renderSingleNoteHtml(m, true, index + 1);
-			});
-			
-			// Close group
-			groupHtml += '</div></div>';
-			
-			var groupEl = new Element('div', { 'html': groupHtml }).inject(listEl);
-			
-			// Add click handler for group toggle
-			var groupHeader = groupEl.querySelector('[data-group="' + groupId + '"]');
-			if (groupHeader) {
-				groupHeader.addEventListener('click', function() {
-					toggleGroup(groupId);
+				var noteHtml = renderSingleNoteHtml(m, true, index + 1);
+				var noteElement = new Element('div', { 
+					'class': 'item-holder',
+					'html': noteHtml 
 				});
-			}
-			
-			// Add event handlers for individual notes
-			items.forEach(function(m, index) {
+				noteElement.inject(notesContainer);
 				addNoteEventHandlers(m);
 			});
+			
+			// Add toggle functionality
+			$(toggleId).addEvent('click', function(e) {
+				e.stop();
+				toggleGroup(groupId);
+			});
+			
 		} else {
-			// Single note, render normally
-			renderSingleNote(firstItem, false);
+			// Single note, render normally with item-holder wrapper
+			var singleNoteElement = new Element('div', {
+				'class': 'item-holder'
+			});
+			var noteHtml = renderSingleNoteHtml(firstItem, false);
+			singleNoteElement.set('html', noteHtml);
+			singleNoteElement.inject(listEl);
+			addNoteEventHandlers(firstItem);
 		}
 	}
 	
@@ -134,38 +153,44 @@ document.addEvent('domready', function(){
 			renderedFirstLine = escapeHtml(firstLine);
 		}
 		
-		// Format timestamp and title
+		// Format timestamp and title using tree-style format
 		var timeStr = fmt(m.note.updatedAt) || '';
 		var displayTitle;
 		if (isInGroup) {
-			// In group, show note index and time only
+			// In group, show note index and time only (tree-style child item)
 			displayTitle = 'Note #' + noteIndex + (timeStr ? ' - ' + timeStr : '');
 		} else {
-			// Single note, show full title with time
-			displayTitle = timeStr ? '[' + timeStr + '] ' + title : title;
+			// Single note, show full title with time (tree-style single item)
+			displayTitle = title;
 		}
 		
-		var itemClass = isInGroup ? 'note-item note-item-grouped' : 'note-item';
-		
+		// Use tree-style history structure
 		var html = '';
-		html += '<div class="' + itemClass + '">';
-		html += '<div class="note-header">';
-		html += '<div class="note-title-row">';
-		if (!isInGroup) {
-			html += '<div class="note-favicon"><img src="chrome://favicon/' + escapeHtml(url) + '" width="16" height="16" onerror="this.style.display=\'none\'"></div>';
+		html += '<div class="item">';
+		html += '<div class="checkbox" style="display:none;"><label><input type="checkbox"></label></div>';
+		if (timeStr && !isInGroup) {
+			html += '<div class="time">' + escapeHtml(timeStr) + '</div>';
 		}
-		html += '<a class="note-title-link" href="'+url+'" target="_blank">'+escapeHtml(displayTitle)+'</a>' + countBadge;
-		html += '</div>';
-		html += '</div>';
-		html += '<div class="note-content">';
-		html += '<div class="note-preview">'+renderedFirstLine+'</div>';
-		html += '<div class="note-actions">';
-		html += '<a href="#" id="edit-'+m.note.visitId+'">'+escapeHtml(returnLang('notesEdit')||'Edit')+'</a> · ';
-		html += '<a href="#" id="view-'+m.note.visitId+'">'+escapeHtml(returnLang('notesView')||'View')+'</a> · ';
-		html += '<a href="#" id="del-'+m.note.visitId+'">'+escapeHtml(returnLang('notesDelete')||'Delete')+'</a> · ';
-		html += '<a href="#" id="copy-'+m.note.visitId+'">'+escapeHtml(returnLang('copy')||'Copy')+'</a>';
-		html += '</div>';
-		html += '</div>';
+		html += '<a class="link" href="'+url+'" target="_blank">';
+		if (!isInGroup) {
+			html += '<img class="favicon" src="chrome://favicon/' + escapeHtml(url) + '" onerror="this.style.display=\'none\'">';
+		}
+		html += '<span class="title">' + escapeHtml(displayTitle) + countBadge + '</span>';
+		html += '</a>';
+		
+		// Note preview and actions
+		if (renderedFirstLine) {
+			html += '<div style="margin-left: 18px; margin-top: 3px; font-size: 11px; color: #666;">';
+			html += '<div>' + renderedFirstLine + '</div>';
+			html += '<div style="margin-top: 2px;">';
+			html += '<a href="#" id="edit-'+m.note.visitId+'" style="font-size: 11px;">'+escapeHtml(returnLang('notesEdit')||'Edit')+'</a> · ';
+			html += '<a href="#" id="view-'+m.note.visitId+'" style="font-size: 11px;">'+escapeHtml(returnLang('notesView')||'View')+'</a> · ';
+			html += '<a href="#" id="del-'+m.note.visitId+'" style="font-size: 11px;">'+escapeHtml(returnLang('notesDelete')||'Delete')+'</a> · ';
+			html += '<a href="#" id="copy-'+m.note.visitId+'" style="font-size: 11px;">'+escapeHtml(returnLang('copy')||'Copy')+'</a>';
+			html += '</div>';
+			html += '</div>';
+		}
+		
 		html += '</div>';
 		
 		return html;
@@ -323,15 +348,12 @@ document.addEvent('domready', function(){
 	});
 	function toggleGroup(groupId) {
 		var groupItems = document.getElementById(groupId);
-		var toggle = document.querySelector('[data-group="' + groupId + '"] .note-group-toggle');
 		
-		if (groupItems && toggle) {
+		if (groupItems) {
 			if (groupItems.style.display === 'none') {
 				groupItems.style.display = 'block';
-				toggle.textContent = '▼';
 			} else {
 				groupItems.style.display = 'none';
-				toggle.textContent = '▶';
 			}
 		}
 	}
