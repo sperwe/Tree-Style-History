@@ -773,4 +773,94 @@
   .note-item-grouped .note-title-link {
     color: #8ab4f8 !important;
   }
+  
+  /* 强制覆盖JavaScript硬编码样式，确保深浅色很好区分 */
+  
+  /* 历史笔记区域背景强制深色 */
+  #tst-quick-note-modal [style*="background: white"],
+  #tst-quick-note-modal [style*="background: #ffffff"],
+  #tst-quick-note-modal [style*="background:#ffffff"],
+  #tst-quick-note-modal [style*="background: #fff"],
+  #tst-quick-note-modal [style*="background:#fff"],
+  #tst-floating-note-manager [style*="background: white"],
+  #tst-floating-note-manager [style*="background: #ffffff"],
+  #tst-floating-note-manager [style*="background:#ffffff"],
+  #tst-floating-note-manager [style*="background: #fff"],
+  #tst-floating-note-manager [style*="background:#fff"] {
+    background: #2d2d2d !important;
+    color: #e0e0e0 !important;
+  }
+  
+  /* 历史笔记项目边框深色 */
+  #tst-quick-note-modal [style*="border: 1px solid #e0e0e0"],
+  #tst-quick-note-modal [style*="border:1px solid #e0e0e0"],
+  #tst-quick-note-modal [style*="border: 1px solid #ddd"],
+  #tst-quick-note-modal [style*="border:1px solid #ddd"] {
+    border: 1px solid #555 !important;
+  }
+  
+  /* 上下文菜单深色主题 */
+  .tst-context-menu {
+    background: #3a3a3a !important;
+    border: 1px solid #555 !important;
+    color: #e0e0e0 !important;
+  }
+  
+  /* 输入框深色适配 */
+  #tst-floating-note-manager input[style*="border: 1px solid #ddd"],
+  #tst-floating-note-manager input[style*="border:1px solid #ddd"],
+  #tst-floating-note-manager select[style*="border: 1px solid #ddd"],
+  #tst-floating-note-manager select[style*="border:1px solid #ddd"] {
+    background: #404040 !important;
+    border: 1px solid #666 !important;
+    color: #e0e0e0 !important;
+  }
+  
+  /* 分隔线深色 */
+  #tst-floating-note-manager [style*="border-bottom: 1px solid #eee"],
+  #tst-floating-note-manager [style*="border-bottom:1px solid #eee"],
+  #tst-floating-note-manager [style*="border-right: 1px solid #dee2e6"],
+  #tst-floating-note-manager [style*="border-right:1px solid #dee2e6"] {
+    border-color: #555 !important;
+  }
+  
+  /* 确保文字颜色对比度足够 */
+  #tst-quick-note-modal [style*="color: #666"],
+  #tst-quick-note-modal [style*="color:#666"],
+  #tst-floating-note-manager [style*="color: #666"],
+  #tst-floating-note-manager [style*="color:#666"] {
+    color: #b0b0b0 !important;
+  }
+  
+  #tst-quick-note-modal [style*="color: #999"],
+  #tst-quick-note-modal [style*="color:#999"],
+  #tst-floating-note-manager [style*="color: #999"],
+  #tst-floating-note-manager [style*="color:#999"] {
+    color: #888 !important;
+  }
+  
+  #tst-quick-note-modal [style*="color: #555"],
+  #tst-quick-note-modal [style*="color:#555"],
+  #tst-floating-note-manager [style*="color: #555"],
+  #tst-floating-note-manager [style*="color:#555"] {
+    color: #ccc !important;
+  }
+  
+  /* 模态框深色 */
+  #tst-floating-note-manager .modal-content {
+    background: #3a3a3a !important;
+    color: #e0e0e0 !important;
+  }
+  
+  /* 空状态提示深色 */
+  #tst-floating-note-manager .empty-state,
+  #tst-floating-note-manager .empty-state p {
+    color: #b0b0b0 !important;
+  }
+  
+  /* 历史笔记hover效果深色优化 */
+  .tst-history-item-hover,
+  #tst-quick-note-modal [style*="background-color: #f5f5f5"] {
+    background-color: #4a4a4a !important;
+  }
 }

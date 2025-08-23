@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.8.5",
-  "version_name": "4.8.5 by sperwe - Deep Theme Consistency - History & Editor Areas + Note Modal Fix",
+  "version": "4.8.6",
+  "version_name": "4.8.6 by sperwe - Deep Theme Consistency - History & Editor Areas + Page Notes Fix",
   "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.8.5: Perfect Theme Alignment - Fixed history notes & all editing areas + Note Modal Theme Fix",
+  "description": "v4.8.6: Perfect Theme Alignment - Fixed history notes & all editing areas + Page Notes History Fix",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
