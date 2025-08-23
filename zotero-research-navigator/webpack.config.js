@@ -1,16 +1,15 @@
 const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
-const ReplaceInFileWebpackPlugin = require('replace-in-file-webpack-plugin');
 const { config } = require('./package.json');
 
-module.exports = (env) => {
+module.exports = (env = {}) => {
   const isDev = env.development;
   const isProduction = env.production;
 
   return {
     mode: isProduction ? 'production' : 'development',
     entry: {
-      index: './src/index.ts',
+      index: './src/simple-index.js',
     },
     output: {
       filename: '[name].js',
@@ -41,45 +40,29 @@ module.exports = (env) => {
       new CopyPlugin({
         patterns: [
           {
+            from: 'addon/',
+            to: './',
+          },
+          {
+            from: '_locales/',
+            to: '_locales/',
+          },
+          {
             from: 'manifest.json',
             to: 'manifest.json',
-          },
-          {
-            from: 'addon/**/*',
-            to: '[path][name][ext]',
-          },
-          {
-            from: 'chrome/**/*',
-            to: '[path][name][ext]',
-          },
-          {
-            from: '_locales/**/*',
-            to: '[path][name][ext]',
+            transform(content) {
+              const manifest = JSON.parse(content.toString());
+              // 替换占位符
+              manifest.name = config.addonName || manifest.name;
+              manifest.description = `A Zotero plugin for tracking research history and enhanced note navigation`;
+              manifest.author = 'Research Navigator Developer';
+              manifest.homepage_url = 'https://github.com/your-username/zotero-research-navigator';
+              
+              return JSON.stringify(manifest, null, 2);
+            },
           },
         ],
       }),
-      new ReplaceInFileWebpackPlugin([
-        {
-          dir: 'build',
-          files: ['manifest.json'],
-          rules: [
-            {
-              search: /__MSG_(\w+)__/g,
-              replace: (match, key) => {
-                return config[key] || match;
-              },
-            },
-            {
-              search: /YOUR_USERNAME/g,
-              replace: 'your-github-username',
-            },
-            {
-              search: /YOUR_NAME/g,
-              replace: 'Your Name',
-            },
-          ],
-        },
-      ]),
     ],
     devtool: isDev ? 'source-map' : false,
     optimization: {

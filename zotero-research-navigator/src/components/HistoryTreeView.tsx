@@ -402,7 +402,7 @@ function extractAccessRecords(nodes: HistoryNode[]): AccessRecord[] {
 }
 
 function getTypeDisplayName(itemType: string): string {
-  const typeNames = {
+  const typeNames: {[key: string]: string} = {
     item: '文献条目',
     note: '笔记',
     collection: '分类集合',

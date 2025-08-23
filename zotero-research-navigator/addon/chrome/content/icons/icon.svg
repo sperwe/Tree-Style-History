@@ -1,0 +1,33 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆形 -->
+  <circle cx="64" cy="64" r="60" fill="#2563eb" stroke="#1d4ed8" stroke-width="2"/>
+  
+  <!-- 树状结构主干 -->
+  <line x1="32" y1="96" x2="32" y2="32" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- 树状分支 -->
+  <line x1="32" y1="45" x2="48" y2="45" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <line x1="32" y1="55" x2="56" y2="55" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <line x1="32" y1="65" x2="52" y2="65" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <line x1="32" y1="75" x2="58" y2="75" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <line x1="32" y1="85" x2="50" y2="85" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- 节点圆点 -->
+  <circle cx="48" cy="45" r="3" fill="white"/>
+  <circle cx="56" cy="55" r="3" fill="white"/>
+  <circle cx="52" cy="65" r="3" fill="white"/>
+  <circle cx="58" cy="75" r="3" fill="white"/>
+  <circle cx="50" cy="85" r="3" fill="white"/>
+  
+  <!-- 历史轨迹箭头 -->
+  <path d="M70 40 Q85 50 90 65 Q85 80 70 90" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- 搜索图标 -->
+  <circle cx="85" cy="45" r="8" stroke="white" stroke-width="2" fill="none"/>
+  <line x1="91" y1="51" x2="96" y2="56" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- 卡片图标 -->
+  <rect x="75" y="70" width="18" height="12" rx="2" stroke="white" stroke-width="1.5" fill="none"/>
+  <rect x="78" y="73" width="12" height="2" fill="white"/>
+  <rect x="78" y="76" width="8" height="1" fill="white"/>
+</svg>

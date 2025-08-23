@@ -1,0 +1,10 @@
+content research-navigator chrome/content/
+skin research-navigator classic/1.0 chrome/skin/
+locale research-navigator en-US chrome/locale/en-US/
+locale research-navigator zh-CN chrome/locale/zh-CN/
+
+# 样式和脚本
+style chrome://global/content/customizeToolbar.xul chrome://research-navigator/skin/overlay.css
+
+# 覆盖和集成
+overlay chrome://zotero/content/zoteroPane.xul chrome://research-navigator/content/overlay.xul

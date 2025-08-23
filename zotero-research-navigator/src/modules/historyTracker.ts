@@ -3,7 +3,9 @@
  * 移植自 Tree Style History 的核心历史跟踪逻辑
  */
 
-import { config } from "../../package.json";
+const config = {
+  prefsPrefix: 'extensions.zotero.researchnavigator'
+};
 
 export interface AccessRecord {
   id: string;
@@ -105,7 +107,7 @@ export class HistoryTracker {
       title: item.title || item.name || 'Untitled',
       timestamp,
       parentId: item.parentID,
-      tags: item.getTags ? item.getTags().map(tag => tag.tag) : []
+      tags: item.getTags ? item.getTags().map((tag: any) => tag.tag) : []
     };
 
     // 添加到打开的条目映射
@@ -311,7 +313,7 @@ export class HistoryTracker {
    * 获取类型显示名称
    */
   private getTypeDisplayName(itemType: string): string {
-    const typeNames = {
+    const typeNames: {[key: string]: string} = {
       item: '📖 文献条目',
       note: '📝 笔记',
       collection: '📁 分类集合',

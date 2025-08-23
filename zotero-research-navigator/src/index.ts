@@ -6,7 +6,13 @@
 import { HistoryTracker } from './modules/historyTracker';
 import { SearchEngine } from './modules/searchEngine';
 import { ResearchNavigatorUI } from './ui/mainUI';
-import { config } from "../package.json";
+import './types/zotero';
+
+const config = {
+  prefsPrefix: 'extensions.zotero.researchnavigator',
+  addonName: 'Research Navigator',
+  addonID: 'research-navigator@zotero.org'
+};
 
 class ResearchNavigator {
   private historyTracker: HistoryTracker;
@@ -184,7 +190,7 @@ class ResearchNavigator {
 let researchNavigatorInstance: ResearchNavigator;
 
 // 全局访问接口
-window.ResearchNavigator = {
+(window as any).ResearchNavigator = {
   togglePanel(): void {
     if (researchNavigatorInstance) {
       researchNavigatorInstance.togglePanel();
@@ -248,14 +254,4 @@ export async function uninstall(data: any, reason: any): Promise<void> {
   }
 }
 
-// 类型声明
-declare global {
-  interface Window {
-    ResearchNavigator: {
-      togglePanel(): void;
-      showPanel(): void;
-      hidePanel(): void;
-      clearHistory(): void;
-    };
-  }
-}
+// 类型声明已移至 types/zotero.d.ts

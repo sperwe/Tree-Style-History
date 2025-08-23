@@ -1,0 +1,16 @@
+# Research Navigator Icon 16x16
+# 这是一个文本描述文件，实际部署时需要使用图像编辑器或在线工具将SVG转换为PNG
+# SVG源文件: addon/chrome/content/icons/icon.svg
+
+尺寸: 16x16 像素
+格式: PNG
+背景: 透明
+主色调: #2563eb (蓝色)
+图标内容: 简化的树状结构图标，带有小的搜索和卡片元素
+
+实际文件应通过以下方式生成:
+1. 使用 Inkscape: inkscape --export-png=icon-16.png --export-width=16 --export-height=16 icon.svg
+2. 使用在线转换工具: https://convertio.co/svg-png/
+3. 使用 GIMP 或 Photoshop 手动调整
+
+注意: 16x16 尺寸下应简化图标，只保留主要的树状结构元素

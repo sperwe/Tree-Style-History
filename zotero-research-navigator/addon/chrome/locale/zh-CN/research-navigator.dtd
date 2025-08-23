@@ -1,0 +1,11 @@
+<!ENTITY research-navigator.button.label "研究导航器">
+<!ENTITY research-navigator.button.tooltip "切换研究导航器面板">
+<!ENTITY research-navigator.menu.label "研究导航器面板">
+<!ENTITY research-navigator.panel.title "研究导航器">
+<!ENTITY research-navigator.search.placeholder "搜索历史记录...">
+<!ENTITY research-navigator.expand.all "展开全部">
+<!ENTITY research-navigator.collapse.all "折叠全部">
+<!ENTITY research-navigator.clear.history "清除历史">
+<!ENTITY research-navigator.open.item "打开项目">
+<!ENTITY research-navigator.no.history "暂无访问历史">
+<!ENTITY research-navigator.loading "正在加载历史记录...">
