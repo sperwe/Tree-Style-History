@@ -56,15 +56,22 @@
     function checkHistoryNoteStatus() {
         const pageUrl = window.location.href;
         
+        console.log('[TST Notes] 检查历史笔记状态:', pageUrl);
+        
         chrome.runtime.sendMessage({
             action: 'checkPageNote',
             data: { url: pageUrl }
         }, (response) => {
+            console.log('[TST Notes] 历史笔记检查结果:', response);
+            
             if (response && response.success && response.hasNote) {
                 // 有历史笔记，更新按钮样式
                 floatingButton.innerHTML = '📝💡';
                 floatingButton.title = '页面笔记（有历史记录）';
                 floatingButton.classList.add('has-history');
+                console.log('[TST Notes] 按钮已更新为历史状态');
+            } else {
+                console.log('[TST Notes] 当前页面无历史笔记');
             }
         });
     }

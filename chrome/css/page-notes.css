@@ -486,3 +486,151 @@
 .item .ops a:hover {
   text-decoration: underline;
 }
+
+/* 树状结构样式 */
+.note-group {
+  margin-bottom: 8px;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.note-group-header {
+  background: linear-gradient(135deg, #f1f3f4 0%, #e8eaed 100%);
+  padding: 12px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #e1e5e9;
+  transition: background-color 0.2s ease;
+}
+
+.note-group-header:hover {
+  background: linear-gradient(135deg, #e8eaed 0%, #dadce0 100%);
+}
+
+.note-group-toggle {
+  font-size: 12px;
+  color: #666;
+  width: 16px;
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.note-group-favicon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-group-favicon img {
+  border-radius: 2px;
+}
+
+.note-group-title {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: #202124;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-group-count {
+  font-size: 11px;
+  color: #5f6368;
+  background: rgba(95, 99, 104, 0.1);
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.note-group-items {
+  background: #fafbfc;
+}
+
+/* 分组内的笔记项样式 */
+.note-item-grouped {
+  border: none !important;
+  border-radius: 0 !important;
+  margin-bottom: 0 !important;
+  background: transparent !important;
+  border-bottom: 1px solid #e8eaed !important;
+}
+
+.note-item-grouped:last-child {
+  border-bottom: none !important;
+}
+
+.note-item-grouped:hover {
+  background: rgba(66, 133, 244, 0.04) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.note-item-grouped .note-header {
+  background: transparent !important;
+  border-bottom: none !important;
+  padding: 8px 16px 4px 32px !important;
+}
+
+.note-item-grouped .note-content {
+  padding: 4px 16px 12px 32px !important;
+}
+
+.note-item-grouped .note-title-link {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #1a73e8 !important;
+}
+
+/* 暗色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .note-group {
+    background: #2d2d2d;
+    border-color: #404040;
+  }
+  
+  .note-group-header {
+    background: linear-gradient(135deg, #3c4043 0%, #313235 100%);
+    border-bottom-color: #404040;
+  }
+  
+  .note-group-header:hover {
+    background: linear-gradient(135deg, #414549 0%, #35383c 100%);
+  }
+  
+  .note-group-toggle {
+    color: #9aa0a6;
+  }
+  
+  .note-group-title {
+    color: #e8eaed;
+  }
+  
+  .note-group-count {
+    color: #9aa0a6;
+    background: rgba(154, 160, 166, 0.1);
+  }
+  
+  .note-group-items {
+    background: #2a2a2a;
+  }
+  
+  .note-item-grouped {
+    border-bottom-color: #404040 !important;
+  }
+  
+  .note-item-grouped:hover {
+    background: rgba(138, 180, 248, 0.08) !important;
+  }
+  
+  .note-item-grouped .note-title-link {
+    color: #8ab4f8 !important;
+  }
+}

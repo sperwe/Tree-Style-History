@@ -1026,9 +1026,17 @@ function saveSelectionAsNote(pageUrl, selectedText){
 function findLatestVisitId(pageUrl) {
     return new Promise((resolve, reject) => {
         try {
+            if (!dbConn) {
+                console.error('Database not initialized in findLatestVisitId');
+                reject(new Error('Database not initialized'));
+                return;
+            }
+            
+            console.log('[TST Background] 查找visitId for URL:', pageUrl);
+            
             var latestVisitId = 0;
             var latestVisitTime = 0;
-            var tx = db.transaction(["VisitItem"], "readonly");
+            var tx = dbConn.transaction(["VisitItem"], "readonly");
             var st = tx.objectStore("VisitItem");
             var idx = st.index('url');
             var c = idx.openCursor(IDBKeyRange.only(pageUrl));
@@ -1301,11 +1309,15 @@ async function loadPageNoteFromContentScript(pageData) {
  */
 async function checkPageNoteExists(pageData) {
     try {
+        console.log('[TST Background] 检查页面笔记是否存在:', pageData.url);
+        
         // Find visitId for this URL
         const visitId = await findLatestVisitId(pageData.url);
+        console.log('[TST Background] 找到visitId:', visitId);
         
         // Check if note exists
         const hasNote = await checkNoteExists(visitId);
+        console.log('[TST Background] 笔记存在状态:', hasNote);
         
         return hasNote;
     } catch (error) {
