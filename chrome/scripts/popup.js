@@ -89,6 +89,11 @@ document.addEvent('domready', function () {
             if ((localStorage['rt-itemsno'] * 1) > 0 && chrome.extension.getBackgroundPage().recentTabs.length > 0) {
                new Element('div', { id: 'rt-inject', html: '<div id="rt-inject-title" class="popup-title"><span>' + returnLang('recentTabs') + '</span></div>' }).inject('popup-insert', 'bottom');
             }
+        } else if (rhporder[o] == 'rn-order') {
+            // rn = recent notes
+            if ((localStorage['rn-itemsno'] * 1) > 0) {
+                new Element('div', { id: 'rn-inject', html: '<div id="rn-inject-title" class="popup-title"><span>' + returnLang('recentNotes') + ' - <a href="#" id="show-all-notes" target="_blank">' + returnLang('more') + '📝</a></span></div>' }).inject('popup-insert', 'bottom');
+            }
         }
     }
 
@@ -118,6 +123,14 @@ document.addEvent('domready', function () {
                 chromeURL('chrome://history/recentlyClosed');
         });
 
+    if ($('show-all-notes') != undefined)
+        $('show-all-notes').addEvent('click', function () {
+            if (localStorage['rm-click'] == 'this')
+                chromeURL('/notes.html');
+            else
+                window.open('/notes.html');
+        });
+
     // Popup init
 
     // -- Insert
@@ -126,6 +139,7 @@ document.addEvent('domready', function () {
     if ($('rt-inject')) { showRecentTabs(); }
     if ($('rb-inject')) { recentBookmarks(); }
     if ($('mv-inject')) { mostVisited(); }
+    if ($('rn-inject')) { recentNotes(); }
 
     // $$("#rt-inject-title .item[target]").each(function (el, i) {
     //     if (i !== 0) {
@@ -189,3 +203,112 @@ document.addEvent('domready', function () {
     //popup_scrollbar_fix.periodical(250);
 
 });
+
+// Recent Notes Function
+function recentNotes() {
+    var bg = chrome.extension.getBackgroundPage();
+    var db = bg && bg.db;
+    var itemsno = localStorage['rn-itemsno'] * 1;
+    
+    if (!db || itemsno <= 0) return;
+    
+    var tx = db.transaction(["VisitNote"], "readonly");
+    var store = tx.objectStore("VisitNote");
+    var req = store.getAll ? store.getAll() : null;
+    
+    if (req) {
+        req.onsuccess = function(e) {
+            var notes = e.target.result || [];
+            renderNotesInPopup(notes, itemsno);
+        };
+        req.onerror = function() {
+            console.error('Failed to load notes for popup');
+        };
+    } else {
+        var out = [];
+        store.openCursor().onsuccess = function(e) {
+            var c = e.target.result;
+            if (c) {
+                out.push(c.value);
+                c.continue();
+            } else {
+                renderNotesInPopup(out, itemsno);
+            }
+        };
+    }
+}
+
+function renderNotesInPopup(notes, itemsno) {
+    if (notes.length === 0) return;
+    
+    // Sort by updatedAt desc
+    notes.sort(function(a, b) {
+        return (b.updatedAt || 0) - (a.updatedAt || 0);
+    });
+    
+    // Limit to itemsno
+    notes = notes.slice(0, itemsno);
+    
+    // Get titles for notes
+    var bg = chrome.extension.getBackgroundPage();
+    var db = bg && bg.db;
+    if (!db) return;
+    
+    var tx = db.transaction(["VisitItem"], "readonly");
+    var store = tx.objectStore("VisitItem");
+    var processed = 0;
+    
+    notes.forEach(function(note, index) {
+        var req = store.get(note.visitId);
+        req.onsuccess = function(e) {
+            var visitItem = e.target.result;
+            var title = (visitItem && visitItem.title) ? visitItem.title : note.url;
+            var url = note.url || '';
+            
+            // Format first line as preview
+            var noteText = note.note || '';
+            var firstLine = noteText.split(/\r?\n/)[0];
+            if (firstLine.length > 50) firstLine = firstLine.slice(0, 50) + '…';
+            
+            // Count selections
+            var excerptCount = 0;
+            excerptCount += (noteText.match(/---\n\*Added on /g) || []).length;
+            excerptCount += (noteText.match(/\*摘录自:/g) || []).length;
+            if (excerptCount === 0 && noteText.trim()) excerptCount = 1;
+            
+            var displayTitle = title;
+            if (firstLine) {
+                displayTitle = title + ': ' + firstLine;
+            }
+            if (excerptCount > 1) {
+                displayTitle += ' [' + excerptCount + ' selections]';
+            }
+            
+            // Format time
+            var timeStr = '';
+            if (note.updatedAt) {
+                try {
+                    timeStr = new Date(note.updatedAt).toLocaleString();
+                } catch (e) {
+                    timeStr = '';
+                }
+            }
+            
+            // Create formatted item for popup
+            var formattedItem = formatItem({
+                type: 'rn',
+                url: url,
+                title: displayTitle,
+                favicon: 'chrome://favicon/' + url,
+                time: timeStr
+            });
+            
+            formattedItem.inject('rn-inject', 'bottom');
+            
+            processed++;
+        };
+        req.onerror = function() {
+            processed++;
+        };
+    });
+}
