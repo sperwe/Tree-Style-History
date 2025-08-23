@@ -3,7 +3,7 @@ document.addEvent('domready', function(){
 	var bg = chrome.extension.getBackgroundPage();
 	var db = bg && bg.db;
 	var all = [];
-	var listEl = $('notes-list');
+	var listEl = $('rh-views-insert');
 	var searchEl = $('notes-search');
 	function fmt(ts){ if(!ts) return ''; try{ return new Date(ts).toLocaleString(); } catch(e){ return ''; } }
 	function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -43,12 +43,19 @@ document.addEvent('domready', function(){
 		
 		var isMultiple = items.length > 1;
 		var firstItem = items[0];
-		var title = (firstItem.title && firstItem.title.trim()!=='') ? firstItem.title : url;
 		var hostName = url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
 		
+		// Alternating background colors like in tree-style history
+		var colorIndex = listEl.getChildren().length % 2;
+		var bgColor = colorIndex === 0 ? 'white' : 'grey';
+		
 		if (isMultiple) {
-			// Create tree-style group using history CSS classes
-			var groupId = 'group-' + btoa(url).replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
+			// Create tree-style group using exact history structure
+			var toggleId = 'toggle-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
+			var moreId = 'more-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
+			var errorId = 'error-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
+			var groupId = 'group-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
+			
 			var totalSelections = items.reduce(function(sum, item) {
 				var noteText = item.note.note || '';
 				var excerptCount = 0;
@@ -58,143 +65,117 @@ document.addEvent('domready', function(){
 				return sum + excerptCount;
 			}, 0);
 			
-			// Tree-style group header using history CSS structure
+			// Group header - exact copy of tree-style history structure
 			var groupElement = new Element('div', {
+				'title': hostName,
+				'rel': bgColor,
 				'class': 'item-holder group-title',
-				'title': groupId,
-				'rel': 'white'
+				'html': '<a href="#" class="group-title-toggle" id="' + toggleId + '" data-host="' + hostName + '" rel="' + hostName + '"></a>' +
+				        '<input type="checkbox" class="group-title-checkbox" id="' + moreId + '" value="' + hostName + '">' +
+				        '<img id="' + errorId + '" class="group-title-favicon" alt="Favicon" src="chrome://favicon/' + escapeHtml(url) + '">' +
+				        '<span id="' + groupId + '" data-host="' + hostName + '" class="group-title-host">' + 
+				        escapeHtml(hostName) + ' (' + items.length + ' notes, ' + totalSelections + ' selections)</span>'
 			});
-			
-			var toggleId = 'toggle-' + groupId;
-			var groupTitleId = 'grouptitle-' + groupId;
-			
-			var groupHtml = '';
-			groupHtml += '<a href="#" class="group-title-toggle" id="' + toggleId + '" data-host="' + url + '" rel="' + url + '"></a>';
-			groupHtml += '<input type="checkbox" class="group-title-checkbox" value="' + url + '" style="display:none;">';
-			groupHtml += '<img class="group-title-favicon" alt="Favicon" src="chrome://favicon/' + escapeHtml(url) + '" onerror="this.style.display=\'none\'">';
-			groupHtml += '<span id="' + groupTitleId + '" data-host="' + url + '" class="group-title-host">';
-			groupHtml += escapeHtml(hostName) + ' (' + items.length + ' notes, ' + totalSelections + ' selections)';
-			groupHtml += '</span>';
-			
-			groupElement.set('html', groupHtml);
 			groupElement.inject(listEl);
 			
-			// Create collapsible container for notes
+			// Create collapsible container
 			var notesContainer = new Element('div', {
-				'id': groupId,
-				'style': 'display: none; margin-left: 20px;'
+				'rel': hostName,
+				'style': 'display: none;'
 			});
 			notesContainer.inject(listEl);
 			
-			// Render individual notes in group
-			items.forEach(function(m, index) {
-				var noteHtml = renderSingleNoteHtml(m, true, index + 1);
-				var noteElement = new Element('div', { 
-					'class': 'item-holder',
-					'html': noteHtml 
-				});
-				noteElement.inject(notesContainer);
-				addNoteEventHandlers(m);
+			// Add toggle functionality
+			$(toggleId).addEvent('click', function() {
+				var host = this.getProperty('data-host');
+				toggleGroup(host);
 			});
 			
-			// Add toggle functionality
-			$(toggleId).addEvent('click', function(e) {
-				e.stop();
-				toggleGroup(groupId);
+			$(groupId).addEvent('click', function() {
+				var host = this.getProperty('data-host');
+				toggleGroup(host);
+			});
+			
+			// Render individual notes in group
+			items.forEach(function(m, index) {
+				var itemBgColor = index % 2 === 0 ? 'white' : 'grey';
+				renderSingleNote(m, true, index + 1, itemBgColor, notesContainer);
 			});
 			
 		} else {
-			// Single note, render normally with item-holder wrapper
-			var singleNoteElement = new Element('div', {
-				'class': 'item-holder'
-			});
-			var noteHtml = renderSingleNoteHtml(firstItem, false);
-			singleNoteElement.set('html', noteHtml);
-			singleNoteElement.inject(listEl);
-			addNoteEventHandlers(firstItem);
+			// Single note
+			renderSingleNote(firstItem, false, 1, bgColor, listEl);
 		}
 	}
 	
-	function renderSingleNote(m, isInGroup, noteIndex) {
-		var html = renderSingleNoteHtml(m, isInGroup, noteIndex);
-		var el = new Element('div', { 'html': html }).inject(listEl);
-		addNoteEventHandlers(m);
-	}
-	
-	function renderSingleNoteHtml(m, isInGroup, noteIndex) {
+	function renderSingleNote(m, isInGroup, noteIndex, bgColor, container) {
 		var url = m.note.url || '';
 		var title = (m.title && m.title.trim()!=='') ? m.title : url;
 		var noteText = m.note.note || '';
 		var firstLine = noteText.split(/\r?\n/)[0];
-		if (firstLine.length>120) firstLine = firstLine.slice(0,120)+'…';
+		if (firstLine.length>80) firstLine = firstLine.slice(0,80)+'…';
 		
-		// Count number of selections (by counting different separator patterns)
+		// Count selections
 		var excerptCount = 0;
-		// Count old format separators
 		excerptCount += (noteText.match(/---\n\*Added on /g) || []).length;
-		// Count new format separators  
 		excerptCount += (noteText.match(/\*摘录自:/g) || []).length;
-		// If no separators but has content, count as 1
 		if (excerptCount === 0 && noteText.trim()) excerptCount = 1;
 		
-		var countBadge = excerptCount > 1 ? 
-			' <span style="background:#007cba;color:white;padding:2px 6px;border-radius:10px;font-size:10px;margin-left:6px;">' + 
-			excerptCount + ' selections</span>' : '';
+		var countBadge = excerptCount > 1 ? ' [' + excerptCount + ' selections]' : '';
 		
-		// Render first line as Markdown if available
-		var renderedFirstLine = '';
-		if (typeof marked !== 'undefined' && firstLine.trim()) {
-			try {
-				renderedFirstLine = marked.parseInline(firstLine);
-			} catch (e) {
-				renderedFirstLine = escapeHtml(firstLine);
-			}
-		} else {
-			renderedFirstLine = escapeHtml(firstLine);
-		}
-		
-		// Format timestamp and title using tree-style format
+		// Format timestamp
 		var timeStr = fmt(m.note.updatedAt) || '';
-		var displayTitle;
-		if (isInGroup) {
-			// In group, show note index and time only (tree-style child item)
-			displayTitle = 'Note #' + noteIndex + (timeStr ? ' - ' + timeStr : '');
-		} else {
-			// Single note, show full title with time (tree-style single item)
-			displayTitle = title;
+		var displayTitle = isInGroup ? 
+			'Note #' + noteIndex + ': ' + firstLine + countBadge :
+			title + countBadge;
+		
+		// Generate unique IDs like tree-style history
+		var selectId = 'select-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
+		var errorId = 'error-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
+		
+		// Build HTML exactly like tree-style history
+		var item = '';
+		item += '<div class="item">';
+		item += '<span class="checkbox"><label><input class="chkbx" type="checkbox" id="' + selectId + '" value="' + url + '" name="check"></label>&nbsp;</span>';
+		item += '<span class="time">' + timeStr + '</span>';
+		item += '<a target="_blank" class="link" href="' + url + '">';
+		item += '<img id="' + errorId + '" class="favicon" alt="Favicon" src="chrome://favicon/' + escapeHtml(url) + '">';
+		item += '<span class="title" title="' + escapeHtml(url) + '">' + escapeHtml(displayTitle) + '</span>';
+		item += '</a>';
+		
+		// Add note preview and actions
+		if (firstLine && !isInGroup) {
+			item += '<div style="margin-left: 18px; margin-top: 3px; font-size: 11px; color: #666;">';
+			item += '<div>' + escapeHtml(firstLine) + '</div>';
 		}
 		
-		// Use tree-style history structure
-		var html = '';
-		html += '<div class="item">';
-		html += '<div class="checkbox" style="display:none;"><label><input type="checkbox"></label></div>';
-		if (timeStr && !isInGroup) {
-			html += '<div class="time">' + escapeHtml(timeStr) + '</div>';
-		}
-		html += '<a class="link" href="'+url+'" target="_blank">';
+		item += '</div>';
+		
+		// Create element
+		var noteElement = new Element('div', { 
+			'rel': bgColor, 
+			'class': 'item-holder',
+			'html': item + '<div class="clearitem" style="clear:both;"></div>'
+		});
+		noteElement.inject(container);
+		
+		// Add note-specific actions as floating buttons
 		if (!isInGroup) {
-			html += '<img class="favicon" src="chrome://favicon/' + escapeHtml(url) + '" onerror="this.style.display=\'none\'">';
-		}
-		html += '<span class="title">' + escapeHtml(displayTitle) + countBadge + '</span>';
-		html += '</a>';
-		
-		// Note preview and actions
-		if (renderedFirstLine) {
-			html += '<div style="margin-left: 18px; margin-top: 3px; font-size: 11px; color: #666;">';
-			html += '<div>' + renderedFirstLine + '</div>';
-			html += '<div style="margin-top: 2px;">';
-			html += '<a href="#" id="edit-'+m.note.visitId+'" style="font-size: 11px;">'+escapeHtml(returnLang('notesEdit')||'Edit')+'</a> · ';
-			html += '<a href="#" id="view-'+m.note.visitId+'" style="font-size: 11px;">'+escapeHtml(returnLang('notesView')||'View')+'</a> · ';
-			html += '<a href="#" id="del-'+m.note.visitId+'" style="font-size: 11px;">'+escapeHtml(returnLang('notesDelete')||'Delete')+'</a> · ';
-			html += '<a href="#" id="copy-'+m.note.visitId+'" style="font-size: 11px;">'+escapeHtml(returnLang('copy')||'Copy')+'</a>';
-			html += '</div>';
-			html += '</div>';
+			var actionsDiv = new Element('div', {
+				'style': 'margin-left: 18px; margin-top: 2px; font-size: 11px;',
+				'html': '<a href="#" id="edit-'+m.note.visitId+'">Edit</a> · ' +
+				        '<a href="#" id="view-'+m.note.visitId+'">View</a> · ' +
+				        '<a href="#" id="del-'+m.note.visitId+'">Delete</a> · ' +
+				        '<a href="#" id="copy-'+m.note.visitId+'">Copy</a>'
+			});
+			actionsDiv.inject(noteElement);
 		}
 		
-		html += '</div>';
-		
-		return html;
+		// Add event handlers
+		addNoteEventHandlers(m);
 	}
+	
+
 	
 	function addNoteEventHandlers(m) {
 		var eid = 'edit-'+m.note.visitId;
@@ -346,14 +327,18 @@ document.addEvent('domready', function(){
 		var f=all.filter(function(m){ return (m.note.url||'').toLowerCase().indexOf(q)>=0 || (m.title||'').toLowerCase().indexOf(q)>=0 || (m.note.note||'').toLowerCase().indexOf(q)>=0; });
 		render(f);
 	});
-	function toggleGroup(groupId) {
-		var groupItems = document.getElementById(groupId);
-		
-		if (groupItems) {
-			if (groupItems.style.display === 'none') {
-				groupItems.style.display = 'block';
+	function toggleGroup(host) {
+		var tgda = listEl.getElement('a[rel="' + host + '"]');
+		var tgde = listEl.getElement('div[rel="' + host + '"]');
+
+		if (tgda != undefined && tgde != undefined) {
+			var tgdv = tgde.getStyle('display');
+			if (tgdv == 'block') {
+				tgde.setStyle('display', 'none');
+				tgda.setStyle('background-position', 'left center');
 			} else {
-				groupItems.style.display = 'none';
+				tgde.setStyle('display', 'block');
+				tgda.setStyle('background-position', 'left bottom');
 			}
 		}
 	}

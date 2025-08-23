@@ -109,6 +109,8 @@ document.addEvent('domready', function () {
     loadSlider('mvitemsno', 0, 100, 'mv-itemsno');
     // recent-bookmark
     loadSlider('rbitemsno', 0, 100, 'rb-itemsno');
+    // recent-notes
+    loadSlider('rnitemsno', 0, 50, 'rn-itemsno');
     loadSlider('rhwidth', 225, 800, 'rh-width');
     loadSlider('loadrange', 3, 300, 'load-range');
     loadSlider('loadrange2', 1, 100, 'load-range2');

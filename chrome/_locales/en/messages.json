@@ -53,6 +53,9 @@
     "option6": {
         "message": "History Page"
     },
+    "option6_notes": {
+        "message": "Maximum number of recent notes to display"
+    },
     "option7": {
         "message": "Date Format"
     },

@@ -372,6 +372,7 @@ var defaultValues = {
 	"rhs-showext": "no",
 	"rhs-showbg": "no",
 	"show-popup": "yes",
+	"rn-itemsno": "10",
 	"notes-badge": "yes",
 	"notes-tooltip": "yes",
 	"notes-merge-mode": "append"
@@ -410,6 +411,7 @@ function loadOptions(full) {
     $('rtitemsno').set('value', localStorage['rt-itemsno']);
     $('mvitemsno').set('value', localStorage['mv-itemsno']);
     $('rbitemsno').set('value', localStorage['rb-itemsno']);
+    $('rnitemsno').set('value', localStorage['rn-itemsno']);
 
     var rhilo_default = defaultValues["rh-list-order"].split(',');
     var rhilo = localStorage['rh-list-order'].split(',');
@@ -635,6 +637,7 @@ function saveOptions(sync) {
     so['rt-itemsno'] = $('rtitemsno').get('value');
     so['rb-itemsno'] = $('rbitemsno').get('value');
     so['mv-itemsno'] = $('mvitemsno').get('value');
+    so['rn-itemsno'] = $('rnitemsno').get('value');
     so['rh-list-order'] = rhlo[0].get('id') + ',' + rhlo[1].get('id') + ',' + rhlo[2].get('id') + ',' + rhlo[3].get('id') + ',' +  rhlo[4].get('id');
     so['rh-historypage'] = $('rhhistorypage').getSelected().get('value');
     so['show-popup'] = $('showPopup').getSelected().get('value');
