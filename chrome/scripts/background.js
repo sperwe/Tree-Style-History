@@ -1749,11 +1749,25 @@ async function getAllNotesFromDatabase() {
             const notes = request.result || [];
             
             // 转换数据格式，确保兼容性
-            const formattedNotes = notes.map(note => ({
-                id: note.id || note.visitId,
-                title: note.title || '未命名笔记',
-                note: note.note || '',
-                tag: note.tag || 'general_general',
+            const formattedNotes = notes.map(note => {
+                // 智能生成标题：从内容提取或使用默认值
+                let title = note.title;
+                if (!title || title.trim() === '') {
+                    const content = note.note || '';
+                    if (content.trim()) {
+                        // 从内容提取前30个字符作为标题
+                        title = content.trim().substring(0, 30).replace(/\n/g, ' ');
+                        if (content.length > 30) title += '...';
+                    } else {
+                        title = 'Untitled Note';
+                    }
+                }
+                
+                return {
+                    id: note.id || note.visitId,
+                    title: title,
+                    note: note.note || '',
+                    tag: note.tag || 'general_general',
                 url: note.url || '',
                 createdAt: note.createdAt || note.time,
                 updatedAt: note.updatedAt || note.time
@@ -1782,10 +1796,22 @@ async function saveNoteFromManager(noteData) {
             const objectStore = transaction.objectStore('VisitNote');
             
             // 准备笔记数据
+            let title = noteData.title;
+            if (!title || title.trim() === '') {
+                const content = noteData.note || '';
+                if (content.trim()) {
+                    // 从内容提取前30个字符作为标题
+                    title = content.trim().substring(0, 30).replace(/\n/g, ' ');
+                    if (content.length > 30) title += '...';
+                } else {
+                    title = 'Untitled Note';
+                }
+            }
+            
             const note = {
                 id: noteData.id,
                 visitId: noteData.id, // 兼容性
-                title: noteData.title || '未命名笔记',
+                title: title,
                 note: noteData.note || '',
                 tag: noteData.tag || 'general_general',
                 url: noteData.url || '',

@@ -2584,9 +2584,9 @@
         noteItem.className = 'note-item';
         noteItem.dataset.noteId = note.id || index;
         
-        const title = note.title || '无标题笔记';
+        const title = generateNoteTitle(note.title, note.note);
         const content = note.note || '';
-        const date = note.updatedAt ? new Date(note.updatedAt).toLocaleString() : '未知时间';
+        const date = note.updatedAt ? new Date(note.updatedAt).toLocaleString() : 'Unknown Time';
         const url = note.url || '';
         const hostname = url ? new URL(url).hostname : '';
         
@@ -3053,7 +3053,7 @@
 
             // 渲染笔记列表
             const notesHTML = notes.map(note => {
-                const title = note.title || '未命名笔记';
+                const title = generateNoteTitle(note.title, note.note);
                 const preview = getFloatingNotePreview(note.note);
                 const time = formatFloatingTime(note.createdAt || note.updatedAt);
                 
@@ -3137,6 +3137,30 @@
         if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / (60 * 60 * 1000))}小时前`;
         
         return date.toLocaleDateString('zh-CN');
+    }
+
+    /**
+     * 智能生成笔记标题
+     * @param {string} title - 原始标题
+     * @param {string} content - 笔记内容
+     * @returns {string} 生成的标题
+     */
+    function generateNoteTitle(title, content) {
+        if (title && title.trim() !== '') {
+            return title.trim();
+        }
+        
+        const cleanContent = (content || '').trim();
+        if (cleanContent) {
+            // 从内容提取前30个字符作为标题
+            let extractedTitle = cleanContent.substring(0, 30).replace(/\n/g, ' ');
+            if (cleanContent.length > 30) {
+                extractedTitle += '...';
+            }
+            return extractedTitle;
+        }
+        
+        return 'Untitled Note';
     }
 
     /**

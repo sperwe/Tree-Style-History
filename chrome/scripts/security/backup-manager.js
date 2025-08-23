@@ -449,7 +449,19 @@ class BackupManager {
         content += `---\n\n`;
 
         for (const note of backup.data) {
-            content += `## ${note.title || '未命名笔记'}\n\n`;
+            // 智能获取标题
+            let title = note.title;
+            if (!title || title.trim() === '') {
+                const noteContent = note.note || '';
+                if (noteContent.trim()) {
+                    title = noteContent.trim().substring(0, 30).replace(/\n/g, ' ');
+                    if (noteContent.length > 30) title += '...';
+                } else {
+                    title = 'Untitled Note';
+                }
+            }
+            
+            content += `## ${title}\n\n`;
             
             if (note.url) {
                 content += `**来源**: ${note.url}\n`;
@@ -523,9 +535,21 @@ class BackupManager {
     </div>`;
 
         for (const note of backup.data) {
+            // 智能获取标题
+            let title = note.title;
+            if (!title || title.trim() === '') {
+                const noteContent = note.note || '';
+                if (noteContent.trim()) {
+                    title = noteContent.trim().substring(0, 30).replace(/\n/g, ' ');
+                    if (noteContent.length > 30) title += '...';
+                } else {
+                    title = 'Untitled Note';
+                }
+            }
+            
             html += `
     <div class="note">
-        <h2 class="note-title">${XSSProtection.escapeHtml(note.title || '未命名笔记')}</h2>
+        <h2 class="note-title">${XSSProtection.escapeHtml(title)}</h2>
         <div class="note-meta">
             ${note.tag ? `<span class="tag">${this.getTagDisplayName(note.tag)}</span> ` : ''}
             ${note.url ? `<a href="${note.url}" target="_blank">🔗 查看原页面</a> ` : ''}

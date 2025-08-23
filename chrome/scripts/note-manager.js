@@ -638,9 +638,21 @@ class NoteManager {
             'class': 'note-content'
         });
 
+        // 智能生成标题
+        let noteTitle = note.title;
+        if (!noteTitle || noteTitle.trim() === '') {
+            const content = note.note || '';
+            if (content.trim()) {
+                noteTitle = content.trim().substring(0, 30).replace(/\n/g, ' ');
+                if (content.length > 30) noteTitle += '...';
+            } else {
+                noteTitle = 'Untitled Note';
+            }
+        }
+        
         // 标题
         const title = XSSProtection.createSafeElement('div', 
-            note.title || '未命名笔记', 
+            noteTitle, 
             { 'class': 'note-title' }
         );
 
@@ -1078,8 +1090,19 @@ class NoteManager {
                 return;
             }
 
+            // 智能设置标题
+            let finalTitle = title;
+            if (!finalTitle || finalTitle.trim() === '') {
+                if (content.trim()) {
+                    finalTitle = content.trim().substring(0, 30).replace(/\n/g, ' ');
+                    if (content.length > 30) finalTitle += '...';
+                } else {
+                    finalTitle = 'Untitled Note';
+                }
+            }
+            
             // 更新笔记数据
-            this.currentNote.title = title || '未命名笔记';
+            this.currentNote.title = finalTitle;
             this.currentNote.note = content;
             this.currentNote.updatedAt = new Date().toISOString();
 
@@ -1226,7 +1249,19 @@ class NoteManager {
                 return;
             }
 
-            const content = `# ${this.currentNote.title || '未命名笔记'}\n\n${this.currentNote.note || ''}`;
+            // 智能获取标题用于复制
+            let copyTitle = this.currentNote.title;
+            if (!copyTitle || copyTitle.trim() === '') {
+                const noteContent = this.currentNote.note || '';
+                if (noteContent.trim()) {
+                    copyTitle = noteContent.trim().substring(0, 30).replace(/\n/g, ' ');
+                    if (noteContent.length > 30) copyTitle += '...';
+                } else {
+                    copyTitle = 'Untitled Note';
+                }
+            }
+            
+            const content = `# ${copyTitle}\n\n${this.currentNote.note || ''}`;
             
             if (navigator.clipboard) {
                 await navigator.clipboard.writeText(content);
