@@ -31,6 +31,23 @@
   transform: translateY(0);
 }
 
+/* 有历史笔记的按钮状态 */
+#tst-page-note-btn.has-history {
+  background: linear-gradient(135deg, #4a90e2 0%, #5ba3f5 100%);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 4px 12px rgba(74, 144, 226, 0.15); }
+  50% { box-shadow: 0 6px 20px rgba(74, 144, 226, 0.35); }
+  100% { box-shadow: 0 4px 12px rgba(74, 144, 226, 0.15); }
+}
+
+#tst-page-note-btn.has-history:hover {
+  background: linear-gradient(135deg, #357abd 0%, #4a90e2 100%);
+  animation: none;
+}
+
 /* 浮动笔记窗口 */
 #tst-quick-note-modal {
   position: fixed;
@@ -314,6 +331,131 @@
 }
 
 /* 笔记列表样式优化 */
+.note-item {
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  background: #fff;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.note-item:hover {
+  border-color: #c3c9d0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.note-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #e1e5e9;
+  padding: 12px 16px;
+}
+
+.note-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.note-favicon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-favicon img {
+  border-radius: 2px;
+}
+
+.note-title-link {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgb(17, 85, 204) !important;
+  text-decoration: none;
+  line-height: 1.4;
+  display: block;
+}
+
+.note-title-link:hover {
+  text-decoration: underline;
+  color: rgb(11, 70, 173) !important;
+}
+
+.note-content {
+  padding: 12px 16px 16px 40px; /* 左侧缩进对齐内容 */
+}
+
+.note-preview {
+  font-size: 13px;
+  color: #495057;
+  line-height: 1.5;
+  margin-bottom: 8px;
+  word-break: break-word;
+}
+
+.note-actions {
+  font-size: 11px;
+  color: #6c757d;
+}
+
+.note-actions a {
+  color: rgb(17, 85, 204);
+  text-decoration: none;
+  margin-right: 4px;
+}
+
+.note-actions a:hover {
+  text-decoration: underline;
+  color: rgb(11, 70, 173);
+}
+
+/* 暗色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .note-item {
+    background: #2d2d2d;
+    border-color: #404040;
+  }
+  
+  .note-item:hover {
+    border-color: #555;
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.05);
+  }
+  
+  .note-header {
+    background: linear-gradient(135deg, #3a3a3a 0%, #2d2d2d 100%);
+    border-bottom-color: #404040;
+  }
+  
+  .note-title-link {
+    color: #6db3f2 !important;
+  }
+  
+  .note-title-link:hover {
+    color: #89c4f4 !important;
+  }
+  
+  .note-preview {
+    color: #e0e0e0;
+  }
+  
+  .note-actions {
+    color: #aaa;
+  }
+  
+  .note-actions a {
+    color: #6db3f2;
+  }
+  
+  .note-actions a:hover {
+    color: #89c4f4;
+  }
+}
+
+/* 兼容旧样式 */
 .item .link {
   font-size: 13px;
   line-height: 1.4;
@@ -321,7 +463,6 @@
   margin-bottom: 2px;
 }
 
-/* 选择计数徽章增强 */
 .item .desc {
   font-size: 12px;
   color: #666;

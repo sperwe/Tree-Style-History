@@ -1225,6 +1225,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Return true to indicate we will send a response asynchronously
         return true;
     }
+    
+    if (request.action === 'checkPageNote') {
+        checkPageNoteExists(request.data)
+            .then((hasNote) => {
+                sendResponse({ success: true, hasNote: hasNote });
+            })
+            .catch((error) => {
+                console.error('Error checking page note:', error);
+                sendResponse({ success: false, error: error.message || 'Unknown error' });
+            });
+        
+        // Return true to indicate we will send a response asynchronously
+        return true;
+    }
 });
 
 /**
@@ -1280,6 +1294,65 @@ async function loadPageNoteFromContentScript(pageData) {
         console.error('Error in loadPageNoteFromContentScript:', error);
         throw error;
     }
+}
+
+/**
+ * Check if page note exists
+ */
+async function checkPageNoteExists(pageData) {
+    try {
+        // Find visitId for this URL
+        const visitId = await findLatestVisitId(pageData.url);
+        
+        // Check if note exists
+        const hasNote = await checkNoteExists(visitId);
+        
+        return hasNote;
+    } catch (error) {
+        console.error('Error in checkPageNoteExists:', error);
+        return false;
+    }
+}
+
+/**
+ * Check if note exists in database by visitId
+ */
+function checkNoteExists(visitId) {
+    return new Promise((resolve) => {
+        try {
+            if (!dbConn) {
+                resolve(false);
+                return;
+            }
+            
+            const tx = dbConn.transaction(['VisitNote'], 'readonly');
+            const ns = tx.objectStore('VisitNote');
+            const getReq = ns.get(visitId);
+            
+            getReq.onsuccess = function() {
+                try {
+                    const result = getReq.result;
+                    resolve(result && result.note && result.note.trim().length > 0);
+                } catch (error) {
+                    console.error('Exception in checkNoteExists:', error);
+                    resolve(false);
+                }
+            };
+            
+            getReq.onerror = function(err) {
+                console.error('Get request error in checkNoteExists:', err);
+                resolve(false);
+            };
+            
+            tx.onerror = function(err) {
+                console.error('Transaction error in checkNoteExists:', err);
+                resolve(false);
+            };
+        } catch (error) {
+            console.error('Exception in checkNoteExists:', error);
+            resolve(false);
+        }
+    });
 }
 
 /**

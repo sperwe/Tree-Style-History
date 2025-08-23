@@ -44,7 +44,29 @@
         
         floatingButton.addEventListener('click', openQuickNoteModal);
         
+        // 检查是否有历史笔记并更新按钮状态
+        checkHistoryNoteStatus();
+        
         document.body.appendChild(floatingButton);
+    }
+
+    /**
+     * 检查历史笔记状态并更新按钮显示
+     */
+    function checkHistoryNoteStatus() {
+        const pageUrl = window.location.href;
+        
+        chrome.runtime.sendMessage({
+            action: 'checkPageNote',
+            data: { url: pageUrl }
+        }, (response) => {
+            if (response && response.success && response.hasNote) {
+                // 有历史笔记，更新按钮样式
+                floatingButton.innerHTML = '📝💡';
+                floatingButton.title = '页面笔记（有历史记录）';
+                floatingButton.classList.add('has-history');
+            }
+        });
     }
 
     /**
