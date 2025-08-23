@@ -1190,11 +1190,11 @@
     /**
      * 打开笔记管理器
      */
-    function openNoteManager(mode = 'window') {
+    async function openNoteManager(mode = 'window') {
         try {
             if (mode === 'floating') {
                 // 创建浮动窗口模式
-                createFloatingNoteManager();
+                await createFloatingNoteManager();
             } else if (chrome && chrome.runtime) {
                 // 通过background script打开独立窗口
                 chrome.runtime.sendMessage({
@@ -1542,13 +1542,25 @@
             styleElement.id = 'tst-floating-window-css';
             
             // 为CSS添加作用域，避免污染主页面
-            const scopedCSS = cssText.replace(/([^{}]+){/g, (match, selector) => {
-                // 为每个选择器添加浮动窗口作用域
+            const scopedCSS = cssText.replace(/([^{}]+)\s*{/g, (match, selector) => {
                 const cleanSelector = selector.trim();
-                if (cleanSelector.startsWith('@') || cleanSelector.includes('html') || cleanSelector.includes('body')) {
-                    return match; // 保持@规则和html/body选择器不变
+                
+                // 跳过@规则、伪元素和特殊选择器
+                if (cleanSelector.startsWith('@') || 
+                    cleanSelector.includes('::') ||
+                    cleanSelector.includes(':root') ||
+                    cleanSelector.match(/^(html|body)(\s|$)/)) {
+                    return match;
                 }
-                return `#tst-floating-note-manager ${cleanSelector} {`;
+                
+                // 分割多个选择器（逗号分隔）
+                const selectors = cleanSelector.split(',').map(sel => {
+                    const trimmedSel = sel.trim();
+                    // 为每个选择器添加作用域前缀
+                    return `#tst-floating-note-manager ${trimmedSel}`;
+                }).join(', ');
+                
+                return `${selectors} {`;
             });
 
             styleElement.textContent = scopedCSS;
@@ -1858,18 +1870,216 @@
      * 初始化笔记管理器核心功能
      */
     function initializeNoteManagerCore(container) {
-        // 这里需要实现笔记管理器的核心功能
-        // 包括加载笔记列表、绑定事件处理器等
-        console.log('[Floating] 核心功能初始化完成');
+        console.log('[Floating] 开始初始化核心功能...');
         
-        // 临时添加一些基本功能绑定
+        // 绑定所有按钮事件
+        bindFloatingWindowEvents(container);
+        
+        // 加载笔记列表
+        loadFloatingNotesData(container);
+        
+        console.log('[Floating] 核心功能初始化完成');
+    }
+
+    /**
+     * 绑定浮动窗口的所有事件处理器
+     */
+    function bindFloatingWindowEvents(container) {
+        // 刷新按钮
         const refreshBtn = container.querySelector('#refresh-notes');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
                 console.log('[Floating] 刷新笔记列表');
-                // 这里调用加载笔记的功能
+                loadFloatingNotesData(container);
             });
         }
+
+        // 新建笔记按钮
+        const newNoteBtn = container.querySelector('#new-note');
+        if (newNoteBtn) {
+            newNoteBtn.addEventListener('click', () => {
+                console.log('[Floating] 新建笔记');
+                createNewFloatingNote(container);
+            });
+        }
+
+        // 搜索功能
+        const searchInput = container.querySelector('#global-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                console.log('[Floating] 搜索:', e.target.value);
+                filterFloatingNotes(container, e.target.value);
+            });
+        }
+
+        // 标签过滤
+        const tagFilter = container.querySelector('#tag-filter');
+        if (tagFilter) {
+            tagFilter.addEventListener('change', (e) => {
+                console.log('[Floating] 标签过滤:', e.target.value);
+                filterFloatingNotesByTag(container, e.target.value);
+            });
+        }
+
+        // 保存按钮
+        const saveBtn = container.querySelector('#save-note');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                console.log('[Floating] 保存笔记');
+                saveCurrentFloatingNote(container);
+            });
+        }
+
+        console.log('[Floating] 事件绑定完成');
+    }
+
+    /**
+     * 加载浮动窗口的笔记数据
+     */
+    function loadFloatingNotesData(container) {
+        console.log('[Floating] 开始加载笔记数据...');
+        
+        const loadingEl = container.querySelector('#loading-notes');
+        const noteListEl = container.querySelector('#note-list');
+        const emptyStateEl = container.querySelector('#empty-state');
+        
+        // 显示加载状态
+        if (loadingEl) loadingEl.style.display = 'block';
+        if (emptyStateEl) emptyStateEl.style.display = 'none';
+        
+        // 通过background script获取所有笔记
+        chrome.runtime.sendMessage({
+            action: 'getAllNotes'
+        }, (response) => {
+            if (chrome.runtime.lastError) {
+                console.error('[Floating] 加载笔记失败:', chrome.runtime.lastError);
+                return;
+            }
+            
+            console.log('[Floating] 笔记数据响应:', response);
+            
+            // 隐藏加载状态
+            if (loadingEl) loadingEl.style.display = 'none';
+            
+            if (response && response.success && response.notes && response.notes.length > 0) {
+                renderFloatingNotesList(container, response.notes);
+            } else {
+                // 显示空状态
+                if (emptyStateEl) emptyStateEl.style.display = 'block';
+                console.log('[Floating] 暂无笔记数据');
+            }
+        });
+    }
+
+    /**
+     * 渲染浮动窗口的笔记列表
+     */
+    function renderFloatingNotesList(container, notes) {
+        console.log('[Floating] 渲染笔记列表, 共', notes.length, '条笔记');
+        
+        const noteListEl = container.querySelector('#note-list');
+        const totalNotesEl = container.querySelector('#total-notes');
+        
+        if (!noteListEl) {
+            console.error('[Floating] 未找到笔记列表容器');
+            return;
+        }
+        
+        // 更新笔记总数
+        if (totalNotesEl) {
+            totalNotesEl.textContent = notes.length;
+        }
+        
+        // 清除现有内容
+        noteListEl.innerHTML = '';
+        
+        // 渲染每个笔记项
+        notes.forEach((note, index) => {
+            const noteItem = createFloatingNoteItem(note, index);
+            noteListEl.appendChild(noteItem);
+        });
+        
+        console.log('[Floating] 笔记列表渲染完成');
+    }
+
+    /**
+     * 创建浮动窗口的笔记项元素
+     */
+    function createFloatingNoteItem(note, index) {
+        const noteItem = document.createElement('div');
+        noteItem.className = 'note-item';
+        noteItem.dataset.noteId = note.id || index;
+        
+        const title = note.title || '无标题笔记';
+        const content = note.note || '';
+        const date = note.updatedAt ? new Date(note.updatedAt).toLocaleString() : '未知时间';
+        const url = note.url || '';
+        const hostname = url ? new URL(url).hostname : '';
+        
+        noteItem.innerHTML = `
+            <div class="note-header">
+                <div class="note-title">${title}</div>
+                <div class="note-actions">
+                    <button class="note-action-btn" title="编辑">✏️</button>
+                    <button class="note-action-btn" title="删除">🗑️</button>
+                </div>
+            </div>
+            <div class="note-preview">${content.substring(0, 100)}${content.length > 100 ? '...' : ''}</div>
+            <div class="note-meta">
+                <span class="note-date">${date}</span>
+                <span class="note-site">${hostname}</span>
+            </div>
+        `;
+        
+        // 绑定点击事件
+        noteItem.addEventListener('click', (e) => {
+            if (!e.target.closest('.note-action-btn')) {
+                loadFloatingNoteContent(noteItem.closest('.floating-content-container'), note);
+            }
+        });
+        
+        return noteItem;
+    }
+
+    /**
+     * 加载笔记内容到编辑器
+     */
+    function loadFloatingNoteContent(container, note) {
+        console.log('[Floating] 加载笔记内容:', note.title);
+        
+        const titleInput = container.querySelector('#note-title');
+        const editor = container.querySelector('#note-editor');
+        const urlSpan = container.querySelector('#note-url');
+        const datesSpan = container.querySelector('#note-dates');
+        
+        if (titleInput) titleInput.value = note.title || '';
+        if (editor) editor.value = note.note || '';
+        if (urlSpan) urlSpan.textContent = note.url || '';
+        if (datesSpan) {
+            const created = note.createdAt ? new Date(note.createdAt).toLocaleString() : '';
+            const updated = note.updatedAt ? new Date(note.updatedAt).toLocaleString() : '';
+            datesSpan.textContent = `创建: ${created} | 更新: ${updated}`;
+        }
+        
+        // 存储当前笔记ID用于保存
+        container.dataset.currentNoteId = note.id || '';
+    }
+
+    // 其他功能的占位符函数
+    function createNewFloatingNote(container) {
+        console.log('[Floating] 创建新笔记功能待实现');
+    }
+
+    function filterFloatingNotes(container, searchTerm) {
+        console.log('[Floating] 搜索功能待实现:', searchTerm);
+    }
+
+    function filterFloatingNotesByTag(container, tag) {
+        console.log('[Floating] 标签过滤功能待实现:', tag);
+    }
+
+    function saveCurrentFloatingNote(container) {
+        console.log('[Floating] 保存功能待实现');
     }
 
     /**
