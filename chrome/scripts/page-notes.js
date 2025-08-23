@@ -1521,45 +1521,49 @@
     }
 
     /**
-     * 创建浮动笔记管理器 - 使用iframe+srcdoc复用独立窗口代码
+     * 注入浮动窗口所需的CSS样式
      */
-    function createFloatingNoteManager() {
-        // 检查是否已有浮动管理器
-        const existingManager = document.getElementById('tst-floating-note-manager');
-        if (existingManager) {
-            // 如果已存在，显示并聚焦
-            existingManager.style.display = 'block';
-            existingManager.style.zIndex = '999999';
+    async function injectFloatingWindowCSS() {
+        // 检查是否已经注入过CSS
+        if (document.getElementById('tst-floating-window-css')) {
             return;
         }
 
-        // 创建浮动容器
-        const floatingManager = document.createElement('div');
-        floatingManager.id = 'tst-floating-note-manager';
-        floatingManager.className = 'tst-floating-manager';
-        
-        // 设置样式
-        floatingManager.style.cssText = `
-            position: fixed;
-            top: 50px;
-            right: 50px;
-            width: 900px;
-            height: 700px;
-            background: white;
-            border: 2px solid #007bff;
-            border-radius: 8px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            z-index: 999999;
-            display: flex;
-            flex-direction: column;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            resize: both;
-            overflow: hidden;
-            min-width: 600px;
-            min-height: 400px;
-        `;
+        console.log('[Floating] 开始注入CSS样式...');
 
-        // 创建标题栏
+        try {
+            // 获取CSS内容
+            const cssUrl = chrome.runtime.getURL('css/note-manager.css');
+            const response = await fetch(cssUrl);
+            const cssText = await response.text();
+
+            // 创建style标签并添加CSS作用域
+            const styleElement = document.createElement('style');
+            styleElement.id = 'tst-floating-window-css';
+            
+            // 为CSS添加作用域，避免污染主页面
+            const scopedCSS = cssText.replace(/([^{}]+){/g, (match, selector) => {
+                // 为每个选择器添加浮动窗口作用域
+                const cleanSelector = selector.trim();
+                if (cleanSelector.startsWith('@') || cleanSelector.includes('html') || cleanSelector.includes('body')) {
+                    return match; // 保持@规则和html/body选择器不变
+                }
+                return `#tst-floating-note-manager ${cleanSelector} {`;
+            });
+
+            styleElement.textContent = scopedCSS;
+            document.head.appendChild(styleElement);
+
+            console.log('[Floating] CSS样式注入完成');
+        } catch (error) {
+            console.error('[Floating] CSS注入失败:', error);
+        }
+    }
+
+    /**
+     * 创建浮动窗口标题栏
+     */
+    function createFloatingTitleBar(floatingManager) {
         const titleBar = document.createElement('div');
         titleBar.className = 'floating-title-bar';
         titleBar.style.cssText = `
@@ -1617,35 +1621,331 @@
         controls.appendChild(closeBtn);
         titleBar.appendChild(controls);
 
-        // 使用iframe + srcdoc，100%复用note-manager.html代码
-        const iframe = document.createElement('iframe');
-        iframe.style.cssText = `
-            flex: 1;
-            border: none;
-            background: white;
-            width: 100%;
-            height: 100%;
+        return titleBar;
+    }
+
+    /**
+     * 创建笔记管理器的内容DOM结构
+     */
+    async function createNoteManagerContent(container) {
+        console.log('[Floating] 开始创建笔记管理器DOM结构...');
+
+        // 创建主要的笔记管理器结构
+        container.innerHTML = `
+            <div class="note-manager-container">
+                <!-- 顶部工具栏 -->
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <div class="search-box">
+                            <input type="text" id="global-search" placeholder="🔍 搜索笔记标题和内容..." maxlength="100">
+                            <button id="clear-search" class="clear-btn" style="display: none;">✖️</button>
+                        </div>
+                    </div>
+                    
+                    <div class="toolbar-center">
+                        <div class="filters">
+                            <select id="tag-filter" title="按标签过滤">
+                                <option value="">🏷️ 全部标签</option>
+                                <option value="important_very">🔥 非常重要</option>
+                                <option value="important_somewhat">🔥 比较重要</option>
+                                <option value="important_general">🔥 一般重要</option>
+                                <option value="interesting_very">💡 非常有趣</option>
+                                <option value="interesting_somewhat">💡 比较有趣</option>
+                                <option value="interesting_general">💡 一般有趣</option>
+                                <option value="needed_very">⚡ 非常需要</option>
+                                <option value="needed_somewhat">⚡ 比较需要</option>
+                                <option value="needed_general">⚡ 一般需要</option>
+                            </select>
+                            
+                            <select id="date-filter" title="按时间过滤">
+                                <option value="">📅 全部时间</option>
+                                <option value="today">今天</option>
+                                <option value="week">本周</option>
+                                <option value="month">本月</option>
+                                <option value="quarter">三个月内</option>
+                                <option value="year">一年内</option>
+                            </select>
+                            
+                            <select id="site-filter" title="按网站过滤">
+                                <option value="">🌐 全部网站</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="toolbar-right">
+                        <div class="actions">
+                            <button id="refresh-notes" title="刷新笔记列表">🔄</button>
+                            <button id="batch-export" title="批量导出选中的笔记">📦 导出</button>
+                            <button id="new-note" title="新建笔记">📝 新建</button>
+                            <button id="settings" title="设置">⚙️</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 主内容区 -->
+                <div class="main-content">
+                    <!-- 左侧笔记列表 -->
+                    <div class="note-list-panel">
+                        <div class="list-header">
+                            <div class="list-stats">
+                                <span class="note-count">共 <span id="total-notes">0</span> 条笔记</span>
+                                <span class="selected-count" id="selected-count" style="display: none;">已选 <span id="selected-number">0</span> 条</span>
+                            </div>
+                            <div class="list-controls">
+                                <label class="select-all-container">
+                                    <input type="checkbox" id="select-all-notes">
+                                    <span>全选</span>
+                                </label>
+                                <select id="sort-by" title="排序方式">
+                                    <option value="priority">按优先级</option>
+                                    <option value="updated">按更新时间</option>
+                                    <option value="created">按创建时间</option>
+                                    <option value="title">按标题</option>
+                                    <option value="site">按网站</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="note-list" id="note-list">
+                            <div class="loading" id="loading-notes">
+                                <div class="spinner"></div>
+                                <span>正在加载笔记...</span>
+                            </div>
+                            <div class="empty-state" id="empty-state" style="display: none;">
+                                <div class="empty-icon">📝</div>
+                                <h3>暂无笔记</h3>
+                                <p>点击右上角"新建"按钮开始记录</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧编辑/预览区 -->
+                    <div class="editor-panel">
+                        <div class="editor-header">
+                            <div class="note-meta">
+                                <input type="text" id="note-title" placeholder="请输入笔记标题..." maxlength="200">
+                                <div class="tag-selector">
+                                    <button id="tag-button" class="tag-btn">🏷️ 选择标签</button>
+                                    <span id="current-tag" class="current-tag">无标签</span>
+                                </div>
+                                <div class="note-info">
+                                    <span id="note-url" class="note-url"></span>
+                                    <span id="note-dates" class="note-dates"></span>
+                                </div>
+                            </div>
+                            <div class="editor-actions">
+                                <button id="preview-mode" class="mode-btn" title="预览模式">👁️ 预览</button>
+                                <button id="edit-mode" class="mode-btn active" title="编辑模式">✏️ 编辑</button>
+                                <button id="reference-note" class="action-btn" title="生成引用链接">📌 引用</button>
+                                <button id="copy-note" class="action-btn" title="复制笔记内容">📋 复制</button>
+                                <button id="delete-note" class="action-btn danger" title="删除当前笔记" style="display: none;">🗑️ 删除</button>
+                                <button id="save-note" class="action-btn primary" title="保存笔记">💾 保存</button>
+                            </div>
+                        </div>
+                        
+                        <div class="editor-content">
+                            <textarea id="note-editor" placeholder="开始编写你的笔记... 
+
+💡 支持 Markdown 格式
+📝 自动保存功能
+🔍 支持全文搜索
+🏷️ 使用标签分类管理"></textarea>
+                            <div id="note-preview" class="markdown-preview" style="display: none;">
+                                <div class="preview-placeholder">
+                                    <div class="preview-icon">👁️</div>
+                                    <p>在左侧选择笔记查看预览</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="editor-status">
+                            <span id="word-count">0 字符</span>
+                            <span id="save-status"></span>
+                            <span id="security-status" title="数据安全状态">🔒 安全</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 标签选择器模态框 -->
+            <div id="tag-selector-modal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>🏷️ 选择笔记标签</h3>
+                        <button class="modal-close">✖️</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="tag-categories">
+                            <div class="tag-category">
+                                <h4>📋 分类维度</h4>
+                                <div class="tag-options">
+                                    <label><input type="radio" name="category" value="important"> 🔥 重要</label>
+                                    <label><input type="radio" name="category" value="interesting"> 💡 有趣</label>
+                                    <label><input type="radio" name="category" value="needed"> ⚡ 需要</label>
+                                </div>
+                            </div>
+                            <div class="tag-category">
+                                <h4>📊 程度维度</h4>
+                                <div class="tag-options">
+                                    <label><input type="radio" name="priority" value="very"> 非常</label>
+                                    <label><input type="radio" name="priority" value="somewhat"> 比较</label>
+                                    <label><input type="radio" name="priority" value="general"> 一般</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tag-preview">
+                            <span>预览：</span>
+                            <span id="tag-preview-display" class="tag-badge">请选择标签</span>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="tag-confirm" class="btn-primary">确定</button>
+                        <button id="tag-cancel" class="btn-secondary">取消</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 通知区域 -->
+            <div id="notification" class="notification" style="display: none;">
+                <span id="notification-text"></span>
+                <button id="notification-close">✖️</button>
+            </div>
         `;
-        
-        // 使用srcdoc避免Chromium src限制
-        iframe.srcdoc = getNoteManagerHTML();
 
-        // 组装窗口
-        floatingManager.appendChild(titleBar);
-        floatingManager.appendChild(iframe);
-        document.body.appendChild(floatingManager);
+        console.log('[Floating] 笔记管理器DOM结构创建完成');
+    }
 
-        // 添加拖拽功能
-        makeDraggable(floatingManager, titleBar);
-
-        // 添加键盘快捷键
+    /**
+     * 添加浮动窗口键盘快捷键
+     */
+    function addFloatingWindowKeyboardShortcuts(floatingManager) {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && floatingManager.style.display !== 'none') {
                 floatingManager.style.display = 'none';
             }
         });
+    }
 
-        console.log('浮动笔记管理器已创建 (iframe+srcdoc模式)');
+    /**
+     * 初始化浮动笔记管理器功能
+     */
+    async function initializeFloatingNoteManager(container) {
+        console.log('[Floating] 开始初始化笔记管理器功能...');
+
+        try {
+            // 动态加载必要的脚本
+            await loadFloatingWindowScripts();
+            
+            // 初始化笔记管理器的核心功能
+            // 这里需要将note-manager.js的功能适配到浮动窗口环境
+            initializeNoteManagerCore(container);
+            
+            console.log('[Floating] 笔记管理器功能初始化完成');
+        } catch (error) {
+            console.error('[Floating] 初始化笔记管理器功能失败:', error);
+        }
+    }
+
+    /**
+     * 加载浮动窗口所需的脚本
+     */
+    async function loadFloatingWindowScripts() {
+        // 这里可以动态加载jQuery等依赖，如果需要的话
+        console.log('[Floating] 脚本加载完成');
+    }
+
+    /**
+     * 初始化笔记管理器核心功能
+     */
+    function initializeNoteManagerCore(container) {
+        // 这里需要实现笔记管理器的核心功能
+        // 包括加载笔记列表、绑定事件处理器等
+        console.log('[Floating] 核心功能初始化完成');
+        
+        // 临时添加一些基本功能绑定
+        const refreshBtn = container.querySelector('#refresh-notes');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                console.log('[Floating] 刷新笔记列表');
+                // 这里调用加载笔记的功能
+            });
+        }
+    }
+
+    /**
+     * 创建浮动笔记管理器 - 使用直接DOM注入方法
+     */
+    async function createFloatingNoteManager() {
+        // 检查是否已有浮动管理器
+        const existingManager = document.getElementById('tst-floating-note-manager');
+        if (existingManager) {
+            // 如果已存在，显示并聚焦
+            existingManager.style.display = 'block';
+            existingManager.style.zIndex = '999999';
+            return;
+        }
+
+        console.log('[Floating] 开始创建直接注入式浮动窗口...');
+
+        // 1. 先注入CSS样式
+        await injectFloatingWindowCSS();
+
+        // 2. 创建浮动容器
+        const floatingManager = document.createElement('div');
+        floatingManager.id = 'tst-floating-note-manager';
+        floatingManager.className = 'tst-floating-manager';
+        
+        // 设置基础容器样式
+        floatingManager.style.cssText = `
+            position: fixed;
+            top: 50px;
+            right: 50px;
+            width: 900px;
+            height: 700px;
+            background: white;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            resize: both;
+            overflow: hidden;
+            min-width: 600px;
+            min-height: 400px;
+        `;
+
+        // 3. 创建标题栏
+        const titleBar = createFloatingTitleBar(floatingManager);
+        
+        // 4. 创建笔记管理器内容区域
+        const contentContainer = document.createElement('div');
+        contentContainer.className = 'floating-content-container';
+        contentContainer.style.cssText = `
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #f8f9fa;
+        `;
+
+        // 5. 直接创建笔记管理器的DOM结构
+        await createNoteManagerContent(contentContainer);
+
+        // 6. 组装窗口
+        floatingManager.appendChild(titleBar);
+        floatingManager.appendChild(contentContainer);
+        document.body.appendChild(floatingManager);
+
+        // 7. 添加窗口交互功能
+        makeDraggable(floatingManager, titleBar);
+        addFloatingWindowKeyboardShortcuts(floatingManager);
+
+        // 8. 初始化笔记管理器功能
+        await initializeFloatingNoteManager(contentContainer);
+
+        console.log('[Floating] 直接注入式浮动窗口创建完成');
     }
 
     /**
