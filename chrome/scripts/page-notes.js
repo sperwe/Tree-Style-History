@@ -1227,7 +1227,304 @@
     }
 
     /**
-     * 创建浮动笔记管理器
+     * 生成note-manager.html的完整内容用于iframe srcdoc
+     * 这样浮动窗口可以100%复用独立窗口的功能
+     */
+    function getNoteManagerHTML() {
+        // 获取extension资源的基础URL
+        const baseUrl = chrome.runtime ? chrome.runtime.getURL('') : '';
+        
+        return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>笔记管理器</title>
+    <link rel="stylesheet" href="${baseUrl}css/note-manager.css">
+    <script src="${baseUrl}scripts/MooTools.js"></script>
+    <script src="${baseUrl}scripts/common.js"></script>
+    <script src="${baseUrl}scripts/jquery.min.js"></script>
+    <style>
+        /* 浮动窗口专用样式调整 */
+        .note-manager-container {
+            height: 100vh;
+            max-height: 100vh;
+        }
+        
+        /* 隐藏"新窗口"按钮，因为已经在浮动窗口中 */
+        .toolbar-right .new-window-btn {
+            display: none !important;
+        }
+        
+        /* 确保全高度显示 */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        /* 优化分割面板高度 */
+        .main-content {
+            height: calc(100vh - 60px);
+        }
+    </style>
+</head>
+<body>
+    <div class="note-manager-container">
+        <!-- 顶部工具栏 -->
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <div class="search-box">
+                    <input type="text" id="global-search" placeholder="🔍 搜索笔记标题和内容..." maxlength="100">
+                    <button id="clear-search" class="clear-btn" style="display: none;">✖️</button>
+                </div>
+            </div>
+            
+            <div class="toolbar-center">
+                <div class="filters">
+                    <select id="tag-filter" title="按标签过滤">
+                        <option value="">🏷️ 全部标签</option>
+                        <option value="important_very">🔥 非常重要</option>
+                        <option value="important_somewhat">🔥 比较重要</option>
+                        <option value="important_general">🔥 一般重要</option>
+                        <option value="interesting_very">💡 非常有趣</option>
+                        <option value="interesting_somewhat">💡 比较有趣</option>
+                        <option value="interesting_general">💡 一般有趣</option>
+                        <option value="needed_very">⚡ 非常需要</option>
+                        <option value="needed_somewhat">⚡ 比较需要</option>
+                        <option value="needed_general">⚡ 一般需要</option>
+                    </select>
+                    
+                    <select id="date-filter" title="按时间过滤">
+                        <option value="">📅 全部时间</option>
+                        <option value="today">今天</option>
+                        <option value="week">最近一周</option>
+                        <option value="month">最近一月</option>
+                        <option value="quarter">最近三月</option>
+                        <option value="year">最近一年</option>
+                    </select>
+                    
+                    <select id="site-filter" title="按网站过滤">
+                        <option value="">🌐 全部网站</option>
+                    </select>
+                    
+                    <select id="sort-filter" title="排序方式">
+                        <option value="newest">最新创建</option>
+                        <option value="oldest">最早创建</option>
+                        <option value="updated">最近更新</option>
+                        <option value="alphabetical">标题A-Z</option>
+                        <option value="priority">优先级</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="toolbar-right">
+                <button id="refresh-notes" class="refresh-btn" title="刷新笔记">🔄</button>
+                <button id="new-note" class="new-note-btn" title="新建笔记">➕ 新建笔记</button>
+                <button id="batch-export" class="export-btn" title="批量导出">📤 导出</button>
+                <button id="open-new-window" class="new-window-btn" title="在新窗口中打开">🔗 新窗口</button>
+                <button id="open-settings" class="settings-btn" title="设置">⚙️</button>
+            </div>
+        </div>
+
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <!-- 左侧笔记列表 -->
+            <div class="note-list-panel">
+                <div class="panel-header">
+                    <span class="note-count">📝 正在加载...</span>
+                    <div class="selection-controls">
+                        <label class="select-all-container">
+                            <input type="checkbox" id="select-all-notes">
+                            <span class="checkmark"></span>
+                            全选
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="note-list" id="note-list">
+                    <div class="loading-state">
+                        <div class="loading-spinner">⏳</div>
+                        <div>正在加载笔记...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧编辑器 -->
+            <div class="editor-panel">
+                <div class="editor-header">
+                    <input type="text" id="note-title" class="note-title-input" placeholder="输入笔记标题..." maxlength="200">
+                    <div class="editor-actions">
+                        <button id="editor-copy" class="action-btn copy-btn" title="复制内容">📋</button>
+                        <button id="editor-save" class="action-btn save-btn" title="保存 (Ctrl+S)">💾</button>
+                        <button id="editor-delete" class="action-btn delete-btn" title="删除">🗑️</button>
+                    </div>
+                </div>
+                
+                <div class="tag-selector-container">
+                    <button id="tag-selector-btn" class="tag-selector-btn">
+                        <span class="tag-text">🏷️ 选择标签</span>
+                        <span class="tag-arrow">▼</span>
+                    </button>
+                    <button id="reference-btn" class="reference-btn" title="生成引用格式">🔗 引用</button>
+                </div>
+                
+                <div class="editor-modes">
+                    <button id="edit-mode" class="mode-btn active">✏️ 编辑</button>
+                    <button id="preview-mode" class="mode-btn">👁️ 预览</button>
+                </div>
+                
+                <div class="editor-container">
+                    <textarea id="note-content" class="note-editor" placeholder="开始写笔记...支持 Markdown 格式"></textarea>
+                    <div id="note-preview" class="note-preview" style="display: none;"></div>
+                </div>
+                
+                <div class="editor-footer">
+                    <div class="editor-status">
+                        <span id="word-count">0 字符</span>
+                        <span id="save-status"></span>
+                    </div>
+                </div>
+                
+                <div class="empty-state" id="empty-editor-state">
+                    <div class="empty-icon">📝</div>
+                    <div class="empty-title">选择一个笔记开始编辑</div>
+                    <div class="empty-subtitle">或点击"新建笔记"创建新的笔记</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 标签选择模态框 -->
+    <div id="tag-modal" class="modal" style="display: none;">
+        <div class="modal-content tag-modal-content">
+            <div class="modal-header">
+                <h3>选择标签</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="tag-grid">
+                    <div class="tag-category">
+                        <h4>🔥 重要</h4>
+                        <div class="tag-options">
+                            <label><input type="radio" name="tag" value="important_very"> 非常重要</label>
+                            <label><input type="radio" name="tag" value="important_somewhat"> 比较重要</label>
+                            <label><input type="radio" name="tag" value="important_general"> 一般重要</label>
+                        </div>
+                    </div>
+                    <div class="tag-category">
+                        <h4>💡 有趣</h4>
+                        <div class="tag-options">
+                            <label><input type="radio" name="tag" value="interesting_very"> 非常有趣</label>
+                            <label><input type="radio" name="tag" value="interesting_somewhat"> 比较有趣</label>
+                            <label><input type="radio" name="tag" value="interesting_general"> 一般有趣</label>
+                        </div>
+                    </div>
+                    <div class="tag-category">
+                        <h4>⚡ 需要</h4>
+                        <div class="tag-options">
+                            <label><input type="radio" name="tag" value="needed_very"> 非常需要</label>
+                            <label><input type="radio" name="tag" value="needed_somewhat"> 比较需要</label>
+                            <label><input type="radio" name="tag" value="needed_general"> 一般需要</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="tag-preview">
+                    <strong>预览:</strong> <span id="tag-preview-text">请选择标签</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="tag-modal-cancel" class="modal-btn-secondary">取消</button>
+                <button id="tag-modal-confirm" class="modal-btn-primary">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引用模态框 -->
+    <div id="reference-modal" class="modal" style="display: none;">
+        <div class="modal-content reference-modal-content">
+            <div class="modal-header">
+                <h3>生成引用格式</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="reference-options">
+                    <label><input type="radio" name="ref-format" value="full" checked> 完整引用</label>
+                    <label><input type="radio" name="ref-format" value="snippet"> 内容片段</label>
+                    <label><input type="radio" name="ref-format" value="simple"> 简单链接</label>
+                    <label><input type="radio" name="ref-format" value="pure"> 纯链接</label>
+                </div>
+                <div class="reference-preview">
+                    <h4>预览:</h4>
+                    <div id="reference-preview-content"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="reference-modal-cancel" class="modal-btn-secondary">取消</button>
+                <button id="reference-modal-copy" class="modal-btn-primary">📋 复制</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导出模态框 -->
+    <div id="export-modal" class="modal" style="display: none;">
+        <div class="modal-content export-modal-content">
+            <div class="modal-header">
+                <h3>批量导出笔记</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="export-options">
+                    <div class="option-group">
+                        <h4>导出格式</h4>
+                        <label><input type="radio" name="export-format" value="json" checked> JSON (完整数据)</label>
+                        <label><input type="radio" name="export-format" value="markdown"> Markdown 文档</label>
+                        <label><input type="radio" name="export-format" value="csv"> CSV 表格</label>
+                        <label><input type="radio" name="export-format" value="html"> HTML 网页</label>
+                    </div>
+                    <div class="option-group">
+                        <h4>导出范围</h4>
+                        <label><input type="radio" name="export-scope" value="selected" checked> 已选择的笔记</label>
+                        <label><input type="radio" name="export-scope" value="filtered"> 当前过滤结果</label>
+                        <label><input type="radio" name="export-scope" value="all"> 全部笔记</label>
+                    </div>
+                    <div class="option-group">
+                        <h4>隐私设置</h4>
+                        <label><input type="checkbox" id="mask-sensitive"> 遮蔽敏感信息</label>
+                    </div>
+                </div>
+                <div class="export-summary">
+                    <span id="export-note-count">将导出 0 条笔记</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="export-modal-cancel" class="modal-btn-secondary">取消</button>
+                <button id="export-modal-confirm" class="modal-btn-primary">📤 开始导出</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知弹窗 -->
+    <div id="notification" class="notification" style="display: none;">
+        <div class="notification-content">
+            <span class="notification-message"></span>
+            <button class="notification-close">&times;</button>
+        </div>
+    </div>
+
+    <!-- 加载所有必要的脚本 -->
+    <script src="${baseUrl}scripts/security/data-sanitizer.js"></script>
+    <script src="${baseUrl}scripts/security/xss-protection.js"></script>
+    <script src="${baseUrl}scripts/security/permission-manager.js"></script>
+    <script src="${baseUrl}scripts/security/backup-manager.js"></script>
+    <script src="${baseUrl}scripts/note-manager.js"></script>
+</body>
+</html>`;
+    }
+
+    /**
+     * 创建浮动笔记管理器 - 使用iframe+srcdoc复用独立窗口代码
      */
     function createFloatingNoteManager() {
         // 检查是否已有浮动管理器
@@ -1323,29 +1620,26 @@
         controls.appendChild(closeBtn);
         titleBar.appendChild(controls);
 
-        // 创建内容容器而非iframe（避免Chromium安全策略限制）
-        const content = document.createElement('div');
-        content.id = 'floating-note-content';
-        content.style.cssText = `
+        // 使用iframe + srcdoc，100%复用note-manager.html代码
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = `
             flex: 1;
+            border: none;
             background: white;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            width: 100%;
+            height: 100%;
         `;
+        
+        // 使用srcdoc避免Chromium src限制
+        iframe.srcdoc = getNoteManagerHTML();
 
         // 组装窗口
         floatingManager.appendChild(titleBar);
-        floatingManager.appendChild(content);
+        floatingManager.appendChild(iframe);
         document.body.appendChild(floatingManager);
 
         // 添加拖拽功能
         makeDraggable(floatingManager, titleBar);
-
-        // 确保DOM更新后再加载内容
-        setTimeout(() => {
-            loadFloatingManagerContent(content);
-        }, 50);
 
         // 添加键盘快捷键
         document.addEventListener('keydown', (e) => {
@@ -1354,7 +1648,7 @@
             }
         });
 
-        console.log('浮动笔记管理器已创建');
+        console.log('浮动笔记管理器已创建 (iframe+srcdoc模式)');
     }
 
     /**
