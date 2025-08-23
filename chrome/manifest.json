@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.5.6",
-  "version_name": "4.5.3 by sperwe - Fixed Comment Block Syntax Error",
+  "version": "4.5.7",
+  "version_name": "4.5.7 by sperwe - Fixed Floating Window Ctrl+Shift+N Shortcut",
   "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.5.6: Fixed Floating Window HTML - Perfect Note Manager Clone",
+  "description": "v4.5.7: Fixed Floating Window Shortcut & Resource Paths - Complete Note Manager",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
