@@ -15,11 +15,20 @@ document.addEvent('domready', function(){
 			var title = (m.title && m.title.trim()!=='') ? m.title : url;
 			var noteText = m.note.note || '';
 			var firstLine = noteText.split(/\r?\n/)[0];
-			if (firstLine.length>140) firstLine = firstLine.slice(0,140)+'…';
+			if (firstLine.length>120) firstLine = firstLine.slice(0,120)+'…';
 			
-			// Count number of selections (by counting separators + 1 for first selection)
-			var selectionCount = (noteText.match(/---\n\*Added on /g) || []).length + 1;
-			var countBadge = selectionCount > 1 ? ' <span style="background:#007cba;color:white;padding:1px 6px;border-radius:10px;font-size:10px;margin-left:4px;">' + selectionCount + ' selections</span>' : '';
+			// Count number of selections (by counting different separator patterns)
+			var excerptCount = 0;
+			// Count old format separators
+			excerptCount += (noteText.match(/---\n\*Added on /g) || []).length;
+			// Count new format separators  
+			excerptCount += (noteText.match(/\*摘录自:/g) || []).length;
+			// If no separators but has content, count as 1
+			if (excerptCount === 0 && noteText.trim()) excerptCount = 1;
+			
+			var countBadge = excerptCount > 1 ? 
+				' <span style="background:#007cba;color:white;padding:2px 6px;border-radius:10px;font-size:10px;margin-left:6px;">' + 
+				excerptCount + ' selections</span>' : '';
 			
 			// Render first line as Markdown if available
 			var renderedFirstLine = '';
@@ -33,14 +42,17 @@ document.addEvent('domready', function(){
 				renderedFirstLine = escapeHtml(firstLine);
 			}
 			
+			// Format timestamp like Tree Style Tab (time first, then title)
+			var timeStr = fmt(m.note.updatedAt) || '';
+			var displayTitle = timeStr ? '[' + timeStr + '] ' + title : title;
+			
 			var eid = 'edit-'+m.note.visitId;
 			var did = 'del-'+m.note.visitId;
 			var cid = 'copy-'+m.note.visitId;
 			var vid = 'view-'+m.note.visitId;
 			var html = '';
 			html += '<div class="item">';
-			html += '<a class="link" href="'+url+'" target="_blank">'+escapeHtml(title)+'</a>' + countBadge;
-			html += '<span class="info">'+(fmt(m.note.updatedAt)||'')+'</span>';
+			html += '<a class="link" href="'+url+'" target="_blank">'+escapeHtml(displayTitle)+'</a>' + countBadge;
 			html += '<div class="desc">'+renderedFirstLine+'</div>';
 			html += '<div class="ops"><a href="#" id="'+eid+'">'+escapeHtml(returnLang('notesEdit')||'Edit')+'</a> · <a href="#" id="'+vid+'">'+escapeHtml(returnLang('notesView')||'View')+'</a> · <a href="#" id="'+did+'">'+escapeHtml(returnLang('notesDelete')||'Delete')+'</a> · <a href="#" id="'+cid+'">'+escapeHtml(returnLang('copy')||'Copy')+'</a></div>';
 			html += '</div>';
