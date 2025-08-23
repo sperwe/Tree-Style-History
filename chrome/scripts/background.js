@@ -1291,10 +1291,16 @@ async function savePageNoteFromContentScript(pageData) {
  */
 async function loadPageNoteFromContentScript(pageData) {
     try {
-        // Find visitId for this URL
-        const visitId = await findLatestVisitId(pageData.url);
+        // 先尝试直接通过URL查找笔记
+        const notes = await loadNotesByUrl(pageData.url);
         
-        // Load the note from database
+        if (notes && notes.length > 0) {
+            // 返回最新的笔记
+            return notes[0];
+        }
+        
+        // 如果没找到，回退到原来的方法
+        const visitId = await findLatestVisitId(pageData.url);
         const note = await loadNoteFromDatabase(visitId);
         
         return note;
@@ -1311,12 +1317,8 @@ async function checkPageNoteExists(pageData) {
     try {
         console.log('[TST Background] 检查页面笔记是否存在:', pageData.url);
         
-        // Find visitId for this URL
-        const visitId = await findLatestVisitId(pageData.url);
-        console.log('[TST Background] 找到visitId:', visitId);
-        
-        // Check if note exists
-        const hasNote = await checkNoteExists(visitId);
+        // 直接通过URL查找笔记，更可靠
+        const hasNote = await checkNoteExistsByUrl(pageData.url);
         console.log('[TST Background] 笔记存在状态:', hasNote);
         
         return hasNote;
@@ -1363,6 +1365,198 @@ function checkNoteExists(visitId) {
         } catch (error) {
             console.error('Exception in checkNoteExists:', error);
             resolve(false);
+        }
+    });
+}
+
+/**
+ * Check if note exists in database by URL (more reliable)
+ */
+function checkNoteExistsByUrl(pageUrl) {
+    return new Promise((resolve) => {
+        try {
+            if (!db) {
+                console.log('[TST Background] Database not initialized');
+                resolve(false);
+                return;
+            }
+            
+            console.log('[TST Background] 通过URL查找笔记:', pageUrl);
+            
+            const tx = db.transaction(['VisitNote'], 'readonly');
+            const ns = tx.objectStore('VisitNote');
+            const urlIndex = ns.index('url');
+            
+            // 首先尝试精确匹配
+            const getReq = urlIndex.getAll(pageUrl);
+            
+            getReq.onsuccess = function() {
+                try {
+                    let results = getReq.result || [];
+                    console.log('[TST Background] 精确匹配找到笔记数量:', results.length);
+                    
+                    // 如果精确匹配没找到，尝试模糊匹配
+                    if (results.length === 0) {
+                        console.log('[TST Background] 尝试模糊匹配...');
+                        // 获取所有笔记进行模糊匹配
+                        const allReq = ns.getAll();
+                        allReq.onsuccess = function() {
+                            const allNotes = allReq.result || [];
+                            console.log('[TST Background] 总笔记数量:', allNotes.length);
+                            
+                            // 模糊匹配：去除查询参数和fragment进行比较
+                            const normalizeUrl = (url) => {
+                                try {
+                                    const urlObj = new URL(url);
+                                    return urlObj.origin + urlObj.pathname;
+                                } catch (e) {
+                                    return url;
+                                }
+                            };
+                            
+                            const normalizedPageUrl = normalizeUrl(pageUrl);
+                            console.log('[TST Background] 标准化URL:', normalizedPageUrl);
+                            
+                            const matchingNotes = allNotes.filter(note => {
+                                if (!note || !note.url) return false;
+                                const normalizedNoteUrl = normalizeUrl(note.url);
+                                return normalizedNoteUrl === normalizedPageUrl;
+                            });
+                            
+                            console.log('[TST Background] 模糊匹配找到笔记数量:', matchingNotes.length);
+                            results = matchingNotes;
+                            
+                            // 检查是否有任何非空笔记
+                            const hasValidNote = results.some(note => 
+                                note && note.note && note.note.trim().length > 0
+                            );
+                            
+                            console.log('[TST Background] 有效笔记存在:', hasValidNote);
+                            resolve(hasValidNote);
+                        };
+                        allReq.onerror = function() {
+                            console.error('Error getting all notes for fuzzy matching');
+                            resolve(false);
+                        };
+                    } else {
+                        // 检查是否有任何非空笔记
+                        const hasValidNote = results.some(note => 
+                            note && note.note && note.note.trim().length > 0
+                        );
+                        
+                        console.log('[TST Background] 有效笔记存在:', hasValidNote);
+                        resolve(hasValidNote);
+                    }
+                } catch (error) {
+                    console.error('Exception in checkNoteExistsByUrl:', error);
+                    resolve(false);
+                }
+            };
+            
+            getReq.onerror = function(err) {
+                console.error('Get request error in checkNoteExistsByUrl:', err);
+                resolve(false);
+            };
+            
+            tx.onerror = function(err) {
+                console.error('Transaction error in checkNoteExistsByUrl:', err);
+                resolve(false);
+            };
+        } catch (error) {
+            console.error('Exception in checkNoteExistsByUrl:', error);
+            resolve(false);
+        }
+    });
+}
+
+/**
+ * Load notes from database by URL
+ */
+function loadNotesByUrl(pageUrl) {
+    return new Promise((resolve) => {
+        try {
+            if (!db) {
+                resolve([]);
+                return;
+            }
+            
+            console.log('[TST Background] 通过URL加载笔记:', pageUrl);
+            
+            const tx = db.transaction(['VisitNote'], 'readonly');
+            const ns = tx.objectStore('VisitNote');
+            const urlIndex = ns.index('url');
+            
+            // 首先尝试精确匹配
+            const getReq = urlIndex.getAll(pageUrl);
+            
+            getReq.onsuccess = function() {
+                try {
+                    let results = getReq.result || [];
+                    console.log('[TST Background] 精确匹配找到笔记数量:', results.length);
+                    
+                    // 如果精确匹配没找到，尝试模糊匹配
+                    if (results.length === 0) {
+                        console.log('[TST Background] 尝试模糊匹配...');
+                        const allReq = ns.getAll();
+                        allReq.onsuccess = function() {
+                            const allNotes = allReq.result || [];
+                            
+                            // 模糊匹配：去除查询参数和fragment进行比较
+                            const normalizeUrl = (url) => {
+                                try {
+                                    const urlObj = new URL(url);
+                                    return urlObj.origin + urlObj.pathname;
+                                } catch (e) {
+                                    return url;
+                                }
+                            };
+                            
+                            const normalizedPageUrl = normalizeUrl(pageUrl);
+                            const matchingNotes = allNotes.filter(note => {
+                                if (!note || !note.url) return false;
+                                const normalizedNoteUrl = normalizeUrl(note.url);
+                                return normalizedNoteUrl === normalizedPageUrl && 
+                                       note.note && note.note.trim().length > 0;
+                            });
+                            
+                            // 按更新时间排序，最新的在前
+                            matchingNotes.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+                            
+                            console.log('[TST Background] 模糊匹配找到有效笔记数量:', matchingNotes.length);
+                            resolve(matchingNotes);
+                        };
+                        allReq.onerror = function() {
+                            console.error('Error getting all notes for fuzzy matching');
+                            resolve([]);
+                        };
+                    } else {
+                        // 过滤非空笔记并按更新时间排序
+                        const validNotes = results.filter(note => 
+                            note && note.note && note.note.trim().length > 0
+                        );
+                        validNotes.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+                        
+                        console.log('[TST Background] 找到有效笔记数量:', validNotes.length);
+                        resolve(validNotes);
+                    }
+                } catch (error) {
+                    console.error('Exception in loadNotesByUrl:', error);
+                    resolve([]);
+                }
+            };
+            
+            getReq.onerror = function(err) {
+                console.error('Get request error in loadNotesByUrl:', err);
+                resolve([]);
+            };
+            
+            tx.onerror = function(err) {
+                console.error('Transaction error in loadNotesByUrl:', err);
+                resolve([]);
+            };
+        } catch (error) {
+            console.error('Exception in loadNotesByUrl:', error);
+            resolve([]);
         }
     });
 }
