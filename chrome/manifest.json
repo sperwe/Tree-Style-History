@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.5.8",
-  "version_name": "4.5.8 by sperwe - Rebuilt Floating Window with Direct DOM Injection",
+  "version": "4.5.9",
+  "version_name": "4.5.9 by sperwe - Authentic Apple macOS Design with Traffic Light Controls",
   "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.5.8: Revolutionary Direct-Injection Floating Window - Full Note Manager Experience",
+  "description": "v4.5.9: Beautiful Apple Design Language - Traffic Light Controls & macOS Aesthetics",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
