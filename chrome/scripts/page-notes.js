@@ -2158,27 +2158,27 @@
             border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
         `;
 
-        const titleText = document.createElement('span');
-        titleText.textContent = '🎈 笔记管理器 (浮动窗口)';
-        titleBar.appendChild(titleText);
-
-        // 窗口控制按钮
+        // 窗口控制按钮 - 苹果风格（左侧）
         const controls = document.createElement('div');
         controls.style.cssText = 'display: flex; gap: 8px;';
 
-        const minimizeBtn = createControlButton('−', '最小化', () => {
+        const closeBtn = createMacControlButton('●', '关闭', '#FF5F57', () => {
+            floatingManager.remove();
+        });
+
+        const minimizeBtn = createMacControlButton('●', '最小化', '#FFBD2E', () => {
             floatingManager.style.display = 'none';
         });
 
-        const maximizeBtn = createControlButton('□', '最大化', () => {
+        const maximizeBtn = createMacControlButton('●', '最大化', '#28CA42', () => {
             if (floatingManager.dataset.maximized === 'true') {
                 // 还原
-                floatingManager.style.width = '900px';
-                floatingManager.style.height = '700px';
-                floatingManager.style.top = '50px';
-                floatingManager.style.right = '50px';
+                floatingManager.style.width = '920px';
+                floatingManager.style.height = '720px';
+                floatingManager.style.top = '60px';
+                floatingManager.style.right = '60px';
+                floatingManager.style.left = 'auto';
                 floatingManager.dataset.maximized = 'false';
-                maximizeBtn.textContent = '□';
             } else {
                 // 最大化
                 floatingManager.style.width = '100vw';
@@ -2187,18 +2187,22 @@
                 floatingManager.style.left = '0';
                 floatingManager.style.right = 'auto';
                 floatingManager.dataset.maximized = 'true';
-                maximizeBtn.textContent = '❐';
             }
         });
 
-        const closeBtn = createControlButton('✖', '关闭', () => {
-            floatingManager.remove();
-        });
-
+        controls.appendChild(closeBtn);
         controls.appendChild(minimizeBtn);
         controls.appendChild(maximizeBtn);
-        controls.appendChild(closeBtn);
         titleBar.appendChild(controls);
+
+        const titleText = document.createElement('span');
+        titleText.textContent = '🎈 笔记管理器 (浮动窗口)';
+        titleText.style.cssText = `
+            flex: 1;
+            text-align: center;
+            margin-right: 84px; /* 平衡左侧按钮的空间 */
+        `;
+        titleBar.appendChild(titleText);
 
         return titleBar;
     }
@@ -2728,7 +2732,47 @@
     }
 
     /**
-     * 创建控制按钮
+     * 创建苹果风格的控制按钮（红、黄、绿圆点）
+     */
+    function createMacControlButton(text, title, color, onclick) {
+        const btn = document.createElement('button');
+        btn.title = title;
+        btn.style.cssText = `
+            background: ${color};
+            border: none;
+            color: transparent;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            position: relative;
+        `;
+        
+        // 悬停时显示符号
+        btn.addEventListener('mouseenter', () => {
+            btn.style.color = 'rgba(0, 0, 0, 0.6)';
+            if (title === '关闭') btn.textContent = '✕';
+            else if (title === '最小化') btn.textContent = '−';
+            else if (title === '最大化') btn.textContent = '+';
+        });
+        
+        btn.addEventListener('mouseleave', () => {
+            btn.style.color = 'transparent';
+            btn.textContent = '●';
+        });
+        
+        btn.addEventListener('click', onclick);
+        return btn;
+    }
+
+    /**
+     * 创建控制按钮（备用）
      */
     function createControlButton(text, title, onclick) {
         const btn = document.createElement('button');
