@@ -1744,19 +1744,442 @@
 
     // 全局函数供HTML调用
     window.selectFloatingNote = function(noteId) {
-        console.log('选择笔记:', noteId);
-        // TODO: 实现笔记选择和编辑功能
+        const note = window.floatingNotes?.find(n => n.id === noteId);
+        if (note) {
+            showFloatingNoteEditor(note);
+        }
     };
 
     window.createFloatingNewNote = function() {
-        console.log('创建新笔记');
-        // TODO: 实现新建笔记功能
+        const newNote = {
+            id: 'new-' + Date.now(),
+            title: '',
+            note: '',
+            url: window.location.href,
+            tag: 'general_general',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            isNew: true
+        };
+        showFloatingNoteEditor(newNote);
     };
 
     window.filterFloatingNotes = function(query) {
-        console.log('过滤笔记:', query);
-        // TODO: 实现笔记过滤功能
+        if (!window.floatingNotes) return;
+        
+        const container = document.querySelector('#floating-notes-container');
+        if (!container) return;
+        
+        const filteredNotes = window.floatingNotes.filter(note => {
+            const title = (note.title || '').toLowerCase();
+            const content = (note.note || '').toLowerCase();
+            const searchText = query.toLowerCase();
+            
+            return title.includes(searchText) || content.includes(searchText);
+        });
+        
+        renderFloatingNotesList(filteredNotes);
     };
+
+    /**
+     * 显示笔记编辑器
+     */
+    function showFloatingNoteEditor(note) {
+        const editorHeader = document.querySelector('#floating-editor-header');
+        const editorContent = document.querySelector('#floating-editor-content');
+        const titleInput = document.querySelector('#floating-note-title');
+        
+        if (!editorHeader || !editorContent || !titleInput) return;
+        
+        // 显示编辑器头部
+        editorHeader.style.display = 'block';
+        
+        // 设置标题
+        titleInput.value = note.title || '';
+        
+        // 创建编辑器内容
+        editorContent.innerHTML = `
+            <div style="
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                padding: 16px;
+            ">
+                <div style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 12px;
+                ">
+                    <div style="
+                        display: flex;
+                        gap: 8px;
+                        align-items: center;
+                    ">
+                        <button id="floating-save-btn" style="
+                            background: #007bff;
+                            color: white;
+                            border: none;
+                            padding: 6px 12px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 12px;
+                        ">💾 保存</button>
+                        <button id="floating-copy-btn" style="
+                            background: #28a745;
+                            color: white;
+                            border: none;
+                            padding: 6px 12px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 12px;
+                        ">📋 复制</button>
+                        ${!note.isNew ? `<button id="floating-delete-btn" style="
+                            background: #dc3545;
+                            color: white;
+                            border: none;
+                            padding: 6px 12px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 12px;
+                        ">🗑️ 删除</button>` : ''}
+                    </div>
+                    <div style="font-size: 12px; color: #666;">
+                        ${note.isNew ? '新建笔记' : '最后更新: ' + formatFloatingTime(note.updatedAt)}
+                    </div>
+                </div>
+                
+                <textarea id="floating-note-textarea" style="
+                    flex: 1;
+                    width: 100%;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    padding: 12px;
+                    font-family: 'Monaco', 'Consolas', monospace;
+                    font-size: 13px;
+                    line-height: 1.4;
+                    resize: none;
+                    outline: none;
+                " placeholder="在此输入笔记内容...">${escapeHtmlContent(note.note || '')}</textarea>
+                
+                <div style="
+                    margin-top: 8px;
+                    font-size: 11px;
+                    color: #999;
+                    text-align: right;
+                " id="floating-char-count">
+                    字符数: ${(note.note || '').length}
+                </div>
+            </div>
+        `;
+        
+        // 绑定事件
+        bindFloatingEditorEvents(note);
+        
+        // 高亮选中的笔记项
+        document.querySelectorAll('.floating-note-item').forEach(item => {
+            item.style.backgroundColor = 'white';
+        });
+        
+        const selectedItem = document.querySelector(`[data-note-id="${note.id}"]`);
+        if (selectedItem) {
+            selectedItem.style.backgroundColor = '#e3f2fd';
+        }
+    }
+
+    /**
+     * 绑定编辑器事件
+     */
+    function bindFloatingEditorEvents(note) {
+        const titleInput = document.querySelector('#floating-note-title');
+        const textarea = document.querySelector('#floating-note-textarea');
+        const saveBtn = document.querySelector('#floating-save-btn');
+        const copyBtn = document.querySelector('#floating-copy-btn');
+        const deleteBtn = document.querySelector('#floating-delete-btn');
+        const charCount = document.querySelector('#floating-char-count');
+        
+        // 更新字符数
+        if (textarea && charCount) {
+            textarea.addEventListener('input', () => {
+                charCount.textContent = `字符数: ${textarea.value.length}`;
+            });
+        }
+        
+        // 保存按钮
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => saveFloatingNote(note));
+        }
+        
+        // 复制按钮
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => copyFloatingNote(note));
+        }
+        
+        // 删除按钮
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => deleteFloatingNote(note));
+        }
+        
+        // Ctrl+S 保存快捷键
+        if (textarea) {
+            textarea.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    saveFloatingNote(note);
+                }
+            });
+        }
+    }
+
+    /**
+     * 保存浮动窗口笔记
+     */
+    async function saveFloatingNote(note) {
+        const titleInput = document.querySelector('#floating-note-title');
+        const textarea = document.querySelector('#floating-note-textarea');
+        
+        if (!titleInput || !textarea) return;
+        
+        const noteData = {
+            id: note.isNew ? undefined : note.id,
+            visitId: note.isNew ? undefined : note.id,
+            title: titleInput.value.trim() || '未命名笔记',
+            note: textarea.value,
+            url: note.url || window.location.href,
+            tag: note.tag || 'general_general',
+            updatedAt: new Date().toISOString()
+        };
+        
+        try {
+            const result = await new Promise((resolve) => {
+                chrome.runtime.sendMessage({
+                    action: 'saveNote',
+                    note: noteData
+                }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error('保存失败:', chrome.runtime.lastError);
+                        resolve({ success: false });
+                    } else {
+                        resolve(response || { success: false });
+                    }
+                });
+            });
+            
+            if (result.success) {
+                showFloatingNotification('✅ 笔记保存成功');
+                
+                // 刷新笔记列表
+                setTimeout(() => {
+                    loadFloatingNotesList();
+                }, 500);
+            } else {
+                showFloatingNotification('❌ 保存失败，请重试', 'error');
+            }
+        } catch (error) {
+            console.error('保存笔记时出错:', error);
+            showFloatingNotification('❌ 保存失败', 'error');
+        }
+    }
+
+    /**
+     * 复制笔记内容
+     */
+    function copyFloatingNote(note) {
+        const titleInput = document.querySelector('#floating-note-title');
+        const textarea = document.querySelector('#floating-note-textarea');
+        
+        if (!textarea) return;
+        
+        const title = titleInput?.value || note.title || '未命名笔记';
+        const content = textarea.value;
+        const url = note.url || '';
+        
+        const textToCopy = `标题: ${title}\n网址: ${url}\n内容:\n${content}`;
+        
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            showFloatingNotification('📋 内容已复制到剪贴板');
+        }).catch(() => {
+            // 降级方案
+            textarea.select();
+            document.execCommand('copy');
+            showFloatingNotification('📋 内容已复制');
+        });
+    }
+
+    /**
+     * 删除笔记
+     */
+    async function deleteFloatingNote(note) {
+        if (!confirm(`确定要删除笔记"${note.title || '未命名笔记'}"吗？`)) {
+            return;
+        }
+        
+        try {
+            const result = await new Promise((resolve) => {
+                chrome.runtime.sendMessage({
+                    action: 'deleteNote',
+                    noteId: note.id
+                }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error('删除失败:', chrome.runtime.lastError);
+                        resolve({ success: false });
+                    } else {
+                        resolve(response || { success: false });
+                    }
+                });
+            });
+            
+            if (result.success) {
+                showFloatingNotification('🗑️ 笔记已删除');
+                
+                // 刷新笔记列表并清空编辑器
+                setTimeout(() => {
+                    loadFloatingNotesList();
+                    clearFloatingEditor();
+                }, 500);
+            } else {
+                showFloatingNotification('❌ 删除失败，请重试', 'error');
+            }
+        } catch (error) {
+            console.error('删除笔记时出错:', error);
+            showFloatingNotification('❌ 删除失败', 'error');
+        }
+    }
+
+    /**
+     * 清空编辑器
+     */
+    function clearFloatingEditor() {
+        const editorHeader = document.querySelector('#floating-editor-header');
+        const editorContent = document.querySelector('#floating-editor-content');
+        
+        if (editorHeader) {
+            editorHeader.style.display = 'none';
+        }
+        
+        if (editorContent) {
+            editorContent.innerHTML = `
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100%;
+                    text-align: center;
+                    color: #666;
+                ">
+                    <div>
+                        <div style="font-size: 48px; margin-bottom: 16px;">📝</div>
+                        <div style="font-size: 18px; margin-bottom: 8px;">选择笔记开始编辑</div>
+                        <div style="font-size: 14px;">或点击"新建"创建新笔记</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 取消笔记项高亮
+        document.querySelectorAll('.floating-note-item').forEach(item => {
+            item.style.backgroundColor = 'white';
+        });
+    }
+
+    /**
+     * 显示浮动通知
+     */
+    function showFloatingNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'error' ? '#dc3545' : '#28a745'};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            z-index: 1000000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        `;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // 动画显示
+        setTimeout(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateX(0)';
+        }, 10);
+        
+        // 自动隐藏
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    /**
+     * 渲染笔记列表
+     */
+    function renderFloatingNotesList(notes) {
+        const container = document.querySelector('#floating-notes-container');
+        if (!container || !notes) return;
+
+        if (notes.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #666;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">📝</div>
+                    <div>未找到匹配的笔记</div>
+                </div>
+            `;
+            return;
+        }
+
+        // 渲染笔记列表 (复用现有的渲染逻辑)
+        const notesHTML = notes.map(note => {
+            const title = note.title || '未命名笔记';
+            const preview = getFloatingNotePreview(note.note);
+            const time = formatFloatingTime(note.createdAt || note.updatedAt);
+            
+            return `
+                <div class="floating-note-item" data-note-id="${note.id}" style="
+                    padding: 12px;
+                    border-bottom: 1px solid #eee;
+                    cursor: pointer;
+                    transition: background-color 0.2s;
+                " onmouseover="this.style.backgroundColor='#f8f9fa'" 
+                   onmouseout="this.style.backgroundColor='white'"
+                   onclick="selectFloatingNote('${note.id}')">
+                    <div style="
+                        font-weight: 500;
+                        font-size: 14px;
+                        margin-bottom: 4px;
+                        color: #333;
+                        word-break: break-word;
+                    ">${escapeHtmlContent(title)}</div>
+                    <div style="
+                        font-size: 12px;
+                        color: #666;
+                        margin-bottom: 4px;
+                        line-height: 1.4;
+                        word-break: break-word;
+                    ">${escapeHtmlContent(preview)}</div>
+                    <div style="
+                        font-size: 11px;
+                        color: #999;
+                    ">${time}</div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = notesHTML;
+    }
 
     /**
      * 打开设置
