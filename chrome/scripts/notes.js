@@ -412,23 +412,7 @@ document.addEvent('domready', function(){
 	
 	// Removed addNoteEventHandlers - now handled in tree structure
 	function load(){
-		console.log('[TST Notes] 开始加载笔记, db状态:', !!db);
-		if (!db){ 
-			console.log('[TST Notes] 数据库未初始化，尝试重新获取');
-			// 尝试重新获取数据库连接
-			setTimeout(() => {
-				var bg = chrome.extension.getBackgroundPage();
-				db = bg && bg.db;
-				if (db) {
-					console.log('[TST Notes] 重新获取数据库成功，重新加载');
-					load();
-				} else {
-					console.log('[TST Notes] 数据库仍未可用，渲染空列表');
-					render([]);
-				}
-			}, 1000);
-			return; 
-		}
+		if (!db){ render([]); return; }
 		var tx = db.transaction(["VisitNote"], "readonly");
 		var store = tx.objectStore("VisitNote");
 		var req = store.getAll ? store.getAll() : null;
