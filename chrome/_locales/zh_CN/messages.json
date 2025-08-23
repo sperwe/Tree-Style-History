@@ -53,6 +53,9 @@
     "option6": {
         "message": "历史页"
     },
+    "option6_notes": {
+        "message": "最多显示多少个最近添加的笔记"
+    },
     "option7": {
         "message": "日期格式"
     },
