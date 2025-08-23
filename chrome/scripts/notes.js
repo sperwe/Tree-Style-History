@@ -58,33 +58,38 @@ document.addEvent('domready', function(){
 			}, 0);
 			
 			// Group header
-			var html = '';
-			html += '<div class="note-group">';
-			html += '<div class="note-group-header" data-group="' + groupId + '">';
-			html += '<div class="note-group-toggle">▶</div>';
-			html += '<div class="note-group-favicon"><img src="chrome://favicon/' + escapeHtml(url) + '" width="16" height="16" onerror="this.style.display=\'none\'"></div>';
-			html += '<div class="note-group-title">' + escapeHtml(title) + '</div>';
-			html += '<div class="note-group-count">' + items.length + ' notes · ' + totalSelections + ' selections</div>';
-			html += '</div>';
-			html += '<div class="note-group-items" id="' + groupId + '" style="display: none;">';
-			
-			var groupEl = new Element('div', { 'html': html }).inject(listEl);
+			var groupHtml = '';
+			groupHtml += '<div class="note-group">';
+			groupHtml += '<div class="note-group-header" data-group="' + groupId + '">';
+			groupHtml += '<div class="note-group-toggle">▶</div>';
+			groupHtml += '<div class="note-group-favicon"><img src="chrome://favicon/' + escapeHtml(url) + '" width="16" height="16" onerror="this.style.display=\'none\'"></div>';
+			groupHtml += '<div class="note-group-title">' + escapeHtml(title) + '</div>';
+			groupHtml += '<div class="note-group-count">' + items.length + ' notes · ' + totalSelections + ' selections</div>';
+			groupHtml += '</div>';
+			groupHtml += '<div class="note-group-items" id="' + groupId + '" style="display: none;">';
 			
 			// Render individual notes in group
 			items.forEach(function(m, index) {
-				renderSingleNote(m, true, index + 1);
+				groupHtml += renderSingleNoteHtml(m, true, index + 1);
 			});
 			
 			// Close group
-			listEl.set('html', listEl.get('html') + '</div></div>');
+			groupHtml += '</div></div>';
+			
+			var groupEl = new Element('div', { 'html': groupHtml }).inject(listEl);
 			
 			// Add click handler for group toggle
-			var groupHeader = listEl.querySelector('[data-group="' + groupId + '"]');
+			var groupHeader = groupEl.querySelector('[data-group="' + groupId + '"]');
 			if (groupHeader) {
 				groupHeader.addEventListener('click', function() {
 					toggleGroup(groupId);
 				});
 			}
+			
+			// Add event handlers for individual notes
+			items.forEach(function(m, index) {
+				addNoteEventHandlers(m);
+			});
 		} else {
 			// Single note, render normally
 			renderSingleNote(firstItem, false);
@@ -92,6 +97,12 @@ document.addEvent('domready', function(){
 	}
 	
 	function renderSingleNote(m, isInGroup, noteIndex) {
+		var html = renderSingleNoteHtml(m, isInGroup, noteIndex);
+		var el = new Element('div', { 'html': html }).inject(listEl);
+		addNoteEventHandlers(m);
+	}
+	
+	function renderSingleNoteHtml(m, isInGroup, noteIndex) {
 		var url = m.note.url || '';
 		var title = (m.title && m.title.trim()!=='') ? m.title : url;
 		var noteText = m.note.note || '';
@@ -106,50 +117,72 @@ document.addEvent('domready', function(){
 		excerptCount += (noteText.match(/\*摘录自:/g) || []).length;
 		// If no separators but has content, count as 1
 		if (excerptCount === 0 && noteText.trim()) excerptCount = 1;
-			
-			var countBadge = excerptCount > 1 ? 
-				' <span style="background:#007cba;color:white;padding:2px 6px;border-radius:10px;font-size:10px;margin-left:6px;">' + 
-				excerptCount + ' selections</span>' : '';
-			
-			// Render first line as Markdown if available
-			var renderedFirstLine = '';
-			if (typeof marked !== 'undefined' && firstLine.trim()) {
-				try {
-					renderedFirstLine = marked.parseInline(firstLine);
-				} catch (e) {
-					renderedFirstLine = escapeHtml(firstLine);
-				}
-			} else {
+		
+		var countBadge = excerptCount > 1 ? 
+			' <span style="background:#007cba;color:white;padding:2px 6px;border-radius:10px;font-size:10px;margin-left:6px;">' + 
+			excerptCount + ' selections</span>' : '';
+		
+		// Render first line as Markdown if available
+		var renderedFirstLine = '';
+		if (typeof marked !== 'undefined' && firstLine.trim()) {
+			try {
+				renderedFirstLine = marked.parseInline(firstLine);
+			} catch (e) {
 				renderedFirstLine = escapeHtml(firstLine);
 			}
-			
-			// Format timestamp like Tree Style Tab (time first, then title)
-			var timeStr = fmt(m.note.updatedAt) || '';
-			var displayTitle = timeStr ? '[' + timeStr + '] ' + title : title;
-			
-			var eid = 'edit-'+m.note.visitId;
-			var did = 'del-'+m.note.visitId;
-			var cid = 'copy-'+m.note.visitId;
-			var vid = 'view-'+m.note.visitId;
-			var html = '';
-			html += '<div class="note-item">';
-			html += '<div class="note-header">';
-			html += '<div class="note-title-row">';
+		} else {
+			renderedFirstLine = escapeHtml(firstLine);
+		}
+		
+		// Format timestamp and title
+		var timeStr = fmt(m.note.updatedAt) || '';
+		var displayTitle;
+		if (isInGroup) {
+			// In group, show note index and time only
+			displayTitle = 'Note #' + noteIndex + (timeStr ? ' - ' + timeStr : '');
+		} else {
+			// Single note, show full title with time
+			displayTitle = timeStr ? '[' + timeStr + '] ' + title : title;
+		}
+		
+		var itemClass = isInGroup ? 'note-item note-item-grouped' : 'note-item';
+		
+		var html = '';
+		html += '<div class="' + itemClass + '">';
+		html += '<div class="note-header">';
+		html += '<div class="note-title-row">';
+		if (!isInGroup) {
 			html += '<div class="note-favicon"><img src="chrome://favicon/' + escapeHtml(url) + '" width="16" height="16" onerror="this.style.display=\'none\'"></div>';
-			html += '<a class="note-title-link" href="'+url+'" target="_blank">'+escapeHtml(displayTitle)+'</a>' + countBadge;
-			html += '</div>';
-			html += '</div>';
-			html += '<div class="note-content">';
-			html += '<div class="note-preview">'+renderedFirstLine+'</div>';
-			html += '<div class="note-actions"><a href="#" id="'+eid+'">'+escapeHtml(returnLang('notesEdit')||'Edit')+'</a> · <a href="#" id="'+vid+'">'+escapeHtml(returnLang('notesView')||'View')+'</a> · <a href="#" id="'+did+'">'+escapeHtml(returnLang('notesDelete')||'Delete')+'</a> · <a href="#" id="'+cid+'">'+escapeHtml(returnLang('copy')||'Copy')+'</a></div>';
-			html += '</div>';
-			html += '</div>';
-			var el = new Element('div', { 'html': html }).inject(listEl);
-			$(eid).addEvent('click', function(e){ e.stop(); openEditor(m.note.visitId, m.note.url, m.title, m.note.note||''); });
-			$(vid).addEvent('click', function(e){ e.stop(); openViewer(m.note.visitId, m.note.url, m.title, m.note.note||''); });
-			$(did).addEvent('click', function(e){ e.stop(); deleteNote(m.note.visitId, function(){ load(); }); });
-			$(cid).addEvent('click', function(e){ e.stop(); var text = (title?('Title: '+title+'\n'):'') + (url?('URL: '+url+'\n'):'') + '\n' + (m.note.note||''); Clipboard.copy(text); });
-		});
+		}
+		html += '<a class="note-title-link" href="'+url+'" target="_blank">'+escapeHtml(displayTitle)+'</a>' + countBadge;
+		html += '</div>';
+		html += '</div>';
+		html += '<div class="note-content">';
+		html += '<div class="note-preview">'+renderedFirstLine+'</div>';
+		html += '<div class="note-actions">';
+		html += '<a href="#" id="edit-'+m.note.visitId+'">'+escapeHtml(returnLang('notesEdit')||'Edit')+'</a> · ';
+		html += '<a href="#" id="view-'+m.note.visitId+'">'+escapeHtml(returnLang('notesView')||'View')+'</a> · ';
+		html += '<a href="#" id="del-'+m.note.visitId+'">'+escapeHtml(returnLang('notesDelete')||'Delete')+'</a> · ';
+		html += '<a href="#" id="copy-'+m.note.visitId+'">'+escapeHtml(returnLang('copy')||'Copy')+'</a>';
+		html += '</div>';
+		html += '</div>';
+		html += '</div>';
+		
+		return html;
+	}
+	
+	function addNoteEventHandlers(m) {
+		var eid = 'edit-'+m.note.visitId;
+		var did = 'del-'+m.note.visitId;
+		var cid = 'copy-'+m.note.visitId;
+		var vid = 'view-'+m.note.visitId;
+		var title = (m.title && m.title.trim()!=='') ? m.title : (m.note.url || '');
+		var url = m.note.url || '';
+		
+		$(eid).addEvent('click', function(e){ e.stop(); openEditor(m.note.visitId, m.note.url, m.title, m.note.note||''); });
+		$(vid).addEvent('click', function(e){ e.stop(); openViewer(m.note.visitId, m.note.url, m.title, m.note.note||''); });
+		$(did).addEvent('click', function(e){ e.stop(); deleteNote(m.note.visitId, function(){ load(); }); });
+		$(cid).addEvent('click', function(e){ e.stop(); var text = (title?('Title: '+title+'\n'):'') + (url?('URL: '+url+'\n'):'') + '\n' + (m.note.note||''); Clipboard.copy(text); });
 	}
 	function load(){
 		if (!db){ render([]); return; }
