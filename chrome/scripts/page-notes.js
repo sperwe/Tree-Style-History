@@ -113,7 +113,7 @@
         quickNoteModal = document.createElement('div');
         quickNoteModal.id = 'tst-quick-note-modal';
         
-        quickNoteModal.innerHTML = `
+                        quickNoteModal.innerHTML = `
             <div id="tst-quick-note-content">
                 <div id="tst-quick-note-header">
                     <h3 id="tst-quick-note-title">📝 页面笔记</h3>
@@ -121,6 +121,15 @@
                         <button class="tst-window-btn" id="tst-minimize-btn" title="最小化">−</button>
                         <button class="tst-window-btn" id="tst-quick-note-close" title="关闭">×</button>
                     </div>
+                </div>
+                
+                <!-- 历史笔记加载区域 -->
+                <div id="tst-history-notes-panel" style="display: none; margin: 0 10px 10px 10px; padding: 8px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #007bff;">
+                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <span style="font-weight: bold; color: #007bff; font-size: 13px;">📚 历史笔记</span>
+                        <button id="tst-hide-history" style="margin-left: auto; background: none; border: none; color: #666; cursor: pointer; font-size: 16px;" title="隐藏">&times;</button>
+                    </div>
+                    <div id="tst-history-notes-list" style="max-height: 120px; overflow-y: auto;"></div>
                 </div>
                 
                 <div id="tst-page-info">
@@ -522,8 +531,8 @@
                     // 只有一个笔记，直接加载
                     loadSingleNote(notesData.latest, textarea);
                 } else if (notesData.count > 1) {
-                    // 多个笔记，显示选择列表
-                    showNotesSelector(notesData.notes, textarea);
+                    // 多个笔记，在窗口内显示简洁列表
+                    showInlineNotesPanel(notesData.notes, textarea);
                 }
             } else {
                 console.log('[TST Notes] 未找到历史笔记或加载失败');
@@ -552,71 +561,44 @@
     }
     
     /**
-     * 显示笔记选择器
+     * 在笔记窗口内显示简洁的历史笔记面板
      */
-    function showNotesSelector(notes, textarea) {
-        // 创建笔记选择弹窗
-        const selectorModal = document.createElement('div');
-        selectorModal.id = 'tst-notes-selector';
-        selectorModal.style.cssText = `
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 10001;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        `;
+    function showInlineNotesPanel(notes, textarea) {
+        const historyPanel = quickNoteModal.querySelector('#tst-history-notes-panel');
+        const notesList = quickNoteModal.querySelector('#tst-history-notes-list');
         
-        const selectorContent = document.createElement('div');
-        selectorContent.style.cssText = `
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        `;
+        if (!historyPanel || !notesList) return;
         
-        selectorContent.innerHTML = `
-            <h3 style="margin: 0 0 15px 0; color: #333;">📝 选择要加载的笔记 (共${notes.length}条)</h3>
-            <div id="notes-list"></div>
-            <div style="margin-top: 15px; text-align: right;">
-                <button id="cancel-selector" style="margin-right: 10px; padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">取消</button>
-                <button id="load-latest" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">加载最新</button>
-            </div>
-        `;
+        // 清空列表
+        notesList.innerHTML = '';
         
-        const notesList = selectorContent.querySelector('#notes-list');
-        
-        // 渲染笔记列表
+        // 添加笔记项
         notes.forEach((note, index) => {
-            const noteItem = document.createElement('div');
             const updateTime = note.updatedAt ? new Date(note.updatedAt).toLocaleString() : '未知时间';
-            const preview = (note.note || '').substring(0, 100) + (note.note && note.note.length > 100 ? '...' : '');
+            const preview = (note.note || '').substring(0, 40) + (note.note && note.note.length > 40 ? '...' : '');
             
+            const noteItem = document.createElement('div');
             noteItem.style.cssText = `
-                border: 1px solid #ddd;
-                border-radius: 6px;
-                padding: 12px;
-                margin-bottom: 10px;
+                padding: 6px 8px;
+                margin-bottom: 4px;
+                border-radius: 4px;
                 cursor: pointer;
                 transition: background-color 0.2s;
-                ${index === 0 ? 'border-color: #007bff; background: #f8f9ff;' : ''}
+                font-size: 12px;
+                ${index === 0 ? 'background: #e3f2fd; border: 1px solid #2196f3;' : 'background: white; border: 1px solid #e0e0e0;'}
             `;
             
             noteItem.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span style="font-weight: bold; color: #007bff;">${index === 0 ? '📝💡 最新笔记' : `📝 笔记 ${index + 1}`}</span>
-                    <span style="font-size: 12px; color: #666;">${updateTime}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                    <span style="font-weight: bold; color: ${index === 0 ? '#1976d2' : '#666'};">${index === 0 ? '💡 最新' : `#${index + 1}`}</span>
+                    <span style="font-size: 10px; color: #999;">${updateTime.split(' ')[1] || updateTime}</span>
                 </div>
-                <div style="color: #333; line-height: 1.4;">${escapeHtml(preview)}</div>
+                <div style="color: #555; line-height: 1.3; font-size: 11px;">${escapeHtml(preview)}</div>
             `;
             
             noteItem.addEventListener('click', () => {
                 loadSelectedNote(note, textarea, updateTime);
-                document.body.removeChild(selectorModal);
+                historyPanel.style.display = 'none'; // 加载后隐藏面板
             });
             
             noteItem.addEventListener('mouseenter', () => {
@@ -624,31 +606,72 @@
             });
             
             noteItem.addEventListener('mouseleave', () => {
-                if (index !== 0) noteItem.style.backgroundColor = '';
+                if (index !== 0) noteItem.style.backgroundColor = 'white';
             });
             
             notesList.appendChild(noteItem);
         });
         
-        // 事件处理
-        selectorContent.querySelector('#cancel-selector').addEventListener('click', () => {
-            document.body.removeChild(selectorModal);
-        });
+        // 添加快捷按钮
+        const quickActions = document.createElement('div');
+        quickActions.style.cssText = `
+            display: flex; 
+            gap: 6px; 
+            margin-top: 8px; 
+            padding-top: 6px; 
+            border-top: 1px solid #e0e0e0;
+        `;
         
-        selectorContent.querySelector('#load-latest').addEventListener('click', () => {
+        const loadLatestBtn = document.createElement('button');
+        loadLatestBtn.textContent = '⚡ 加载最新';
+        loadLatestBtn.style.cssText = `
+            flex: 1;
+            padding: 4px 8px;
+            font-size: 11px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        `;
+        loadLatestBtn.addEventListener('click', () => {
             loadSelectedNote(notes[0], textarea, notes[0].updatedAt ? new Date(notes[0].updatedAt).toLocaleString() : '未知时间');
-            document.body.removeChild(selectorModal);
+            historyPanel.style.display = 'none';
         });
         
-        // 点击背景关闭
-        selectorModal.addEventListener('click', (e) => {
-            if (e.target === selectorModal) {
-                document.body.removeChild(selectorModal);
-            }
+        const mergeBtn = document.createElement('button');
+        mergeBtn.textContent = '📋 合并全部';
+        mergeBtn.style.cssText = `
+            flex: 1;
+            padding: 4px 8px;
+            font-size: 11px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        `;
+        mergeBtn.addEventListener('click', () => {
+            mergeAllNotes(notes, textarea);
+            historyPanel.style.display = 'none';
         });
         
-        selectorModal.appendChild(selectorContent);
-        document.body.appendChild(selectorModal);
+        quickActions.appendChild(loadLatestBtn);
+        quickActions.appendChild(mergeBtn);
+        notesList.appendChild(quickActions);
+        
+        // 显示面板
+        historyPanel.style.display = 'block';
+        
+        // 隐藏按钮事件
+        const hideBtn = quickNoteModal.querySelector('#tst-hide-history');
+        if (hideBtn) {
+            hideBtn.onclick = () => {
+                historyPanel.style.display = 'none';
+            };
+        }
+        
+        showNotification(`发现${notes.length}条历史笔记`, 'info');
     }
     
     /**
@@ -668,6 +691,49 @@
                 showNotification(`已加载笔记 (${timeStr})`, 'success');
             }
         }
+    }
+    
+    /**
+     * 合并所有历史笔记
+     */
+    function mergeAllNotes(notes, textarea) {
+        if (!notes || notes.length === 0) return;
+        
+        const currentContent = textarea.value.trim();
+        const separator = '\n\n---\n\n';
+        
+        // 按时间倒序排列笔记（最新的在前）
+        const sortedNotes = notes.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+        
+        let mergedContent = '';
+        
+        // 如果当前有内容，先保留
+        if (currentContent) {
+            mergedContent += `📝 当前编辑内容\n${currentContent}${separator}`;
+        }
+        
+        // 添加所有历史笔记
+        sortedNotes.forEach((note, index) => {
+            const noteContent = note.note || '';
+            const updateTime = note.updatedAt ? new Date(note.updatedAt).toLocaleString() : '未知时间';
+            
+            if (noteContent.trim()) {
+                mergedContent += `📚 历史笔记 ${index + 1} (${updateTime})\n${noteContent}`;
+                if (index < sortedNotes.length - 1) {
+                    mergedContent += separator;
+                }
+            }
+        });
+        
+        if (currentContent && !confirm(`合并后将包含当前内容和${notes.length}条历史笔记，是否继续？`)) {
+            return;
+        }
+        
+        textarea.value = mergedContent;
+        showNotification(`已合并${notes.length}条历史笔记`, 'success');
+        
+        // 滚动到顶部
+        textarea.scrollTop = 0;
     }
 
     /**
