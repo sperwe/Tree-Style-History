@@ -868,6 +868,7 @@
   #tst-quick-note-modal [style*="background: #e3f2fd"],
   #tst-quick-note-modal [style*="background:#e3f2fd"] {
     background: #2a4a5c !important;  /* 深蓝灰色背景 */
+    color: #ffffff !important;  /* 同时设置文字颜色 */
   }
   
   #tst-quick-note-modal [style*="border: 1px solid #2196f3"],
@@ -875,15 +876,15 @@
     border: 1px solid #4a90e2 !important;  /* 调整边框颜色为更柔和的蓝色 */
   }
   
-  /* 增强最新笔记项目内文字的对比度 */
-  #tst-quick-note-modal [style*="background: #e3f2fd"] .tst-history-item-label.current,
-  #tst-quick-note-modal [style*="background:#e3f2fd"] .tst-history-item-label.current {
-    color: #ffffff !important;  /* 白色文字，确保在深蓝灰背景上清晰可见 */
-    font-weight: bold !important;
+  /* 确保最新笔记项目内所有文字都有足够对比度 */
+  #tst-quick-note-modal [style*="background: #e3f2fd"] *,
+  #tst-quick-note-modal [style*="background:#e3f2fd"] * {
+    color: inherit !important;  /* 继承父元素的白色 */
   }
   
+  /* 特别设置预览文字为稍微暗一点的颜色以区分层次 */
   #tst-quick-note-modal [style*="background: #e3f2fd"] .tst-history-item-preview,
   #tst-quick-note-modal [style*="background:#e3f2fd"] .tst-history-item-preview {
-    color: #e0e0e0 !important;  /* 浅色文字，确保预览文本清晰可见 */
+    color: #e0e0e0 !important;  /* 浅色文字，确保预览文本清晰可见但有层次 */
   }
 }
