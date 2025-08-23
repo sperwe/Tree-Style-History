@@ -154,15 +154,18 @@
         quickNoteModal.style.display = 'block';
         isModalOpen = true;
 
-        // 加载历史笔记内容
-        loadHistoryNotes();
-
-        // 聚焦到文本框
+        // 聚焦到文本框并加载历史笔记
         const textarea = quickNoteModal.querySelector('#tst-quick-note-textarea');
         setTimeout(() => {
-            textarea.focus();
-            // 将光标移到末尾，方便继续编辑
-            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+            // 先加载历史笔记内容
+            loadHistoryNotes();
+            
+            // 然后聚焦并设置光标位置
+            setTimeout(() => {
+                textarea.focus();
+                // 将光标移到末尾，方便继续编辑
+                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+            }, 200);
         }, 100);
     }
 
