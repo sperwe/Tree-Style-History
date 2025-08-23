@@ -1026,7 +1026,7 @@ function saveSelectionAsNote(pageUrl, selectedText){
 function findLatestVisitId(pageUrl) {
     return new Promise((resolve, reject) => {
         try {
-            if (!dbConn) {
+            if (!db) {
                 console.error('Database not initialized in findLatestVisitId');
                 reject(new Error('Database not initialized'));
                 return;
@@ -1036,7 +1036,7 @@ function findLatestVisitId(pageUrl) {
             
             var latestVisitId = 0;
             var latestVisitTime = 0;
-            var tx = dbConn.transaction(["VisitItem"], "readonly");
+            var tx = db.transaction(["VisitItem"], "readonly");
             var st = tx.objectStore("VisitItem");
             var idx = st.index('url');
             var c = idx.openCursor(IDBKeyRange.only(pageUrl));
@@ -1332,12 +1332,12 @@ async function checkPageNoteExists(pageData) {
 function checkNoteExists(visitId) {
     return new Promise((resolve) => {
         try {
-            if (!dbConn) {
+            if (!db) {
                 resolve(false);
                 return;
             }
             
-            const tx = dbConn.transaction(['VisitNote'], 'readonly');
+            const tx = db.transaction(['VisitNote'], 'readonly');
             const ns = tx.objectStore('VisitNote');
             const getReq = ns.get(visitId);
             
@@ -1373,12 +1373,12 @@ function checkNoteExists(visitId) {
 function loadNoteFromDatabase(visitId) {
     return new Promise((resolve, reject) => {
         try {
-            if (!dbConn) {
+            if (!db) {
                 reject(new Error('Database not initialized'));
                 return;
             }
             
-            const tx = dbConn.transaction(['VisitNote'], 'readonly');
+            const tx = db.transaction(['VisitNote'], 'readonly');
             const ns = tx.objectStore('VisitNote');
             const getReq = ns.get(visitId);
             
