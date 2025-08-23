@@ -328,6 +328,42 @@
                 closeFloatingWindow();
             }
         });
+        
+        // 定期检查窗口状态，确保保持可见性（针对不支持alwaysOnTop的情况）
+        let keepOnTopInterval = null;
+        
+        function startKeepOnTop() {
+            if (keepOnTopInterval) return;
+            
+            keepOnTopInterval = setInterval(() => {
+                // 每30秒尝试将窗口带到前台
+                chrome.windows.getCurrent((currentWindow) => {
+                    if (!currentWindow.focused) {
+                        chrome.windows.update(currentWindow.id, { focused: true }, () => {
+                            if (chrome.runtime.lastError) {
+                                console.log('[Floating] 无法聚焦窗口:', chrome.runtime.lastError.message);
+                            }
+                        });
+                    }
+                });
+            }, 30000); // 30秒检查一次
+        }
+        
+        function stopKeepOnTop() {
+            if (keepOnTopInterval) {
+                clearInterval(keepOnTopInterval);
+                keepOnTopInterval = null;
+            }
+        }
+        
+        // 当窗口获得焦点时启动保持置顶，失去焦点时停止（节省资源）
+        window.addEventListener('focus', startKeepOnTop);
+        window.addEventListener('blur', stopKeepOnTop);
+        
+        // 页面加载完成时启动一次
+        document.addEventListener('DOMContentLoaded', () => {
+            startKeepOnTop();
+        });
     </script>
 </body>
 </html>

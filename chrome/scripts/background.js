@@ -1288,22 +1288,56 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         const topPosition = 60;
                         
                         // 创建全局浮动窗口
-                        chrome.windows.create({
+                        const windowConfig = {
                             url: floatingUrl,
                             type: 'popup',
                             width: windowWidth,
                             height: windowHeight,
                             left: leftPosition,
                             top: topPosition,
-                            focused: true,
-                            alwaysOnTop: true  // 关键：始终置顶
-                        }, (window) => {
-                            if (chrome.runtime.lastError) {
-                                console.error('Error creating global floating window:', chrome.runtime.lastError);
+                            focused: true
+                        };
+                        
+                        // 首先尝试创建支持alwaysOnTop的窗口
+                        const alwaysOnTopConfig = { ...windowConfig, alwaysOnTop: true };
+                        
+                        chrome.windows.create(alwaysOnTopConfig, (window) => {
+                            if (chrome.runtime.lastError && chrome.runtime.lastError.message.includes('alwaysOnTop')) {
+                                console.log('[TST Background] alwaysOnTop不支持，使用降级方案');
+                                
+                                // 降级：创建普通popup窗口
+                                chrome.windows.create(windowConfig, (fallbackWindow) => {
+                                    if (chrome.runtime.lastError) {
+                                        console.error('Error creating fallback floating window:', chrome.runtime.lastError);
+                                        sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                                    } else {
+                                        console.log('[TST Background] 降级浮动窗口创建成功:', fallbackWindow.id);
+                                        
+                                        // 尝试设置窗口属性使其更突出
+                                        chrome.windows.update(fallbackWindow.id, { 
+                                            focused: true,
+                                            drawAttention: true
+                                        }, () => {
+                                            sendResponse({ 
+                                                success: true, 
+                                                action: 'created', 
+                                                windowId: fallbackWindow.id,
+                                                alwaysOnTop: false 
+                                            });
+                                        });
+                                    }
+                                });
+                            } else if (chrome.runtime.lastError) {
+                                console.error('Error creating floating window:', chrome.runtime.lastError);
                                 sendResponse({ success: false, error: chrome.runtime.lastError.message });
                             } else {
-                                console.log('[TST Background] 全局浮动窗口创建成功:', window.id);
-                                sendResponse({ success: true, action: 'created', windowId: window.id });
+                                console.log('[TST Background] 置顶浮动窗口创建成功:', window.id);
+                                sendResponse({ 
+                                    success: true, 
+                                    action: 'created', 
+                                    windowId: window.id,
+                                    alwaysOnTop: true 
+                                });
                             }
                         });
                     });
