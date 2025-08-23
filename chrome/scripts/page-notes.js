@@ -1053,7 +1053,7 @@
                 shortcut: 'Ctrl+Shift+Q'
             },
             {
-                text: '🎈 笔记管理器 (浮动窗口)',
+                text: '🎈 全局浮动笔记管理器 (置顶窗口)',
                 action: () => openNoteManager('floating'),
                 shortcut: 'Ctrl+Shift+N'
             },
@@ -1193,8 +1193,27 @@
     async function openNoteManager(mode = 'window') {
         try {
             if (mode === 'floating') {
-                // 创建浮动窗口模式
-                await createFloatingNoteManager();
+                // 创建全局浮动窗口（真正的系统级置顶窗口）
+                if (chrome && chrome.runtime) {
+                    chrome.runtime.sendMessage({
+                        action: 'createGlobalFloatingWindow'
+                    }, (response) => {
+                        if (chrome.runtime.lastError) {
+                            console.error('创建全局浮动窗口失败:', chrome.runtime.lastError);
+                            // 降级方案：使用页面内浮动窗口
+                            createFloatingNoteManager();
+                        } else if (response && response.success) {
+                            console.log('[Page Notes] 全局浮动窗口创建成功:', response.action);
+                        } else {
+                            console.error('全局浮动窗口创建失败:', response?.error);
+                            // 降级方案：使用页面内浮动窗口
+                            createFloatingNoteManager();
+                        }
+                    });
+                } else {
+                    // 降级方案：使用页面内浮动窗口
+                    await createFloatingNoteManager();
+                }
             } else if (chrome && chrome.runtime) {
                 // 通过background script打开独立窗口
                 chrome.runtime.sendMessage({
