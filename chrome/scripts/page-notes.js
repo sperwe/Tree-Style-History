@@ -1607,7 +1607,7 @@
         const styleElement = document.createElement('style');
         styleElement.id = 'tst-floating-window-css';
         
-        // 完整的降级CSS样式，接近独立窗口的体验
+        // 现代苹果/macOS风格的CSS样式
         styleElement.textContent = `
             /* 全局重置和基础样式 */
             #tst-floating-note-manager * {
@@ -1618,23 +1618,26 @@
                 display: flex;
                 flex-direction: column;
                 height: 100%;
-                background: #f8f9fa;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                line-height: 1.6;
-                color: #333;
+                background: #ffffff;
+                font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Helvetica, Arial, sans-serif;
+                line-height: 1.47;
+                color: #1d1d1f;
+                font-weight: 400;
+                letter-spacing: -0.003em;
             }
             
-            /* 工具栏样式 */
+            /* 工具栏样式 - macOS风格 */
             #tst-floating-note-manager .toolbar {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                padding: 12px 16px;
-                background: #fff;
-                border-bottom: 1px solid #e0e0e0;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                padding: 16px 20px;
+                background: rgba(255, 255, 255, 0.8);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border-bottom: 0.5px solid rgba(0, 0, 0, 0.04);
                 z-index: 100;
-                min-height: 60px;
+                min-height: 64px;
                 flex-shrink: 0;
             }
             
@@ -1643,14 +1646,14 @@
             #tst-floating-note-manager .toolbar-right {
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 14px;
             }
             
             #tst-floating-note-manager .toolbar-left {
                 flex: 1;
             }
             
-            /* 搜索框样式 */
+            /* 搜索框样式 - iOS/macOS风格 */
             #tst-floating-note-manager .search-box {
                 position: relative;
                 display: flex;
@@ -1658,58 +1661,96 @@
             }
             
             #tst-floating-note-manager .search-box input {
-                padding: 8px 12px;
-                border: 1px solid #ddd;
-                border-radius: 6px;
-                font-size: 14px;
-                width: 280px;
-                background: #fff;
-                transition: border-color 0.2s, box-shadow 0.2s;
+                padding: 10px 16px 10px 36px;
+                border: none;
+                border-radius: 10px;
+                font-size: 15px;
+                font-weight: 400;
+                width: 300px;
+                background: rgba(142, 142, 147, 0.12);
+                color: #1d1d1f;
+                transition: all 0.2s ease;
+                font-family: inherit;
+            }
+            
+            #tst-floating-note-manager .search-box input::placeholder {
+                color: rgba(60, 60, 67, 0.6);
+                font-weight: 400;
             }
             
             #tst-floating-note-manager .search-box input:focus {
                 outline: none;
-                border-color: #007bff;
-                box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+                background: rgba(142, 142, 147, 0.16);
+                box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.16);
             }
             
-            /* 过滤器样式 */
+            #tst-floating-note-manager .search-box::before {
+                content: "🔍";
+                position: absolute;
+                left: 12px;
+                color: rgba(60, 60, 67, 0.6);
+                font-size: 14px;
+                pointer-events: none;
+            }
+            
+            /* 过滤器样式 - macOS风格 */
             #tst-floating-note-manager .filters select {
-                padding: 6px 10px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                background: #fff;
-                font-size: 13px;
+                padding: 8px 12px;
+                border: none;
+                border-radius: 8px;
+                background: rgba(142, 142, 147, 0.12);
+                font-size: 14px;
+                font-weight: 400;
                 cursor: pointer;
-                min-width: 120px;
+                min-width: 130px;
+                color: #1d1d1f;
+                font-family: inherit;
+                transition: all 0.2s ease;
             }
             
-            /* 按钮样式 */
+            #tst-floating-note-manager .filters select:focus {
+                outline: none;
+                background: rgba(142, 142, 147, 0.16);
+                box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.16);
+            }
+            
+            /* 按钮样式 - iOS/macOS风格 */
             #tst-floating-note-manager button {
-                padding: 8px 12px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                background: #f8f9fa;
+                padding: 10px 16px;
+                border: none;
+                border-radius: 8px;
+                background: rgba(142, 142, 147, 0.12);
                 cursor: pointer;
                 font-size: 14px;
-                transition: all 0.2s;
+                font-weight: 500;
+                color: #007AFF;
+                transition: all 0.2s ease;
                 white-space: nowrap;
+                font-family: inherit;
+                letter-spacing: -0.01em;
             }
             
             #tst-floating-note-manager button:hover {
-                background: #e9ecef;
-                border-color: #adb5bd;
+                background: rgba(142, 142, 147, 0.2);
+                transform: scale(0.98);
             }
             
             #tst-floating-note-manager button.btn-primary {
-                background: #007bff;
+                background: #007AFF;
                 color: white;
-                border-color: #007bff;
             }
             
             #tst-floating-note-manager button.btn-primary:hover {
-                background: #0056b3;
-                border-color: #0056b3;
+                background: #0056CC;
+                transform: scale(0.98);
+            }
+            
+            #tst-floating-note-manager button.danger {
+                color: #FF3B30;
+            }
+            
+            #tst-floating-note-manager button.danger:hover {
+                background: rgba(255, 59, 48, 0.1);
             }
             
             /* 主内容区域 */
@@ -1717,16 +1758,18 @@
                 display: flex;
                 flex: 1;
                 overflow: hidden;
-                background: #fff;
+                background: #ffffff;
             }
             
-            /* 左侧笔记列表面板 */
+            /* 左侧笔记列表面板 - macOS侧边栏风格 */
             #tst-floating-note-manager .note-list-panel {
-                width: 350px;
-                min-width: 300px;
-                max-width: 500px;
-                border-right: 1px solid #e0e0e0;
-                background: #fff;
+                width: 360px;
+                min-width: 280px;
+                max-width: 480px;
+                border-right: 0.5px solid rgba(0, 0, 0, 0.04);
+                background: rgba(246, 246, 246, 0.6);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
                 display: flex;
                 flex-direction: column;
                 resize: horizontal;
@@ -1734,9 +1777,9 @@
             }
             
             #tst-floating-note-manager .list-header {
-                padding: 12px 16px;
-                border-bottom: 1px solid #f0f0f0;
-                background: #fafafa;
+                padding: 16px 20px;
+                border-bottom: 0.5px solid rgba(0, 0, 0, 0.04);
+                background: rgba(255, 255, 255, 0.4);
                 flex-shrink: 0;
             }
             
@@ -1744,9 +1787,10 @@
                 display: flex;
                 align-items: center;
                 gap: 16px;
-                margin-bottom: 8px;
+                margin-bottom: 10px;
                 font-size: 13px;
-                color: #666;
+                font-weight: 500;
+                color: rgba(60, 60, 67, 0.8);
             }
             
             #tst-floating-note-manager .list-controls {
@@ -1903,15 +1947,17 @@
             #tst-floating-note-manager #note-editor {
                 flex: 1;
                 border: none;
-                padding: 20px;
-                font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', monospace;
-                font-size: 14px;
+                padding: 24px;
+                font-family: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', monospace;
+                font-size: 15px;
                 line-height: 1.6;
                 resize: none;
                 outline: none;
-                background: #fff;
-                color: #333;
+                background: #ffffff;
+                color: #1d1d1f;
                 overflow-y: auto;
+                font-weight: 400;
+                letter-spacing: 0.01em;
             }
             
             #tst-floating-note-manager .editor-status {
@@ -1975,27 +2021,29 @@
                 color: #999;
             }
             
-            /* 滚动条样式 */
+            /* 滚动条样式 - macOS风格 */
             #tst-floating-note-manager .note-list::-webkit-scrollbar,
             #tst-floating-note-manager #note-editor::-webkit-scrollbar {
-                width: 8px;
+                width: 6px;
             }
             
             #tst-floating-note-manager .note-list::-webkit-scrollbar-track,
             #tst-floating-note-manager #note-editor::-webkit-scrollbar-track {
-                background: #f1f1f1;
-                border-radius: 4px;
+                background: transparent;
             }
             
             #tst-floating-note-manager .note-list::-webkit-scrollbar-thumb,
             #tst-floating-note-manager #note-editor::-webkit-scrollbar-thumb {
-                background: #c1c1c1;
-                border-radius: 4px;
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 10px;
+                border: 2px solid transparent;
+                background-clip: content-box;
             }
             
             #tst-floating-note-manager .note-list::-webkit-scrollbar-thumb:hover,
             #tst-floating-note-manager #note-editor::-webkit-scrollbar-thumb:hover {
-                background: #a8a8a8;
+                background: rgba(0, 0, 0, 0.3);
+                background-clip: content-box;
             }
             
             /* 模态框样式 */
