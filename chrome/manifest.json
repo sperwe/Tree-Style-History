@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.5.7",
-  "version_name": "4.5.7 by sperwe - Fixed Floating Window Ctrl+Shift+N Shortcut",
+  "version": "4.5.8",
+  "version_name": "4.5.8 by sperwe - Rebuilt Floating Window with Direct DOM Injection",
   "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.5.7: Fixed Floating Window Shortcut & Resource Paths - Complete Note Manager",
+  "description": "v4.5.8: Revolutionary Direct-Injection Floating Window - Full Note Manager Experience",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
