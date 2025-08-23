@@ -9,16 +9,18 @@ document.addEvent('domready', function(){
 	function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 	function render(items){
 		listEl.set('html','');
+		console.log('render called with', items.length, 'items');
 		if (items.length===0){ listEl.set('html','<div class="no-results"><span>'+returnLang('noResults')+'</span></div>'); return; }
 		
-		// Sort items by update time (newest first)
-		items.sort(function(a, b) {
-			return (b.note.updatedAt || 0) - (a.note.updatedAt || 0);
-		});
+		// Sort items by update time (newest first) - remove duplicate sorting since enrich already sorts
+		// items.sort(function(a, b) {
+		// 	return (b.note.updatedAt || 0) - (a.note.updatedAt || 0);
+		// });
 		
 		// Render each note as individual item like in tree history
 		var colorToggle = true;
 		items.forEach(function(m) {
+			console.log('rendering item:', m.note ? m.note.url : 'no note', m.title);
 			var bgColor = colorToggle ? 'white' : 'grey';
 			colorToggle = !colorToggle;
 			renderSingleNote(m, false, 1, bgColor, listEl);
@@ -113,11 +115,18 @@ document.addEvent('domready', function(){
 		}
 	}
 	function enrich(list){
+		console.log('enrich called with', list.length, 'notes from database');
 		if (list.length===0){ all=[]; render(all); return; }
 		var i=0; all=[];
 		(function next(){
-			if (i>=list.length){ all.sort(function(a,b){ return (b.note.updatedAt||0)-(a.note.updatedAt||0); }); render(all); return; }
+			if (i>=list.length){ 
+				console.log('enrichment complete, final all array has', all.length, 'items');
+				all.sort(function(a,b){ return (b.note.updatedAt||0)-(a.note.updatedAt||0); }); 
+				render(all); 
+				return; 
+			}
 			var n=list[i++];
+			console.log('processing note', i-1, ':', n.url, 'visitId:', n.visitId);
 			var meta = { note:n, title:'', visitTime:0 };
 			if (!n.visitId){ all.push(meta); next(); return; }
 			var tx2=db.transaction(["VisitItem"],"readonly");
