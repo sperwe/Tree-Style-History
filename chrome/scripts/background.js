@@ -1837,10 +1837,11 @@ async function getAllNotesFromDatabase() {
                     title: title,
                     note: note.note || '',
                     tag: note.tag || 'general_general',
-                url: note.url || '',
-                createdAt: note.createdAt || note.time,
-                updatedAt: note.updatedAt || note.time
-            }));
+                    url: note.url || '',
+                    createdAt: note.createdAt || note.time,
+                    updatedAt: note.updatedAt || note.time
+                };
+            });
             
             console.log('[TST Background] 获取所有笔记:', formattedNotes.length);
             resolve(formattedNotes);
