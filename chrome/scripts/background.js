@@ -1300,26 +1300,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true; // 异步响应
     }
     
-    // 检查数据库状态
-    if (request.action === 'checkDbStatus') {
-        sendResponse({ 
-            success: true, 
-            dbReady: !!db,
-            dbVersion: db ? db.version : 0
-        });
-        return true;
-    }
-
     // 获取所有笔记
     if (request.action === 'getAllNotes') {
-        console.log('[TST Background] 处理getAllNotes请求, db状态:', !!db);
         getAllNotesFromDatabase()
             .then((notes) => {
-                console.log('[TST Background] 成功获取笔记数量:', notes.length);
                 sendResponse({ success: true, notes: notes });
             })
             .catch((error) => {
-                console.error('[TST Background] Error getting all notes:', error);
+                console.error('Error getting all notes:', error);
                 sendResponse({ success: false, error: error.message || 'Unknown error' });
             });
         
@@ -1745,151 +1733,36 @@ function loadNoteFromDatabase(visitId) {
  */
 async function getAllNotesFromDatabase() {
     return new Promise((resolve) => {
-        try {
-            console.log('[TST Background] 开始获取所有笔记，db状态:', !!db);
-            
-            if (!db) {
-                console.error('[TST Background] 数据库未初始化');
-                resolve([]);
-                return;
-            }
-
-            const transaction = db.transaction(['VisitNote'], 'readonly');
-            const objectStore = transaction.objectStore('VisitNote');
-            const request = objectStore.getAll();
-            
-            transaction.onerror = function(error) {
-                console.error('[TST Background] 事务错误:', error);
-                resolve([]);
-            };
+        const transaction = db.transaction(['VisitNote'], 'readonly');
+        const objectStore = transaction.objectStore('VisitNote');
+        const request = objectStore.getAll();
         
         request.onsuccess = function() {
             const notes = request.result || [];
             
-            // 转换数据格式，确保兼容性并修复编码问题
-            const formattedNotes = notes.map(note => {
-                let title = note.title || '未命名笔记';
-                let content = note.note || '';
-                
-                // 修复可能的编码问题
-                try {
-                    title = fixEncodingIssues(title);
-                    content = fixEncodingIssues(content);
-                } catch (error) {
-                    console.warn('修复编码失败:', error);
-                }
-                
-                return {
-                    id: note.id || note.visitId,
-                    title: title,
-                    note: content,
-                    tag: note.tag || 'general_general',
-                    url: note.url || '',
-                    createdAt: note.createdAt || note.time,
-                    updatedAt: note.updatedAt || note.time
-                };
-            });
+            // 转换数据格式，确保兼容性
+            const formattedNotes = notes.map(note => ({
+                id: note.id || note.visitId,
+                title: note.title || '未命名笔记',
+                note: note.note || '',
+                tag: note.tag || 'general_general',
+                url: note.url || '',
+                createdAt: note.createdAt || note.time,
+                updatedAt: note.updatedAt || note.time
+            }));
             
             console.log('[TST Background] 获取所有笔记:', formattedNotes.length);
             resolve(formattedNotes);
         };
         
-            request.onerror = function(error) {
-                console.error('[TST Background] 获取所有笔记失败:', error);
-                resolve([]);
-            };
-            
-        } catch (error) {
-            console.error('[TST Background] getAllNotesFromDatabase异常:', error);
+        request.onerror = function(error) {
+            console.error('获取所有笔记失败:', error);
             resolve([]);
-        }
+        };
     });
 }
 
-/**
- * 修复编码问题
- * @param {string} text - 需要修复的文本
- * @returns {string} 修复后的文本
- */
-function fixEncodingIssues(text) {
-    if (!text || typeof text !== 'string') {
-        return text;
-    }
 
-    try {
-        // 检测是否存在常见的UTF-8乱码模式
-        // 如: æœªå'½åç¬"è®° (未命名笔记的乱码)
-        
-        // 方法1: 尝试修复双重编码问题
-        if (text.includes('æ') || text.includes('å') || text.includes('ç') || text.includes('è')) {
-            try {
-                // 将错误解码的字符串转换为字节数组
-                const bytes = new Uint8Array(text.length);
-                for (let i = 0; i < text.length; i++) {
-                    bytes[i] = text.charCodeAt(i) & 0xFF;
-                }
-                
-                // 使用UTF-8解码器重新解码
-                const fixed = new TextDecoder('utf-8').decode(bytes);
-                
-                // 验证修复结果是否合理
-                if (isValidFixedText(fixed, text)) {
-                    console.log('编码修复成功:', text, '->', fixed);
-                    return fixed;
-                }
-            } catch (e) {
-                console.warn('方法1修复失败:', e);
-            }
-        }
-
-        // 方法2: 处理特定的已知乱码模式
-        const knownPatterns = {
-            'æœªå'½åç¬"è®°': '未命名笔记',
-            'Proofâ€"of': 'Proof-of',
-            'â€"': '—',
-            'â€™': ''',
-            'â€œ': '"',
-            'â€': '"',
-            'Â®': '®',
-            'â€¢': '•'
-        };
-
-        let fixedText = text;
-        for (const [corrupt, correct] of Object.entries(knownPatterns)) {
-            if (fixedText.includes(corrupt)) {
-                fixedText = fixedText.replace(new RegExp(corrupt, 'g'), correct);
-                console.log('模式修复:', corrupt, '->', correct);
-            }
-        }
-
-        return fixedText;
-
-    } catch (error) {
-        console.warn('编码修复过程出错:', error);
-        return text;
-    }
-}
-
-/**
- * 验证修复后的文本是否合理
- * @param {string} fixed - 修复后的文本
- * @param {string} original - 原始文本
- * @returns {boolean} 是否是合理的修复
- */
-function isValidFixedText(fixed, original) {
-    // 检查是否包含合理的中文字符
-    const chineseRegex = /[\u4e00-\u9fff]/;
-    const hasValidChinese = chineseRegex.test(fixed);
-    
-    // 检查是否仍然包含明显的乱码字符
-    const stillCorrupted = /[æåçè]{3,}/.test(fixed);
-    
-    // 长度不应该变化太大
-    const lengthRatio = fixed.length / original.length;
-    const reasonableLength = lengthRatio > 0.3 && lengthRatio < 3;
-    
-    return hasValidChinese && !stillCorrupted && reasonableLength;
-}
 
 /**
  * 从笔记管理器保存笔记

@@ -19,13 +19,6 @@ class DataSanitizer {
             return '';
         }
 
-        // 修复编码问题
-        try {
-            content = this.fixEncoding(content);
-        } catch (error) {
-            console.warn('笔记内容编码修复失败:', error);
-        }
-
         // 长度限制检查
         if (content.length > this.MAX_CONTENT_LENGTH) {
             throw new Error(`笔记内容过大，请缩减至 ${Math.round(this.MAX_CONTENT_LENGTH / 1000)}KB 以内`);
@@ -67,20 +60,12 @@ class DataSanitizer {
             return '';
         }
 
-        // 确保字符串是正确编码的
-        try {
-            // 检查是否有编码问题并修复
-            title = this.fixEncoding(title);
-        } catch (error) {
-            console.warn('标题编码修复失败:', error);
-        }
-
         // 长度限制
         if (title.length > this.MAX_TITLE_LENGTH) {
             title = title.substring(0, this.MAX_TITLE_LENGTH - 3) + '...';
         }
 
-        // HTML实体编码危险字符（但保留中文字符）
+        // HTML实体编码危险字符
         return title.replace(/[<>'"&]/g, (match) => {
             const entities = {
                 '<': '&lt;',
@@ -93,80 +78,7 @@ class DataSanitizer {
         });
     }
 
-    /**
-     * 修复字符编码问题
-     * @param {string} text - 原始文本
-     * @returns {string} 修复后的文本
-     */
-    static fixEncoding(text) {
-        if (!text) return '';
 
-        try {
-            // 检测常见的UTF-8乱码模式并修复
-            if (text.includes('æ') || text.includes('å') || text.includes('ç') || text.includes('è')) {
-                // 方法1: 尝试直接字节转换
-                try {
-                    const bytes = new Uint8Array(text.length);
-                    for (let i = 0; i < text.length; i++) {
-                        bytes[i] = text.charCodeAt(i) & 0xFF;
-                    }
-                    const fixed = new TextDecoder('utf-8').decode(bytes);
-                    
-                    if (this.isValidText(fixed)) {
-                        console.log('[DataSanitizer] 编码修复成功:', text.substring(0, 20), '->', fixed.substring(0, 20));
-                        return fixed;
-                    }
-                } catch (e) {
-                    // 忽略转换错误，继续下一种方法
-                }
-            }
-
-            // 方法2: 处理已知的乱码模式
-            const patterns = {
-                'æœªå'½åç¬"è®°': '未命名笔记',
-                'Proofâ€"of': 'Proof-of',
-                'â€"': '—',
-                'â€™': ''',
-                'â€œ': '"',
-                'â€': '"',
-                'Â®': '®',
-                'Ã¡': 'á',
-                'Ã©': 'é',
-                'Ã­': 'í',
-                'Ã³': 'ó',
-                'Ãº': 'ú'
-            };
-
-            let result = text;
-            for (const [corrupt, correct] of Object.entries(patterns)) {
-                if (result.includes(corrupt)) {
-                    result = result.replace(new RegExp(corrupt, 'g'), correct);
-                }
-            }
-
-            // 检查是否有改进
-            if (result !== text && this.isValidText(result)) {
-                console.log('[DataSanitizer] 模式修复成功:', text.substring(0, 20), '->', result.substring(0, 20));
-                return result;
-            }
-
-        } catch (error) {
-            console.warn('[DataSanitizer] 编码修复失败:', error);
-        }
-
-        return text;
-    }
-
-    /**
-     * 验证文本是否有效（无乱码）
-     * @param {string} text - 文本
-     * @returns {boolean} 是否有效
-     */
-    static isValidText(text) {
-        // 检查是否包含常见的乱码字符
-        const invalidChars = /[\uFFFD\u00C3\u00A0-\u00FF]{2,}/;
-        return !invalidChars.test(text);
-    }
 
     /**
      * 验证标签值
