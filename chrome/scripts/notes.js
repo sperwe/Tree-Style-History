@@ -12,80 +12,73 @@ document.addEvent('domready', function(){
 		console.log('render called with', items.length, 'items');
 		if (items.length===0){ listEl.set('html','<div class="no-results"><span>'+returnLang('noResults')+'</span></div>'); return; }
 		
-		// Sort items by update time (newest first) - remove duplicate sorting since enrich already sorts
-		// items.sort(function(a, b) {
-		// 	return (b.note.updatedAt || 0) - (a.note.updatedAt || 0);
-		// });
-		
 		// Render each note as individual item like in tree history
-		var colorToggle = true;
-		items.forEach(function(m) {
+		// Items are already sorted in enrich function
+		var rel = 'white';
+		for (var i = 0; i < items.length; i++) {
+			var m = items[i];
 			console.log('rendering item:', m.note ? m.note.url : 'no note', m.title);
-			var bgColor = colorToggle ? 'white' : 'grey';
-			colorToggle = !colorToggle;
-			renderSingleNote(m, false, 1, bgColor, listEl);
-		});
+			
+			var url = m.note.url || '';
+			var title = (m.title && m.title.trim()!=='') ? m.title : url;
+			var noteText = m.note.note || '';
+			var firstLine = noteText.split(/\r?\n/)[0];
+			if (firstLine.length > 60) firstLine = firstLine.slice(0,60)+'…';
+			
+			// Count selections
+			var excerptCount = 0;
+			excerptCount += (noteText.match(/---\n\*Added on /g) || []).length;
+			excerptCount += (noteText.match(/\*摘录自:/g) || []).length;
+			if (excerptCount === 0 && noteText.trim()) excerptCount = 1;
+			
+			var countBadge = excerptCount > 1 ? ' [' + excerptCount + ' selections]' : '';
+			var timeStr = fmt(m.note.updatedAt) || '';
+			
+			var displayTitle = title;
+			if (firstLine && firstLine !== title) {
+				displayTitle = title + ': ' + firstLine;
+			}
+			displayTitle += countBadge;
+			
+			// Generate IDs
+			var selectId = 'select-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
+			var errorId = 'error-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
+			
+			// Build item HTML exactly like tree history
+			var item = '';
+			item += '<div class="item">';
+			item += '<span class="checkbox"><label><input class="chkbx" type="checkbox" id="' + selectId + '" value="' + url + '" name="check"></label>&nbsp;</span>';
+			item += '<span class="time">' + timeStr + '</span>';
+			item += '<a target="_blank" class="link" href="' + url + '">';
+			item += '<img id="' + errorId + '" class="favicon" alt="Favicon" src="chrome://favicon/' + escapeHtml(url) + '">';
+			item += '<span class="title" title="' + escapeHtml(url + ' - ' + noteText.substring(0, 200)) + '">' + escapeHtml(displayTitle) + '</span>';
+			item += '</a>';
+			item += '</div>';
+			
+			// Create and inject element
+			var noteElement = new Element('div', { 
+				'rel': rel, 
+				'class': 'item-holder',
+				'html': item + '<div class="clearitem" style="clear:both;"></div>'
+			});
+			noteElement.inject(listEl);
+			
+			// Add event handlers
+			addNoteEventHandlers(m);
+			
+			// Add double-click to edit
+			noteElement.addEvent('dblclick', function(e) {
+				e.stop();
+				openEditor(m.note.visitId, m.note.url, m.title, m.note.note||'');
+			}.bind(null, m));
+			
+			// Alternate background
+			rel = (rel === 'white') ? 'grey' : 'white';
+		}
 	}
 	
 
-	
-	function renderSingleNote(m, isInGroup, noteIndex, bgColor, container) {
-		var url = m.note.url || '';
-		var title = (m.title && m.title.trim()!=='') ? m.title : url;
-		var noteText = m.note.note || '';
-		var firstLine = noteText.split(/\r?\n/)[0];
-		if (firstLine.length>60) firstLine = firstLine.slice(0,60)+'…';
-		
-		// Count selections
-		var excerptCount = 0;
-		excerptCount += (noteText.match(/---\n\*Added on /g) || []).length;
-		excerptCount += (noteText.match(/\*摘录自:/g) || []).length;
-		if (excerptCount === 0 && noteText.trim()) excerptCount = 1;
-		
-		var countBadge = excerptCount > 1 ? ' [' + excerptCount + ' selections]' : '';
-		
-		// Format timestamp
-		var timeStr = fmt(m.note.updatedAt) || '';
-		
-		// Display title with first line preview
-		var displayTitle = title;
-		if (firstLine && firstLine !== title) {
-			displayTitle = title + ': ' + firstLine;
-		}
-		displayTitle += countBadge;
-		
-		// Generate unique IDs like tree-style history
-		var selectId = 'select-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
-		var errorId = 'error-' + Math.floor((Math.random() * 999999999999999999) + 100000000000000000);
-		
-		// Build HTML exactly like tree-style history
-		var item = '';
-		item += '<div class="item">';
-		item += '<span class="checkbox"><label><input class="chkbx" type="checkbox" id="' + selectId + '" value="' + url + '" name="check"></label>&nbsp;</span>';
-		item += '<span class="time">' + timeStr + '</span>';
-		item += '<a target="_blank" class="link" href="' + url + '">';
-		item += '<img id="' + errorId + '" class="favicon" alt="Favicon" src="chrome://favicon/' + escapeHtml(url) + '">';
-		item += '<span class="title" title="' + escapeHtml(url + ' - ' + noteText.substring(0, 200)) + '">' + escapeHtml(displayTitle) + '</span>';
-		item += '</a>';
-		item += '</div>';
-		
-		// Create element exactly like tree-style history
-		var noteElement = new Element('div', { 
-			'rel': bgColor, 
-			'class': 'item-holder',
-			'html': item + '<div class="clearitem" style="clear:both;"></div>'
-		});
-		noteElement.inject(container);
-		
-		// Add event handlers for note actions
-		addNoteEventHandlers(m);
-		
-		// Add click to edit functionality 
-		noteElement.addEvent('dblclick', function(e) {
-			e.stop();
-			openEditor(m.note.visitId, m.note.url, m.title, m.note.note||'');
-		});
-	}
+
 	
 
 	
