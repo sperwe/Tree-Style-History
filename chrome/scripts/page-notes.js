@@ -230,11 +230,12 @@
                         quickNoteModal.innerHTML = `
             <div id="tst-quick-note-content">
                 <div id="tst-quick-note-header">
-                    <h3 id="tst-quick-note-title">📝 页面笔记</h3>
-                    <div class="tst-window-controls">
-                        <button class="tst-window-btn" id="tst-minimize-btn" title="最小化">−</button>
-                        <button class="tst-window-btn" id="tst-quick-note-close" title="关闭">×</button>
+                    <div class="tst-apple-controls">
+                        <button class="tst-apple-control-btn tst-close" title="关闭">●</button>
+                        <button class="tst-apple-control-btn tst-minimize" title="最小化">●</button>
+                        <button class="tst-apple-control-btn tst-maximize" title="最大化" disabled style="opacity: 0.3;">●</button>
                     </div>
+                    <h3 id="tst-quick-note-title">📝 页面笔记</h3>
                 </div>
                 
                 <!-- 历史笔记加载区域 -->
@@ -275,12 +276,30 @@
         `;
 
         // 绑定基础事件
-        const closeBtn = quickNoteModal.querySelector('#tst-quick-note-close');
-        const minimizeBtn = quickNoteModal.querySelector('#tst-minimize-btn');
+        const closeBtn = quickNoteModal.querySelector('.tst-close');
+        const minimizeBtn = quickNoteModal.querySelector('.tst-minimize');
         const clearBtn = quickNoteModal.querySelector('#tst-clear-btn');
         const saveBtn = quickNoteModal.querySelector('#tst-save-btn');
         const textarea = quickNoteModal.querySelector('#tst-quick-note-textarea');
         const header = quickNoteModal.querySelector('#tst-quick-note-header');
+        
+        // 苹果风格交通灯悬停效果
+        const appleControls = quickNoteModal.querySelectorAll('.tst-apple-control-btn');
+        appleControls.forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                if (btn.classList.contains('tst-close')) {
+                    btn.textContent = '✕';
+                } else if (btn.classList.contains('tst-minimize')) {
+                    btn.textContent = '−';
+                } else if (btn.classList.contains('tst-maximize')) {
+                    btn.textContent = '+';
+                }
+            });
+            
+            btn.addEventListener('mouseleave', () => {
+                btn.textContent = '●';
+            });
+        });
 
         closeBtn.addEventListener('click', closeQuickNoteModal);
         minimizeBtn.addEventListener('click', minimizeWindow);
