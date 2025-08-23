@@ -44,10 +44,10 @@
         
         floatingButton.addEventListener('click', openQuickNoteModal);
         
-        // 检查是否有历史笔记并更新按钮状态
-        checkHistoryNoteStatus();
-        
         document.body.appendChild(floatingButton);
+        
+        // 检查是否有历史笔记并更新按钮状态（使用延迟检查确保数据库已初始化）
+        delayedCheckHistoryNoteStatus();
     }
 
     /**
@@ -66,14 +66,39 @@
             
             if (response && response.success && response.hasNote) {
                 // 有历史笔记，更新按钮样式
-                floatingButton.innerHTML = '📝💡';
-                floatingButton.title = '页面笔记（有历史记录）';
-                floatingButton.classList.add('has-history');
-                console.log('[TST Notes] 按钮已更新为历史状态');
+                if (floatingButton) {
+                    floatingButton.innerHTML = '📝💡';
+                    floatingButton.title = '页面笔记（有历史记录）';
+                    floatingButton.classList.add('has-history');
+                    console.log('[TST Notes] 按钮已更新为历史状态');
+                }
             } else {
                 console.log('[TST Notes] 当前页面无历史笔记');
+                if (chrome.runtime.lastError) {
+                    console.log('[TST Notes] Runtime error:', chrome.runtime.lastError);
+                }
             }
         });
+    }
+    
+    /**
+     * 延迟检查历史笔记状态（在数据库完全初始化后）
+     */
+    function delayedCheckHistoryNoteStatus() {
+        // 立即检查一次
+        checkHistoryNoteStatus();
+        
+        // 2秒后再检查一次，确保数据库已初始化
+        setTimeout(() => {
+            console.log('[TST Notes] 延迟检查历史笔记状态');
+            checkHistoryNoteStatus();
+        }, 2000);
+        
+        // 5秒后最后检查一次
+        setTimeout(() => {
+            console.log('[TST Notes] 最终检查历史笔记状态');
+            checkHistoryNoteStatus();
+        }, 5000);
     }
 
     /**
