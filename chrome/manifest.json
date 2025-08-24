@@ -3,12 +3,12 @@
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
   "version": "4.9.11",
-  "version_name": "4.9.11 - 快捷键功能完善（Alt+Shift+S保存选中文本）",
+  "version_name": "4.9.11 - 快捷键功能完善（Ctrl+Shift+F保存选中文本）",
 
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.9.11: Added Alt+Shift+S shortcut to save selected text. Removed Ctrl+Shift+F. Fixed showNotification scope issue for better reliability.",
+  "description": "v4.9.11: Ctrl+Shift+F now saves selected text as note. Fixed showNotification scope issue. Added console logging for debugging.",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
