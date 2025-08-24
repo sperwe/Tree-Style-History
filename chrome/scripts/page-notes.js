@@ -188,8 +188,8 @@
                 e.preventDefault();
                 openNoteManager('floating');
             }
-            // Ctrl+Shift+F 保存选中文本为笔记
-            if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+            // Ctrl+Shift+S 保存选中文本为笔记
+            if (e.ctrlKey && e.shiftKey && e.key === 'S') {
                 e.preventDefault();
                 const selectedText = window.getSelection().toString().trim();
                 if (selectedText) {
@@ -4734,8 +4734,8 @@
             e.preventDefault();
             openNoteManager('floating');
         }
-        // Ctrl+Shift+F 保存选中文本为笔记
-        if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+        // Ctrl+Shift+S 保存选中文本为笔记
+        if (e.ctrlKey && e.shiftKey && e.key === 'S') {
             e.preventDefault();
             const selectedText = window.getSelection().toString().trim();
             if (selectedText) {
