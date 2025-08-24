@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.9.16",
-  "version_name": "4.9.16 - 弹窗添加笔记管理器入口",
+  "version": "4.9.17",
+  "version_name": "4.9.17 - 修复笔记管理器显示问题",
 
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.9.16: Added Note Manager quick access buttons to extension popup for easier navigation.",
+  "description": "v4.9.17: Fixed Note Manager not showing in popup for users with existing settings.",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
