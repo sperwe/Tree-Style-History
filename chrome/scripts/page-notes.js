@@ -2734,10 +2734,27 @@
 
         // 搜索功能
         const searchInput = container.querySelector('#global-search');
+        const clearSearchBtn = container.querySelector('#clear-search');
+        
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 console.log('[Floating] 搜索:', e.target.value);
                 filterFloatingNotes(container, e.target.value);
+                
+                // 显示/隐藏清空按钮
+                if (clearSearchBtn) {
+                    clearSearchBtn.style.display = e.target.value ? 'block' : 'none';
+                }
+            });
+        }
+        
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', () => {
+                console.log('[Floating] 清空搜索');
+                if (searchInput) {
+                    searchInput.value = '';
+                    searchInput.dispatchEvent(new Event('input'));
+                }
             });
         }
 
@@ -2747,6 +2764,26 @@
             tagFilter.addEventListener('change', (e) => {
                 console.log('[Floating] 标签过滤:', e.target.value);
                 filterFloatingNotesByTag(container, e.target.value);
+            });
+        }
+
+        // 日期过滤
+        const dateFilter = container.querySelector('#date-filter');
+        if (dateFilter) {
+            dateFilter.addEventListener('change', (e) => {
+                console.log('[Floating] 日期过滤:', e.target.value);
+                floatingFilters.date = e.target.value;
+                applyFloatingFilters(container);
+            });
+        }
+
+        // 网站过滤
+        const siteFilter = container.querySelector('#site-filter');
+        if (siteFilter) {
+            siteFilter.addEventListener('change', (e) => {
+                console.log('[Floating] 网站过滤:', e.target.value);
+                floatingFilters.site = e.target.value;
+                applyFloatingFilters(container);
             });
         }
 
@@ -2882,6 +2919,11 @@
             if (loadingEl) loadingEl.style.display = 'none';
             
             if (response && response.success && response.notes && response.notes.length > 0) {
+                // 保存笔记数据
+                floatingNotes = response.notes;
+                // 填充网站过滤器
+                populateFloatingSiteFilter(container);
+                // 渲染笔记列表
                 renderFloatingNotesList(container, response.notes);
             } else {
                 // 显示空状态
@@ -3099,12 +3141,35 @@
         // 清空并显示编辑器区域
         const titleInput = container.querySelector('#note-title');
         const editor = container.querySelector('#note-editor');
+        const urlSpan = container.querySelector('#note-url');
+        const datesSpan = container.querySelector('#note-dates');
+        const deleteBtn = container.querySelector('#delete-note');
         
         if (titleInput) titleInput.value = '';
         if (editor) {
             editor.value = '';
             editor.focus();
         }
+        
+        // 显示当前页面信息
+        if (urlSpan) urlSpan.textContent = newNote.url;
+        if (datesSpan) {
+            const now = new Date().toLocaleString();
+            datesSpan.textContent = `创建: ${now} | 更新: ${now}`;
+        }
+        
+        // 隐藏删除按钮（新笔记还未保存）
+        if (deleteBtn) deleteBtn.style.display = 'none';
+        
+        // 清除当前标签显示
+        const currentTagEl = container.querySelector('#current-tag');
+        if (currentTagEl) {
+            currentTagEl.textContent = '无标签';
+            currentTagEl.className = 'current-tag';
+        }
+        
+        // 更新字数统计
+        updateFloatingWordCount(container);
         
         console.log('[Floating] 新建笔记准备完成');
         
@@ -3148,6 +3213,87 @@
         // 标签过滤
         if (floatingFilters.tag) {
             filtered = filtered.filter(note => note.tag === floatingFilters.tag);
+        }
+        
+        // 日期过滤
+        if (floatingFilters.date) {
+            const now = new Date();
+            filtered = filtered.filter(note => {
+                if (!note.updatedAt) return false;
+                const noteDate = new Date(note.updatedAt);
+                const daysDiff = (now - noteDate) / (1000 * 60 * 60 * 24);
+                
+                switch (floatingFilters.date) {
+                    case 'today':
+                        return daysDiff < 1;
+                    case 'week':
+                        return daysDiff < 7;
+                    case 'month':
+                        return daysDiff < 30;
+                    case 'quarter':
+                        return daysDiff < 90;
+                    case 'year':
+                        return daysDiff < 365;
+                    default:
+                        return true;
+                }
+            });
+        }
+        
+        // 网站过滤
+        if (floatingFilters.site) {
+            filtered = filtered.filter(note => {
+                if (!note.url) return false;
+                try {
+                    const url = new URL(note.url);
+                    return url.hostname === floatingFilters.site;
+                } catch {
+                    return false;
+                }
+            });
+        }
+        
+        // 排序
+        if (floatingFilters.sortBy) {
+            filtered.sort((a, b) => {
+                switch (floatingFilters.sortBy) {
+                    case 'priority':
+                        // 按标签权重排序
+                        const getPriority = (tag) => {
+                            if (!tag) return 0;
+                            const weights = {
+                                'very': 3,
+                                'somewhat': 2,
+                                'general': 1
+                            };
+                            const parts = tag.split('_');
+                            return weights[parts[1]] || 0;
+                        };
+                        return getPriority(b.tag) - getPriority(a.tag);
+                        
+                    case 'updated':
+                        return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
+                        
+                    case 'created':
+                        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+                        
+                    case 'title':
+                        return (a.title || '').localeCompare(b.title || '');
+                        
+                    case 'site':
+                        const getHostname = (url) => {
+                            try {
+                                return new URL(url).hostname;
+                            } catch {
+                                return '';
+                            }
+                        };
+                        return getHostname(a.url).localeCompare(getHostname(b.url));
+                        
+                    default:
+                        return 0;
+                }
+            });
         }
         
         renderFloatingNotesList(container, filtered);
@@ -3851,6 +3997,45 @@
         URL.revokeObjectURL(url);
         
         showFloatingNotification(`已导出 ${notesToExport.length} 条笔记`, 'success');
+    }
+
+    /**
+     * 填充网站过滤器选项
+     */
+    function populateFloatingSiteFilter(container) {
+        const siteFilter = container.querySelector('#site-filter');
+        if (!siteFilter) return;
+        
+        // 收集所有网站
+        const sites = new Set();
+        floatingNotes.forEach(note => {
+            if (note.url) {
+                try {
+                    const url = new URL(note.url);
+                    sites.add(url.hostname);
+                } catch {
+                    // 忽略无效URL
+                }
+            }
+        });
+        
+        // 保存当前选中值
+        const currentValue = siteFilter.value;
+        
+        // 清空并重新填充选项
+        siteFilter.innerHTML = '<option value="">🌐 全部网站</option>';
+        
+        // 按字母顺序排序网站
+        const sortedSites = Array.from(sites).sort();
+        sortedSites.forEach(site => {
+            const option = document.createElement('option');
+            option.value = site;
+            option.textContent = site;
+            siteFilter.appendChild(option);
+        });
+        
+        // 恢复选中值
+        siteFilter.value = currentValue;
     }
 
     /**
