@@ -18,7 +18,7 @@ document.addEvent('domready', function(){
 	var openNotesManagerBtn = document.getElementById('open-notes-manager');
 	if (openNotesManagerBtn) {
 		openNotesManagerBtn.addEventListener('click', function() {
-			chrome.tabs.create({ url: chrome.extension.getURL('notes.html') });
+			chrome.tabs.create({ url: chrome.extension.getURL('note-manager.html') });
 		});
 	}
 	
