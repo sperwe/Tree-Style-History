@@ -20,7 +20,7 @@ This project is a continuation of excellent work by previous developers.
   - Added Chinese localization
   - Improved performance
 
-#### Tree Style History · Notes v4+ (2024)
+#### Tree Style History · Notes v4+ (2025)
 - **Maintainer**: sperwe
 - **Major Contributions**:
   - Complete note-taking system integration
