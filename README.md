@@ -1,7 +1,7 @@
-# Tree Style History
+# Tree Style History · Notes
 
-Tree Style History collects your browser history, analyzes it and stores it on your computer, and shows it when needed.   
-Tree Style History会收集您的浏览器记录，分析并存储到您的计算机内，并在需要的时候进行展示。  
+Tree Style History · Notes - A powerful browser extension that visualizes your browsing history in tree structure and provides comprehensive note-taking capabilities.   
+Tree Style History · Notes - 一个强大的浏览器扩展，以树形结构可视化您的浏览历史，并提供全面的笔记功能。  
 
 ## Credits
 - Original author: Tumuyan (up to v3.x)
