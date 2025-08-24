@@ -1255,7 +1255,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const mode = request.mode || '';
             const fullUrl = mode ? `${url}?mode=${mode}` : url;
             
-            // 检查是否已有笔记管理器窗口打开
+            // Tab模式 - 在新标签页中打开
+            if (mode === 'tab') {
+                chrome.tabs.create({ 
+                    url: fullUrl,
+                    active: true 
+                }, (tab) => {
+                    if (chrome.runtime.lastError) {
+                        console.error('Error creating note manager tab:', chrome.runtime.lastError);
+                        sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                    } else {
+                        console.log('Note manager opened in new tab:', tab.id);
+                        sendResponse({ success: true, action: 'created', tabId: tab.id });
+                    }
+                });
+                return true; // 异步响应
+            }
+            
+            // 窗口模式 - 检查是否已有笔记管理器窗口打开
             chrome.windows.getAll({ populate: true }, (windows) => {
                 let managerWindow = null;
                 
