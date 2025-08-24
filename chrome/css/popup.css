@@ -328,8 +328,8 @@ input[type="text"] {
 /* Note Manager Buttons */
 .manager-buttons {
     display: flex;
-    gap: 8px;
-    padding: 8px;
+    gap: 6px;
+    padding: 6px 8px;
 }
 
 .manager-btn {
@@ -346,6 +346,13 @@ input[type="text"] {
     font-size: 13px;
     font-family: inherit;
     transition: all 0.2s;
+}
+
+.manager-btn.icon-only {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    font-size: 18px;
+    min-width: 36px;
 }
 
 .manager-btn:hover {
