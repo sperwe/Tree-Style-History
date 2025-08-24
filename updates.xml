@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <gupdate xmlns='http://www.google.com/update2/response' protocol='2.0'>
-  <app appid='你的扩展ID'>
+  <app appid='hoandbbabbgdngdkccejgnpllmofohho'>
     <updatecheck codebase='https://github.com/sperwe/Tree-Style-History/releases/download/v4.9.8/tree-style-history-v4.9.8.crx' version='4.9.8' />
   </app>
 </gupdate>
