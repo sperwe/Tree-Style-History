@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.9.8",
-  "version_name": "4.9.8 by sperwe - Simplified Note List & Open Tab Feature",
+  "version": "4.9.11",
+  "version_name": "4.9.11 - 快捷键功能完善（Alt+Shift+S保存选中文本）",
 
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.9.8: Simplified note list UI - Removed header layer for cleaner look. Added open in tab button. Fixed notes.html modal styles for light theme.",
+  "description": "v4.9.11: Added Alt+Shift+S shortcut to save selected text. Removed Ctrl+Shift+F. Fixed showNotification scope issue for better reliability.",
   "options_page": "options.html",
   "background": {
     "page": "background.html"

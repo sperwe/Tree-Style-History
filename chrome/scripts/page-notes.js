@@ -32,6 +32,55 @@
     };
 
     /**
+     * 显示通知 - 全局函数
+     */
+    function showNotification(message, type = 'info') {
+        // 创建简单的通知提示
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 6px;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            font-size: 14px;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease;
+            ${type === 'success' ? 'background: #28a745;' : 
+              type === 'error' ? 'background: #dc3545;' : 'background: #17a2b8;'}
+        `;
+        notification.textContent = message;
+
+        // 添加滑入动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        document.body.appendChild(notification);
+
+        // 3秒后自动消失
+        setTimeout(() => {
+            notification.style.animation = 'slideIn 0.3s ease reverse';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+                if (style.parentNode) {
+                    style.parentNode.removeChild(style);
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    /**
      * 创建浮动按钮
      */
     function createFloatingButton() {
@@ -139,11 +188,7 @@
                 e.preventDefault();
                 openNoteManager('floating');
             }
-            // Ctrl+Shift+F 打开笔记管理器（独立窗口）
-            if (e.ctrlKey && e.shiftKey && e.key === 'F') {
-                e.preventDefault();
-                openNoteManager('window');
-            }
+
             // Ctrl+Shift+T 打开笔记管理器（新标签页）
             if (e.ctrlKey && e.shiftKey && e.key === 'T') {
                 e.preventDefault();
@@ -978,54 +1023,7 @@
         });
     }
 
-    /**
-     * 显示通知
-     */
-    function showNotification(message, type = 'info') {
-        // 创建简单的通知提示
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 6px;
-            color: white;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            font-size: 14px;
-            z-index: 10000;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            animation: slideIn 0.3s ease;
-            ${type === 'success' ? 'background: #28a745;' : 
-              type === 'error' ? 'background: #dc3545;' : 'background: #17a2b8;'}
-        `;
-        notification.textContent = message;
 
-        // 添加滑入动画
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-        `;
-        document.head.appendChild(style);
-
-        document.body.appendChild(notification);
-
-        // 3秒后自动消失
-        setTimeout(() => {
-            notification.style.animation = 'slideIn 0.3s ease reverse';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-                if (style.parentNode) {
-                    style.parentNode.removeChild(style);
-                }
-            }, 300);
-        }, 3000);
-    }
 
     /**
      * HTML转义函数
@@ -1084,7 +1082,7 @@
             {
                 text: '📚 笔记管理器 (独立窗口)',
                 action: () => openNoteManager('window'),
-                shortcut: 'Ctrl+Shift+F'
+                shortcut: ''
             },
             {
                 text: '📑 笔记管理器 (新标签页)',
@@ -4701,6 +4699,46 @@
             createFloatingButton();
         }, 1000);
     }
+
+    // 全局键盘快捷键监听器 - 立即绑定
+    document.addEventListener('keydown', (e) => {
+        // Ctrl+Shift+N 打开笔记管理器（浮动窗口）
+        if (e.ctrlKey && e.shiftKey && e.key === 'N') {
+            e.preventDefault();
+            openNoteManager('floating');
+        }
+        // Alt+Shift+S 保存选中文本为笔记
+        if (e.altKey && e.shiftKey && e.key === 'S') {
+            e.preventDefault();
+            const selectedText = window.getSelection().toString().trim();
+            if (selectedText) {
+                // 使用右键菜单相同的方式保存
+                chrome.runtime.sendMessage({
+                    action: 'saveSelectionAsNote',
+                    pageUrl: window.location.href,
+                    pageTitle: document.title,
+                    selectedText: selectedText
+                }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error('[TST Notes] Runtime error:', chrome.runtime.lastError);
+                        return;
+                    }
+                    // 显示保存成功通知
+                    showNotification('选中文本已保存为笔记', 'success');
+                });
+            }
+        }
+        // Ctrl+Shift+T 打开笔记管理器（新标签页）
+        if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+            e.preventDefault();
+            openNoteManager('tab');
+        }
+        // Ctrl+Shift+Q 快速笔记
+        if (e.ctrlKey && e.shiftKey && e.key === 'Q') {
+            e.preventDefault();
+            openQuickNoteModal();
+        }
+    });
 
     // 启动初始化
     initialize();
