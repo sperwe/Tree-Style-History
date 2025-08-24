@@ -2324,6 +2324,33 @@
                 }
             }
             
+            /* 滚动条样式 */
+            #tst-floating-note-manager ::-webkit-scrollbar {
+                width: 12px;
+                height: 12px;
+            }
+            
+            #tst-floating-note-manager ::-webkit-scrollbar-track {
+                background: #f5f5f5;
+                border-radius: 6px;
+            }
+            
+            #tst-floating-note-manager ::-webkit-scrollbar-thumb {
+                background: #dadce0;
+                border-radius: 6px;
+                border: 2px solid transparent;
+                background-clip: content-box;
+            }
+            
+            #tst-floating-note-manager ::-webkit-scrollbar-thumb:hover {
+                background: #bdc1c6;
+                background-clip: content-box;
+            }
+            
+            #tst-floating-note-manager ::-webkit-scrollbar-corner {
+                background: transparent;
+            }
+            
             /* 深色模式支持 */
             @media (prefers-color-scheme: dark) {
                 #tst-floating-note-manager {
