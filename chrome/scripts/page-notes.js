@@ -1734,19 +1734,19 @@
                 letter-spacing: -0.003em;
             }
             
-            /* 工具栏样式 - macOS风格 */
+            /* 工具栏样式 - 响应式改进版 */
             #tst-floating-note-manager .toolbar {
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
-                padding: 16px 20px;
+                gap: 16px;
+                padding: 12px 16px;
                 background: rgba(255, 255, 255, 0.8);
                 backdrop-filter: blur(20px);
                 -webkit-backdrop-filter: blur(20px);
                 border-bottom: 0.5px solid rgba(0, 0, 0, 0.04);
                 z-index: 100;
-                min-height: 64px;
-                flex-shrink: 0;
+                min-height: 56px;
+                flex-wrap: wrap;
             }
             
             #tst-floating-note-manager .toolbar-left,
@@ -1754,11 +1754,43 @@
             #tst-floating-note-manager .toolbar-right {
                 display: flex;
                 align-items: center;
-                gap: 14px;
+                gap: 12px;
             }
             
             #tst-floating-note-manager .toolbar-left {
-                flex: 1;
+                flex: 1 1 280px;
+                min-width: 0;
+            }
+            
+            #tst-floating-note-manager .toolbar-center {
+                flex: 0 1 auto;
+            }
+            
+            #tst-floating-note-manager .toolbar-right {
+                flex: 0 0 auto;
+            }
+            
+            /* 响应式布局 */
+            @media (max-width: 900px) {
+                #tst-floating-note-manager .toolbar {
+                    padding: 10px 12px;
+                }
+                
+                #tst-floating-note-manager .toolbar-center {
+                    order: 3;
+                    flex: 1 1 100%;
+                    margin-top: 8px;
+                }
+                
+                #tst-floating-note-manager .filters {
+                    width: 100%;
+                    justify-content: space-between;
+                }
+                
+                #tst-floating-note-manager select {
+                    flex: 1;
+                    min-width: 0;
+                }
             }
             
             /* 搜索框样式 - iOS/macOS风格 */
@@ -1801,25 +1833,50 @@
                 pointer-events: none;
             }
             
-            /* 过滤器样式 - macOS风格 */
-            #tst-floating-note-manager .filters select {
-                padding: 8px 12px;
-                border: none;
+            /* 过滤器样式 - 改进版 */
+            #tst-floating-note-manager select {
+                appearance: none;
+                -webkit-appearance: none;
+                padding: 8px 36px 8px 12px;
+                border: 1px solid #dadce0;
                 border-radius: 8px;
-                background: rgba(142, 142, 147, 0.12);
+                background-color: #f8f9fa;
+                background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%235f6368' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 12px center;
+                background-size: 12px;
                 font-size: 14px;
                 font-weight: 400;
                 cursor: pointer;
-                min-width: 130px;
+                min-width: 120px;
                 color: #1d1d1f;
                 font-family: inherit;
                 transition: all 0.2s ease;
             }
             
-            #tst-floating-note-manager .filters select:focus {
+            #tst-floating-note-manager select:hover {
+                background-color: #fff;
+                border-color: #5f6368;
+            }
+            
+            #tst-floating-note-manager select:focus {
                 outline: none;
-                background: rgba(142, 142, 147, 0.16);
-                box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.16);
+                border-color: #1a73e8;
+                box-shadow: 0 0 0 1px #1a73e8;
+            }
+            
+            /* 列表头部的排序选择器 */
+            #tst-floating-note-manager .list-controls select {
+                padding: 6px 32px 6px 10px;
+                font-size: 13px;
+                min-width: auto;
+                background-color: transparent;
+                border-color: transparent;
+            }
+            
+            #tst-floating-note-manager .list-controls select:hover {
+                background-color: rgba(0, 0, 0, 0.04);
+                border-color: #dadce0;
             }
             
             /* 按钮样式 - iOS/macOS风格 */
@@ -2357,19 +2414,44 @@
                     box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
                 }
                 
-                #tst-floating-note-manager .search-box input,
-                #tst-floating-note-manager .filters select {
+                #tst-floating-note-manager .search-box input {
                     background: rgba(255, 255, 255, 0.1);
                     color: #e0e0e0;
                     border-color: #404040;
+                }
+                
+                #tst-floating-note-manager select {
+                    background-color: #2d2d2d;
+                    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23e8eaed' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+                    border-color: #5f6368;
+                    color: #e8eaed;
+                }
+                
+                #tst-floating-note-manager select:hover {
+                    background-color: #3c4043;
+                    border-color: #8ab4f8;
+                }
+                
+                #tst-floating-note-manager select:focus {
+                    border-color: #8ab4f8;
+                    box-shadow: 0 0 0 1px #8ab4f8;
+                }
+                
+                #tst-floating-note-manager .list-controls select {
+                    background-color: transparent;
+                    border-color: transparent;
+                }
+                
+                #tst-floating-note-manager .list-controls select:hover {
+                    background-color: rgba(255, 255, 255, 0.08);
+                    border-color: #5f6368;
                 }
                 
                 #tst-floating-note-manager .search-box input::placeholder {
                     color: rgba(180, 180, 180, 0.6);
                 }
                 
-                #tst-floating-note-manager .search-box input:focus,
-                #tst-floating-note-manager .filters select:focus {
+                #tst-floating-note-manager .search-box input:focus {
                     background: rgba(255, 255, 255, 0.15);
                     box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.3);
                 }

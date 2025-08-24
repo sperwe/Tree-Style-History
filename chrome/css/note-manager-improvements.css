@@ -1,0 +1,332 @@
+/* Note Manager UI Improvements */
+
+/* ========== 选择器样式优化 ========== */
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: #f8f9fa;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%235f6368' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    padding: 8px 36px 8px 12px;
+    font-size: 14px;
+    color: #3c4043;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 120px;
+}
+
+select:hover {
+    background-color: #fff;
+    border-color: #5f6368;
+}
+
+select:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 1px #1a73e8;
+}
+
+/* ========== 工具栏响应式布局 ========== */
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    flex-wrap: wrap;
+}
+
+.toolbar-left,
+.toolbar-center,
+.toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.toolbar-left {
+    flex: 1 1 300px;
+    min-width: 0;
+}
+
+.toolbar-center {
+    flex: 0 1 auto;
+}
+
+.toolbar-right {
+    flex: 0 0 auto;
+}
+
+/* 搜索框优化 */
+.search-box {
+    position: relative;
+    flex: 1;
+    max-width: 400px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 8px 36px 8px 12px;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    font-size: 14px;
+    background: #f8f9fa;
+    transition: all 0.2s ease;
+}
+
+.search-box input:focus {
+    outline: none;
+    background: #fff;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 1px #1a73e8;
+}
+
+/* ========== 按钮样式优化 ========== */
+.actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.actions button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 14px;
+    color: #3c4043;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+/* 图标按钮 */
+.actions button:not([id="batch-export"]):not([id="new-note"]) {
+    padding: 8px;
+    min-width: 36px;
+    justify-content: center;
+}
+
+.actions button:hover {
+    background: #f8f9fa;
+    border-color: #5f6368;
+}
+
+.actions button:active {
+    background: #e8eaed;
+}
+
+/* 主要操作按钮 */
+#new-note {
+    background: #1a73e8;
+    color: white;
+    border-color: #1a73e8;
+}
+
+#new-note:hover {
+    background: #1967d2;
+    border-color: #1967d2;
+}
+
+#batch-export {
+    background: #34a853;
+    color: white;
+    border-color: #34a853;
+}
+
+#batch-export:hover {
+    background: #2e8b47;
+    border-color: #2e8b47;
+}
+
+/* ========== 响应式断点 ========== */
+@media (max-width: 1200px) {
+    .toolbar {
+        padding: 12px;
+    }
+    
+    .toolbar-center {
+        order: 3;
+        flex: 1 1 100%;
+        margin-top: 8px;
+    }
+    
+    .filters {
+        display: flex;
+        gap: 8px;
+        width: 100%;
+    }
+    
+    .filters select {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .toolbar-left {
+        flex: 1 1 100%;
+        order: 1;
+    }
+    
+    .toolbar-right {
+        order: 2;
+    }
+    
+    .actions button span {
+        display: none;
+    }
+    
+    .actions button {
+        padding: 8px;
+        min-width: 36px;
+    }
+    
+    #new-note::after {
+        content: "📝";
+    }
+    
+    #batch-export::after {
+        content: "📦";
+    }
+}
+
+/* ========== 深色模式 ========== */
+@media (prefers-color-scheme: dark) {
+    .toolbar {
+        background: #1e1e1e;
+        border-bottom-color: #333;
+    }
+    
+    select {
+        background-color: #2d2d2d;
+        background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23e8eaed' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        border-color: #5f6368;
+        color: #e8eaed;
+    }
+    
+    select:hover {
+        background-color: #3c4043;
+        border-color: #8ab4f8;
+    }
+    
+    select:focus {
+        border-color: #8ab4f8;
+        box-shadow: 0 0 0 1px #8ab4f8;
+    }
+    
+    .search-box input {
+        background: #2d2d2d;
+        border-color: #5f6368;
+        color: #e8eaed;
+    }
+    
+    .search-box input:focus {
+        background: #3c4043;
+        border-color: #8ab4f8;
+        box-shadow: 0 0 0 1px #8ab4f8;
+    }
+    
+    .search-box input::placeholder {
+        color: #9aa0a6;
+    }
+    
+    .actions button {
+        background: #2d2d2d;
+        border-color: #5f6368;
+        color: #e8eaed;
+    }
+    
+    .actions button:hover {
+        background: #3c4043;
+        border-color: #8ab4f8;
+    }
+    
+    .actions button:active {
+        background: #5f6368;
+    }
+    
+    #new-note {
+        background: #1a73e8;
+        border-color: #1a73e8;
+    }
+    
+    #new-note:hover {
+        background: #1967d2;
+        border-color: #1967d2;
+    }
+    
+    #batch-export {
+        background: #34a853;
+        border-color: #34a853;
+    }
+    
+    #batch-export:hover {
+        background: #2e8b47;
+        border-color: #2e8b47;
+    }
+}
+
+/* ========== 浮动窗口特定样式 ========== */
+#tst-floating-note-manager .toolbar {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+#tst-floating-note-manager select {
+    font-size: 13px;
+    padding: 6px 32px 6px 10px;
+    min-width: 110px;
+}
+
+#tst-floating-note-manager .actions button {
+    font-size: 13px;
+    padding: 6px 10px;
+}
+
+#tst-floating-note-manager .actions button:not([id="batch-export"]):not([id="new-note"]) {
+    padding: 6px;
+    min-width: 32px;
+}
+
+/* 深色模式下的浮动窗口 */
+@media (prefers-color-scheme: dark) {
+    #tst-floating-note-manager .toolbar {
+        background: rgba(30, 30, 30, 0.9);
+    }
+}
+
+/* ========== 排序选择器样式 ========== */
+.list-header select {
+    padding: 6px 32px 6px 10px;
+    font-size: 13px;
+    min-width: auto;
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.list-header select:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+    border-color: #dadce0;
+}
+
+@media (prefers-color-scheme: dark) {
+    .list-header select {
+        background-color: transparent;
+        border-color: transparent;
+    }
+    
+    .list-header select:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+        border-color: #5f6368;
+    }
+}

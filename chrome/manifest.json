@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.9.22",
-  "version_name": "4.9.22 - 修复历史链接并美化弹窗",
+  "version": "4.9.23",
+  "version_name": "4.9.23 - 美化笔记管理器UI和深色模式",
 
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.9.22: Fixed history link to open Tree Style History and modernized popup UI design.",
+  "description": "v4.9.23: Enhanced Note Manager UI with better selectors, responsive toolbar, and improved dark mode support.",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
