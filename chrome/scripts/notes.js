@@ -14,6 +14,9 @@ document.addEvent('domready', function(){
 	initializeDateFilter();
 	initializeSearch();
 	
+	// Load notes and initialize calendar display
+	load();
+	
 	// Add button event listener for opening notes manager
 	var openNotesManagerBtn = document.getElementById('open-notes-manager');
 	if (openNotesManagerBtn) {
