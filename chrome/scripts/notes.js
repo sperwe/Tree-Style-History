@@ -14,6 +14,14 @@ document.addEvent('domready', function(){
 	initializeDateFilter();
 	initializeSearch();
 	
+	// Add button event listener for opening notes manager
+	var openNotesManagerBtn = document.getElementById('open-notes-manager');
+	if (openNotesManagerBtn) {
+		openNotesManagerBtn.addEventListener('click', function() {
+			chrome.tabs.create({ url: chrome.extension.getURL('notes.html') });
+		});
+	}
+	
 	// Tree structure variables (similar to history2.js)
 	var treeObj;
 	var zNodes = [];
