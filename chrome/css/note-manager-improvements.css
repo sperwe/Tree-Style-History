@@ -1,10 +1,11 @@
 /* Note Manager UI Improvements */
 
 /* ========== 选择器样式优化 ========== */
-select {
+select,
+.filters select {
     appearance: none;
     -webkit-appearance: none;
-    background-color: #f8f9fa;
+    background-color: #f8f9fa !important;
     background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%235f6368' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
@@ -201,20 +202,32 @@ select:focus {
 
 /* ========== 深色模式 ========== */
 @media (prefers-color-scheme: dark) {
-    .toolbar {
-        background: #1e1e1e;
-        border-bottom-color: #333;
+    /* 修正深色模式背景色 */
+    body {
+        background: #202124;
+        color: #e8eaed;
     }
     
-    select {
-        background-color: #2d2d2d;
+    .note-manager-container {
+        background: #202124;
+    }
+    
+    .toolbar {
+        background: #292a2d;
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    select,
+    .filters select {
+        background-color: #303134 !important;
         background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23e8eaed' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
         border-color: #5f6368;
         color: #e8eaed;
     }
     
-    select:hover {
-        background-color: #3c4043;
+    select:hover,
+    .filters select:hover {
+        background-color: #3c4043 !important;
         border-color: #8ab4f8;
     }
     
