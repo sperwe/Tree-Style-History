@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.9.19",
-  "version_name": "4.9.19 - 改进浮动管理器错误处理",
+  "version": "4.9.20",
+  "version_name": "4.9.20 - 优化笔记管理器按钮样式和位置",
 
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.9.19: Improved floating manager error handling with fallback to new tab for special pages.",
+  "description": "v4.9.20: Icon-only buttons for Note Manager and forced position at top of popup for all users.",
   "options_page": "options.html",
   "background": {
     "page": "background.html"

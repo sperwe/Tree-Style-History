@@ -65,8 +65,21 @@ document.addEvent('domready', function () {
     
     // Ensure new items from default are included (for users with existing settings)
     var defaultOrder = "nm-order,rh-order,rct-order,rn-order,rb-order,mv-order,rt-order".split(',');
+    
+    // Special handling for nm-order - ensure it's at the beginning
+    var nmIndex = rhporder.indexOf('nm-order');
+    if (nmIndex === -1) {
+        // Not found, add at beginning
+        rhporder.unshift('nm-order');
+    } else if (nmIndex > 0) {
+        // Found but not at beginning, move to beginning
+        rhporder.splice(nmIndex, 1);
+        rhporder.unshift('nm-order');
+    }
+    
+    // Add other missing items at the end
     for (var i in defaultOrder) {
-        if (rhporder.indexOf(defaultOrder[i]) < 0) {
+        if (defaultOrder[i] !== 'nm-order' && rhporder.indexOf(defaultOrder[i]) < 0) {
             rhporder.push(defaultOrder[i]);
         }
     }
@@ -108,8 +121,8 @@ document.addEvent('domready', function () {
                 id: 'nm-inject', 
                 html: '<div id="nm-inject-title" class="popup-title"><span>' + returnLang('noteManager') + '</span></div>' +
                       '<div class="manager-buttons">' +
-                      '<button class="manager-btn" id="floating-manager-btn"><span class="icon">📝</span><span class="text">' + returnLang('floatingManager') + '</span></button>' +
-                      '<button class="manager-btn" id="tab-manager-btn"><span class="icon">📑</span><span class="text">' + returnLang('tabManager') + '</span></button>' +
+                      '<button class="manager-btn icon-only" id="floating-manager-btn" title="' + returnLang('floatingManager') + '">📝</button>' +
+                      '<button class="manager-btn icon-only" id="tab-manager-btn" title="' + returnLang('tabManager') + '">📑</button>' +
                       '</div>'
             }).inject('popup-insert', 'bottom');
         }
