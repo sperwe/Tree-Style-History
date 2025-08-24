@@ -94,6 +94,16 @@ document.addEvent('domready', function () {
             if ((localStorage['rn-itemsno'] * 1) > 0) {
                 new Element('div', { id: 'rn-inject', html: '<div id="rn-inject-title" class="popup-title"><span>' + returnLang('recentNotes') + ' - <a href="#" id="show-all-notes" target="_blank">' + returnLang('more') + '📝</a></span></div>' }).inject('popup-insert', 'bottom');
             }
+        } else if (rhporder[o] == 'nm-order') {
+            // nm = note manager
+            new Element('div', { 
+                id: 'nm-inject', 
+                html: '<div id="nm-inject-title" class="popup-title"><span>' + returnLang('noteManager') + '</span></div>' +
+                      '<div class="manager-buttons">' +
+                      '<button class="manager-btn" id="floating-manager-btn"><span class="icon">📝</span><span class="text">' + returnLang('floatingManager') + '</span></button>' +
+                      '<button class="manager-btn" id="tab-manager-btn"><span class="icon">📑</span><span class="text">' + returnLang('tabManager') + '</span></button>' +
+                      '</div>'
+            }).inject('popup-insert', 'bottom');
         }
     }
 
@@ -129,6 +139,21 @@ document.addEvent('domready', function () {
                 chromeURL('/notes.html');
             else
                 window.open('/notes.html');
+        });
+
+    // Note Manager buttons
+    if ($('floating-manager-btn') != undefined)
+        $('floating-manager-btn').addEvent('click', function () {
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                chrome.tabs.sendMessage(tabs[0].id, {action: 'openNoteManager', mode: 'floating'});
+                window.close();
+            });
+        });
+
+    if ($('tab-manager-btn') != undefined)
+        $('tab-manager-btn').addEvent('click', function () {
+            chrome.tabs.create({url: chrome.extension.getURL('note-manager.html')});
+            window.close();
         });
 
     // Popup init

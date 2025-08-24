@@ -325,6 +325,45 @@ input[type="text"] {
   color: #5C6166;
 }
 
+/* Note Manager Buttons */
+.manager-buttons {
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+}
+
+.manager-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f8f8f8;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.manager-btn:hover {
+    background: #e8e8e8;
+    border-color: #ccc;
+}
+
+.manager-btn:active {
+    background: #ddd;
+}
+
+.manager-btn .icon {
+    font-size: 16px;
+}
+
+.manager-btn .text {
+    white-space: nowrap;
+}
 
 
 @media (prefers-color-scheme: dark) {
@@ -405,6 +444,21 @@ input[type="text"] {
 
     .item:hover {
         background-color: #666 !important;
-      }
-      
     }
+    
+    /* Dark mode - Note Manager buttons */
+    .manager-btn {
+        background: #2a2a2a;
+        border-color: #444;
+        color: #e0e0e0;
+    }
+    
+    .manager-btn:hover {
+        background: #333;
+        border-color: #555;
+    }
+    
+    .manager-btn:active {
+        background: #3a3a3a;
+    }
+}

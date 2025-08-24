@@ -686,6 +686,15 @@
     "recentNotes": {
         "message": "最近笔记"
     },
+    "noteManager": {
+        "message": "笔记管理器"
+    },
+    "floatingManager": {
+        "message": "浮动管理器"
+    },
+    "tabManager": {
+        "message": "新标签页"
+    },
     "saveSelectionAsNote": {
         "message": "保存选中的内容为笔记"
     },
