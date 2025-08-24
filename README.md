@@ -72,5 +72,14 @@ Tree Style History · Notes - 一个强大的浏览器扩展，以树形结构�
 ### 更新方式
 - 修改代码后，在扩展管理页面点击"更新"按钮即可
 
+## 📄 License
+
+This project is licensed for **NON-COMMERCIAL USE ONLY**. See [LICENSE](LICENSE) and [ATTRIBUTION](ATTRIBUTION.md) for details.
+
+- Based on Recent History by Umar Sheikh (with explicit permission to modify)
+- Originally licensed under CC BY-NC-ND 3.0
+- Commercial use is prohibited
+
 ## Privacy
+
 Tree Style History does not upload your data to the Internet. All data remains on your computer. When you uninstall the extension, all saved data will be automatically erased by the browser.
