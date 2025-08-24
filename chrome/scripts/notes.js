@@ -605,6 +605,12 @@ document.addEvent('domready', function(){
 			
 			// Initialize calendar
 			initializeCalendar();
+			
+			// Render custom calendar with notes statistics
+			renderNotesCalendar();
+			
+			// Setup date range filtering
+			setupDateRangeFiltering();
 		}
 	}
 	
