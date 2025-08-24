@@ -689,6 +689,12 @@
     "saveSelectionAsNote": {
         "message": "保存选中的内容为笔记"
     },
+    "openFloatingNotes": {
+        "message": "打开浮动笔记管理器"
+    },
+    "newQuickNote": {
+        "message": "新建快速笔记"
+    },
     "notesMergeMode": {
         "message": "笔记合并模式"
     },
