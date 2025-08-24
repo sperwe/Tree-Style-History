@@ -660,8 +660,10 @@ document.addEvent('domready', function(){
 	function updateDaySelector() {
 		if (!$('date-select-day') || !$('date-select-month') || !$('date-select-year')) return;
 		
-		var year = parseInt($('date-select-year').getSelected().get('value'));
-		var month = parseInt($('date-select-month').getSelected().get('value'));
+		var yearSelect = $('date-select-year');
+		var monthSelect = $('date-select-month');
+		var year = parseInt(yearSelect.value || yearSelect.options[yearSelect.selectedIndex].value);
+		var month = parseInt(monthSelect.value || monthSelect.options[monthSelect.selectedIndex].value);
 		var currentDate = new Date();
 		var currentDay = currentDate.getDate();
 		
@@ -685,11 +687,22 @@ document.addEvent('domready', function(){
 	function updateDateFilter() {
 		if (!$('date-select-day') || !$('date-select-month') || !$('date-select-year')) return;
 		
-		var year = parseInt($('date-select-year').getSelected().get('value'));
-		var month = parseInt($('date-select-month').getSelected().get('value')) - 1; // JavaScript months are 0-based
-		var day = parseInt($('date-select-day').getSelected().get('value'));
+		// Use value property directly instead of getSelected()
+		var yearSelect = $('date-select-year');
+		var monthSelect = $('date-select-month');
+		var daySelect = $('date-select-day');
+		
+		var year = parseInt(yearSelect.value || yearSelect.options[yearSelect.selectedIndex].value);
+		var month = parseInt(monthSelect.value || monthSelect.options[monthSelect.selectedIndex].value) - 1; // JavaScript months are 0-based
+		var day = parseInt(daySelect.value || daySelect.options[daySelect.selectedIndex].value);
 		
 		console.log('[updateDateFilter] Selected date:', year, month + 1, day);
+		
+		// Check if values are valid
+		if (isNaN(year) || isNaN(month) || isNaN(day)) {
+			console.error('[updateDateFilter] Invalid date values:', year, month, day);
+			return;
+		}
 		
 		var startDate = new Date(year, month, day, 0, 0, 0, 0);
 		var endDate = new Date(year, month, day, 23, 59, 59, 999);
@@ -700,6 +713,7 @@ document.addEvent('domready', function(){
 		};
 		
 		console.log('[updateDateFilter] Date range set:', startDate, 'to', endDate);
+		console.log('[updateDateFilter] Timestamps:', selectedDateRange.start, 'to', selectedDateRange.end);
 		
 		// Update day selector in case month/year changed
 		updateDaySelector();
@@ -817,8 +831,10 @@ document.addEvent('domready', function(){
 		if (!$('calendar-days')) return;
 		
 		// Get selected year and month
-		var year = parseInt($('date-select-year').getSelected().get('value'));
-		var month = parseInt($('date-select-month').getSelected().get('value')) - 1; // JavaScript month is 0-based
+		var yearSelect = $('date-select-year');
+		var monthSelect = $('date-select-month');
+		var year = parseInt(yearSelect.value || yearSelect.options[yearSelect.selectedIndex].value);
+		var month = parseInt(monthSelect.value || monthSelect.options[monthSelect.selectedIndex].value) - 1; // JavaScript month is 0-based
 		
 		// Calculate notes count by date
 		var notesCountByDate = {};
