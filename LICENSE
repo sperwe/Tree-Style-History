@@ -1,0 +1,39 @@
+Tree Style History · Notes
+Copyright (c) 2024 sperwe (Maintainer)
+Copyright (c) 2021 Tumuyan tumuyan@gmail.com
+Based on Recent History, Copyright (c) 2011-2020 Umar Sheikh hello@umarsheikh.co.uk
+
+PERMISSION NOTICE:
+This work is based on Recent History by Umar Sheikh. Tumuyan has received 
+permission to modify and publish the code as Tree Style History. The current 
+maintainer (sperwe) continues development under the same permission.
+
+ORIGINAL LICENSE:
+The original Recent History was licensed under Creative Commons 
+Attribution-NonCommercial-NoDerivatives 3.0 Unported License.
+However, explicit permission was granted for modification.
+
+CURRENT LICENSE:
+This software is provided "AS IS", without warranty of any kind, express or
+implied, including but not limited to the warranties of merchantability,
+fitness for a particular purpose and noninfringement. In no event shall the
+authors or copyright holders be liable for any claim, damages or other
+liability, whether in an action of contract, tort or otherwise, arising from,
+out of or in connection with the software or the use or other dealings in
+the software.
+
+RESTRICTIONS:
+- This software is for NON-COMMERCIAL USE ONLY
+- Attribution to all contributors must be maintained
+- Any distribution must include this license file
+
+CONTRIBUTIONS:
+- Original Recent History: Umar Sheikh (2011-2020)
+- Tree Style History v1-v3: Tumuyan (2021)
+- Tree Style History · Notes v4+: sperwe (2024)
+  - Floating note manager implementation
+  - Enhanced UI/UX design
+  - Batch operations and filtering systems
+  - Tag system and Markdown support
+
+For commercial licensing inquiries, please contact the original author.
