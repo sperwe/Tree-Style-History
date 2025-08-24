@@ -689,6 +689,8 @@ document.addEvent('domready', function(){
 		var month = parseInt($('date-select-month').getSelected().get('value')) - 1; // JavaScript months are 0-based
 		var day = parseInt($('date-select-day').getSelected().get('value'));
 		
+		console.log('[updateDateFilter] Selected date:', year, month + 1, day);
+		
 		var startDate = new Date(year, month, day, 0, 0, 0, 0);
 		var endDate = new Date(year, month, day, 23, 59, 59, 999);
 		
@@ -697,12 +699,17 @@ document.addEvent('domready', function(){
 			end: endDate.getTime()
 		};
 		
+		console.log('[updateDateFilter] Date range set:', startDate, 'to', endDate);
+		
 		// Update day selector in case month/year changed
 		updateDaySelector();
 		
 		// Only refilter if data is already loaded
 		if (dataLoaded) {
+			console.log('[updateDateFilter] Data loaded, applying filters');
 			applyFilters();
+		} else {
+			console.log('[updateDateFilter] Data not loaded yet, skipping filters');
 		}
 	}
 	
@@ -740,13 +747,21 @@ document.addEvent('domready', function(){
 	
 	function applyFilters() {
 		var filteredNotes = all.slice(); // Copy all notes
+		console.log('[applyFilters] Starting with', all.length, 'notes');
 		
 		// Apply date filter
 		if (selectedDateRange) {
+			console.log('[applyFilters] Date filter active:', new Date(selectedDateRange.start), 'to', new Date(selectedDateRange.end));
+			var beforeCount = filteredNotes.length;
 			filteredNotes = filteredNotes.filter(function(item) {
 				var noteTime = item.note.updatedAt || 0;
-				return noteTime >= selectedDateRange.start && noteTime <= selectedDateRange.end;
+				var inRange = noteTime >= selectedDateRange.start && noteTime <= selectedDateRange.end;
+				if (!inRange && noteTime > 0) {
+					console.log('[applyFilters] Note excluded:', new Date(noteTime), 'not in range');
+				}
+				return inRange;
 			});
+			console.log('[applyFilters] Date filter: ' + beforeCount + ' -> ' + filteredNotes.length + ' notes');
 		}
 		
 		// Apply search filter
@@ -761,6 +776,7 @@ document.addEvent('domready', function(){
 			});
 		}
 		
+		console.log('[applyFilters] Final result:', filteredNotes.length, 'notes');
 		render(filteredNotes);
 		
 		// Update total count
@@ -812,6 +828,10 @@ document.addEvent('domready', function(){
 				if (noteDate.getFullYear() === year && noteDate.getMonth() === month) {
 					var day = noteDate.getDate();
 					notesCountByDate[day] = (notesCountByDate[day] || 0) + 1;
+					// Debug: log first note of each day
+					if (notesCountByDate[day] === 1) {
+						console.log('[renderNotesCalendar] Day', day, 'has note with updatedAt:', item.note.updatedAt, '-> Date:', noteDate);
+					}
 				}
 			}
 		});
