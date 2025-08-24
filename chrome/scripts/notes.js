@@ -9,6 +9,7 @@ document.addEvent('domready', function(){
 	// Date filtering variables
 	var selectedDateRange = null;
 	var currentSearchQuery = '';
+	var dataLoaded = false; // Flag to prevent rendering before data is loaded
 	
 	// Initialize calendar and search functionality
 	initializeDateFilter();
@@ -436,14 +437,23 @@ document.addEvent('domready', function(){
 	}
 	function enrich(list){
 		console.log('enrich called with', list.length, 'notes from database');
-		if (list.length===0){ all=[]; render(all); return; }
+		if (list.length===0){ 
+			all=[]; 
+			dataLoaded = true;
+			renderNotesCalendar();
+			render(all); 
+			return; 
+		}
 		var i=0; all=[];
 		(function next(){
 			if (i>=list.length){ 
 				console.log('enrichment complete, final all array has', all.length, 'items');
 				all.sort(function(a,b){ return (b.note.updatedAt||0)-(a.note.updatedAt||0); }); 
-				// Apply any active filters
-				applyFilters(); 
+				dataLoaded = true;
+				// Update calendar with note counts
+				renderNotesCalendar();
+				// Show all notes initially (no filters)
+				render(all); 
 				return; 
 			}
 			var n=list[i++];
@@ -608,11 +618,10 @@ document.addEvent('domready', function(){
 			// Initialize calendar
 			initializeCalendar();
 			
-			// Render custom calendar with notes statistics
-			renderNotesCalendar();
-			
 			// Setup date range filtering
 			setupDateRangeFiltering();
+			
+			// Note: renderNotesCalendar() will be called after data loads
 		}
 	}
 	
@@ -691,8 +700,10 @@ document.addEvent('domready', function(){
 		// Update day selector in case month/year changed
 		updateDaySelector();
 		
-		// Refilter notes
-		applyFilters();
+		// Only refilter if data is already loaded
+		if (dataLoaded) {
+			applyFilters();
+		}
 	}
 	
 	// Search functionality
