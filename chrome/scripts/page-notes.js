@@ -2759,6 +2759,15 @@
             });
         }
 
+        // 删除按钮
+        const deleteBtn = container.querySelector('#delete-note');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                console.log('[Floating] 删除当前笔记');
+                deleteCurrentFloatingNote(container);
+            });
+        }
+
         console.log('[Floating] 事件绑定完成');
     }
 
@@ -2849,8 +2858,8 @@
             <div class="note-header">
                 <div class="note-title">${title}</div>
                 <div class="note-actions">
-                    <button class="note-action-btn" title="编辑">✏️</button>
-                    <button class="note-action-btn" title="删除">🗑️</button>
+                    <button class="note-action-btn" data-action="edit" title="编辑">✏️</button>
+                    <button class="note-action-btn" data-action="delete" title="删除">🗑️</button>
                 </div>
             </div>
             <div class="note-preview">${content.substring(0, 100)}${content.length > 100 ? '...' : ''}</div>
@@ -2861,9 +2870,44 @@
         `;
         
         // 绑定点击事件
-        noteItem.addEventListener('click', (e) => {
-            if (!e.target.closest('.note-action-btn')) {
-                loadFloatingNoteContent(noteItem.closest('.floating-content-container'), note);
+        noteItem.addEventListener('click', async (e) => {
+            const actionBtn = e.target.closest('.note-action-btn');
+            const container = noteItem.closest('.floating-content-container');
+            
+            if (actionBtn) {
+                const action = actionBtn.dataset.action;
+                if (action === 'edit') {
+                    loadFloatingNoteContent(container, note);
+                } else if (action === 'delete') {
+                    if (confirm('确定要删除这条笔记吗？')) {
+                        try {
+                            await deleteFloatingNote(note.id);
+                            
+                            // 更新本地数据
+                            const notes = window.floatingNotes || [];
+                            window.floatingNotes = notes.filter(n => n.id !== note.id);
+                            
+                            // 重新加载列表
+                            await loadFloatingNotesData(container);
+                            
+                            // 如果删除的是当前选中的笔记，清空编辑器
+                            if (floatingCurrentNote && floatingCurrentNote.id === note.id) {
+                                floatingCurrentNote = null;
+                                const titleInput = container.querySelector('#note-title');
+                                const editor = container.querySelector('#note-editor');
+                                if (titleInput) titleInput.value = '';
+                                if (editor) editor.value = '';
+                            }
+                            
+                            showFloatingNotification('笔记删除成功', 'success');
+                        } catch (error) {
+                            console.error('[Floating] 删除失败:', error);
+                            showFloatingNotification('删除失败: ' + error.message, 'error');
+                        }
+                    }
+                }
+            } else {
+                loadFloatingNoteContent(container, note);
             }
         });
         
@@ -3038,7 +3082,7 @@
             window.floatingNotes = notes;
             
             // 重新加载列表以保持数据一致性
-            await loadFloatingNotesList();
+            await loadFloatingNotesData(container);
             
             showFloatingNotification('笔记保存成功', 'success');
             console.log('[Floating] 笔记保存成功:', updatedNote.id);
@@ -3070,7 +3114,7 @@
             window.floatingNotes = notes.filter(note => note.id !== floatingCurrentNote.id);
             
             // 重新加载列表
-            await loadFloatingNotesList();
+            await loadFloatingNotesData(container);
             
             // 清空编辑器
             const editorContent = container.querySelector('#floating-editor-content');
@@ -3661,7 +3705,7 @@
 
             // 延迟加载笔记列表，确保DOM完全就绪
             setTimeout(async () => {
-                await loadFloatingNotesList();
+                await loadFloatingNotesData(container);
             }, 100);
 
         } catch (error) {
@@ -3710,7 +3754,7 @@
         const refreshBtn = container.querySelector('#floating-refresh');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
-                loadFloatingNotesList();
+                loadFloatingNotesData(refreshBtn.closest('.floating-content-container'));
             });
         }
     }
