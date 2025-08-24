@@ -2525,13 +2525,15 @@
      * 创建浮动窗口标题栏
      */
     function createFloatingTitleBar(floatingManager) {
+        const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
         const titleBar = document.createElement('div');
         titleBar.className = 'floating-title-bar';
         titleBar.style.cssText = `
-            background: rgba(246, 246, 246, 0.8);
+            background: ${isDarkMode ? 'rgba(40, 40, 40, 0.8)' : 'rgba(246, 246, 246, 0.8)'};
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            color: #1d1d1f;
+            color: ${isDarkMode ? '#e8eaed' : '#1d1d1f'};
             padding: 12px 20px;
             display: flex;
             justify-content: space-between;
@@ -2541,7 +2543,7 @@
             border-radius: 12px 12px 0 0;
             font-weight: 600;
             font-size: 14px;
-            border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+            border-bottom: 0.5px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'};
         `;
 
         // 窗口控制按钮 - 苹果风格（左侧）
@@ -4220,19 +4222,24 @@
         floatingManager.id = 'tst-floating-note-manager';
         floatingManager.className = 'tst-floating-manager';
         
-        // 设置苹果风格容器样式
+        // 检测深色模式
+        const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        // 设置苹果风格容器样式（根据深色模式调整）
         floatingManager.style.cssText = `
             position: fixed;
             top: 60px;
             right: 60px;
             width: 920px;
             height: 720px;
-            background: rgba(255, 255, 255, 0.95);
+            background: ${isDarkMode ? 'rgba(30, 30, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)'};
             backdrop-filter: blur(40px);
             -webkit-backdrop-filter: blur(40px);
-            border: 0.5px solid rgba(0, 0, 0, 0.08);
+            border: 0.5px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'};
             border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 20px rgba(0, 0, 0, 0.08);
+            box-shadow: ${isDarkMode ? 
+                '0 20px 60px rgba(0, 0, 0, 0.5), 0 8px 20px rgba(0, 0, 0, 0.3)' : 
+                '0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 20px rgba(0, 0, 0, 0.08)'};
             z-index: 999999;
             display: flex;
             flex-direction: column;
@@ -4254,7 +4261,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            background: var(--floating-bg-secondary, #f8f9fa);
+            background: ${isDarkMode ? '#1e1e1e' : 'var(--floating-bg-secondary, #f8f9fa)'};
         `;
 
         // 5. 直接创建笔记管理器的DOM结构

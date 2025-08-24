@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.9.24",
-  "version_name": "4.9.24 - 修复深色模式选择器背景色",
+  "version": "4.9.25",
+  "version_name": "4.9.25 - 修复浮动窗口深色模式外框",
 
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.9.24: Fixed select elements showing white background in dark mode, now properly styled with dark gray.",
+  "description": "v4.9.25: Fixed floating window frame and title bar to properly adapt to dark mode with dark backgrounds.",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
