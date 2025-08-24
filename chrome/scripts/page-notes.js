@@ -1895,7 +1895,7 @@
             }
             
             #tst-floating-note-manager .note-item {
-                padding: 12px 16px;
+                padding: 8px 16px;
                 border-bottom: 1px solid #f0f0f0;
                 cursor: pointer;
                 transition: background-color 0.15s;
@@ -1916,14 +1916,14 @@
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
-                margin-bottom: 6px;
+                margin-bottom: 3px;
             }
             
             #tst-floating-note-manager .note-title {
                 font-weight: 500;
                 color: #333;
                 font-size: 14px;
-                line-height: 1.3;
+                line-height: 1.2;
                 flex: 1;
                 margin-right: 8px;
                 word-break: break-word;
