@@ -79,9 +79,11 @@ document.addEvent('domready', function () {
     }
 
 
-    // $('shortcuts').set('value', returnLang('shortcuts'));
+    $('shortcuts').set('value', returnLang('shortcuts'));
     $('shortcuts').addEvent('click', function () {
-        chromeURL('chrome://extensions/shortcuts');
+        chrome.tabs.create({
+            url: 'chrome://extensions/shortcuts'
+        });
     });
 
     $('saveUpload').set('value', returnLang('saveUpload'));
