@@ -197,7 +197,7 @@
                     const pageUrl = window.location.href;
                     const pageTitle = document.title;
                     const timestamp = new Date().toLocaleString('zh-CN');
-                    const formattedText = `## [${pageTitle}](${pageUrl})\n\n> 摘录时间：${timestamp}\n\n${selectedText}`;
+                    const formattedText = `> 摘录时间：${timestamp}\n\n${selectedText}`;
                     
                     console.log('[TST Notes] Saving selected text with MD format:', formattedText.substring(0, 100) + '...');
                     // 使用右键菜单相同的方式保存
@@ -4749,7 +4749,7 @@
                 const pageUrl = window.location.href;
                 const pageTitle = document.title;
                 const timestamp = new Date().toLocaleString('zh-CN');
-                const formattedText = `## [${pageTitle}](${pageUrl})\n\n> 摘录时间：${timestamp}\n\n${selectedText}`;
+                const formattedText = `> 摘录时间：${timestamp}\n\n${selectedText}`;
                 
                 console.log('[TST Notes] Saving selected text with MD format:', formattedText.substring(0, 100) + '...');
                 // 使用右键菜单相同的方式保存

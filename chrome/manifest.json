@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.9.11",
-  "version_name": "4.9.11 - 快捷键功能完善（Ctrl+Shift+S保存选中文本）",
+  "version": "4.9.12",
+  "version_name": "4.9.12 - 简化笔记格式（仅保留时间戳）",
 
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.9.11: Ctrl+Shift+S saves selected text as note. Fixed showNotification scope issue. Shortcut working reliably now.",
+  "description": "v4.9.12: Simplified note format - removed page title/link, keep timestamp only. Ctrl+Shift+S saves selected text with timestamp.",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
