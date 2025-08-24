@@ -1206,6 +1206,18 @@ function saveNoteToDatabase(visitId, pageUrl, selectedText) {
 
 // Handle messages from content scripts (for page notes feature)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    // 处理保存选中文本为笔记
+    if (request.action === 'saveSelectionAsNote') {
+        const { pageUrl, pageTitle, selectedText } = request;
+        if (pageUrl && selectedText) {
+            saveSelectionAsNote(pageUrl, selectedText);
+            sendResponse({ success: true });
+        } else {
+            sendResponse({ success: false, error: 'Missing required data' });
+        }
+        return;
+    }
+    
     if (request.action === 'savePageNote') {
         savePageNoteFromContentScript(request.data)
             .then((result) => {
