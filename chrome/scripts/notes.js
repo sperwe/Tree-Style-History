@@ -692,9 +692,14 @@ document.addEvent('domready', function(){
 		var monthSelect = $('date-select-month');
 		var daySelect = $('date-select-day');
 		
-		var year = parseInt(yearSelect.value || yearSelect.options[yearSelect.selectedIndex].value);
-		var month = parseInt(monthSelect.value || monthSelect.options[monthSelect.selectedIndex].value) - 1; // JavaScript months are 0-based
-		var day = parseInt(daySelect.value || daySelect.options[daySelect.selectedIndex].value);
+		if (!yearSelect || !monthSelect || !daySelect) {
+			console.error('[updateDateFilter] Date selectors not found');
+			return;
+		}
+		
+		var year = parseInt(yearSelect.value || (yearSelect.options && yearSelect.options[yearSelect.selectedIndex] && yearSelect.options[yearSelect.selectedIndex].value));
+		var month = parseInt(monthSelect.value || (monthSelect.options && monthSelect.options[monthSelect.selectedIndex] && monthSelect.options[monthSelect.selectedIndex].value)) - 1; // JavaScript months are 0-based
+		var day = parseInt(daySelect.value || (daySelect.options && daySelect.options[daySelect.selectedIndex] && daySelect.options[daySelect.selectedIndex].value));
 		
 		console.log('[updateDateFilter] Selected date:', year, month + 1, day);
 		
@@ -768,7 +773,19 @@ document.addEvent('domready', function(){
 			console.log('[applyFilters] Date filter active:', new Date(selectedDateRange.start), 'to', new Date(selectedDateRange.end));
 			var beforeCount = filteredNotes.length;
 			filteredNotes = filteredNotes.filter(function(item) {
-				var noteTime = item.note.updatedAt || 0;
+				var updatedAt = item.note.updatedAt;
+				if (!updatedAt) return false;
+				
+				// Handle both timestamp and ISO string formats
+				var noteTime;
+				if (typeof updatedAt === 'string') {
+					// ISO string format
+					noteTime = new Date(updatedAt).getTime();
+				} else {
+					// Timestamp format
+					noteTime = updatedAt;
+				}
+				
 				var inRange = noteTime >= selectedDateRange.start && noteTime <= selectedDateRange.end;
 				if (!inRange && noteTime > 0) {
 					console.log('[applyFilters] Note excluded:', new Date(noteTime), 'not in range');
