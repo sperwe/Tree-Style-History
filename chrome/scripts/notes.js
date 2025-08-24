@@ -697,22 +697,9 @@ document.addEvent('domready', function(){
 			return;
 		}
 		
-		// Debug: log raw values
-		console.log('[updateDateFilter] Raw selector values:', {
-			year: yearSelect.value,
-			month: monthSelect.value,
-			day: daySelect.value
-		});
-		
 		var year = parseInt(yearSelect.value || (yearSelect.options && yearSelect.options[yearSelect.selectedIndex] && yearSelect.options[yearSelect.selectedIndex].value));
 		var month = parseInt(monthSelect.value || (monthSelect.options && monthSelect.options[monthSelect.selectedIndex] && monthSelect.options[monthSelect.selectedIndex].value)) - 1; // JavaScript months are 0-based
 		var day = parseInt(daySelect.value || (daySelect.options && daySelect.options[daySelect.selectedIndex] && daySelect.options[daySelect.selectedIndex].value));
-		
-		console.log('[updateDateFilter] Parsed values:', {
-			year: year,
-			month: month + 1, // Display as 1-based for clarity
-			day: day
-		});
 		
 		// Check if values are valid
 		if (isNaN(year) || isNaN(month) || isNaN(day)) {
@@ -728,18 +715,12 @@ document.addEvent('domready', function(){
 			end: endDate.getTime()
 		};
 		
-		console.log('[updateDateFilter] Date range set:', startDate, 'to', endDate);
-		console.log('[updateDateFilter] Timestamps:', selectedDateRange.start, 'to', selectedDateRange.end);
-		
 		// Update day selector in case month/year changed
 		updateDaySelector();
 		
 		// Only refilter if data is already loaded
 		if (dataLoaded) {
-			console.log('[updateDateFilter] Data loaded, applying filters');
 			applyFilters();
-		} else {
-			console.log('[updateDateFilter] Data not loaded yet, skipping filters');
 		}
 	}
 	
@@ -777,12 +758,9 @@ document.addEvent('domready', function(){
 	
 	function applyFilters() {
 		var filteredNotes = all.slice(); // Copy all notes
-		console.log('[applyFilters] Starting with', all.length, 'notes');
 		
 		// Apply date filter
 		if (selectedDateRange) {
-			console.log('[applyFilters] Date filter active:', new Date(selectedDateRange.start), 'to', new Date(selectedDateRange.end));
-			var beforeCount = filteredNotes.length;
 			filteredNotes = filteredNotes.filter(function(item) {
 				var updatedAt = item.note.updatedAt;
 				if (!updatedAt) return false;
@@ -798,12 +776,8 @@ document.addEvent('domready', function(){
 				}
 				
 				var inRange = noteTime >= selectedDateRange.start && noteTime <= selectedDateRange.end;
-				if (!inRange && noteTime > 0) {
-					console.log('[applyFilters] Note excluded:', new Date(noteTime), 'not in range');
-				}
 				return inRange;
 			});
-			console.log('[applyFilters] Date filter: ' + beforeCount + ' -> ' + filteredNotes.length + ' notes');
 		}
 		
 		// Apply search filter
@@ -818,7 +792,6 @@ document.addEvent('domready', function(){
 			});
 		}
 		
-		console.log('[applyFilters] Final result:', filteredNotes.length, 'notes');
 		render(filteredNotes);
 		
 		// Update total count
@@ -872,10 +845,7 @@ document.addEvent('domready', function(){
 				if (noteDate.getFullYear() === year && noteDate.getMonth() === month) {
 					var day = noteDate.getDate();
 					notesCountByDate[day] = (notesCountByDate[day] || 0) + 1;
-					// Debug: log first note of each day
-					if (notesCountByDate[day] === 1) {
-						console.log('[renderNotesCalendar] Day', day, 'has note with updatedAt:', item.note.updatedAt, '-> Date:', noteDate);
-					}
+
 				}
 			}
 		});
