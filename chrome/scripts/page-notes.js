@@ -1912,6 +1912,22 @@
                 border-left: 3px solid #2196f3;
             }
             
+            #tst-floating-note-manager .note-checkbox {
+                margin-right: 12px;
+                margin-top: 2px;
+                flex-shrink: 0;
+            }
+            
+            #tst-floating-note-manager .note-content {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            #tst-floating-note-manager .note-item {
+                display: flex;
+                align-items: flex-start;
+            }
+            
             #tst-floating-note-manager .note-header {
                 display: flex;
                 justify-content: space-between;
@@ -1924,9 +1940,13 @@
                 color: #333;
                 font-size: 14px;
                 line-height: 1.2;
-                flex: 1;
-                margin-right: 8px;
+                margin-bottom: 4px;
                 word-break: break-word;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
             }
             
             #tst-floating-note-manager .note-actions {
@@ -2518,7 +2538,7 @@
                             <button id="refresh-notes" title="刷新笔记列表">🔄</button>
                             <button id="batch-export" title="批量导出选中的笔记">📦 导出</button>
                             <button id="new-note" title="新建笔记">📝 新建</button>
-                            <button id="settings" title="设置">⚙️</button>
+                            <button id="open-tab" title="在新标签页中打开">📂</button>
                         </div>
                     </div>
                 </div>
@@ -2887,6 +2907,31 @@
             });
         }
 
+        // 打开新标签页按钮
+        const openTabBtn = container.querySelector('#open-tab');
+        if (openTabBtn) {
+            openTabBtn.addEventListener('click', () => {
+                console.log('[Floating] 打开新标签页');
+                chrome.runtime.sendMessage({
+                    action: 'openNoteManager',
+                    mode: 'tab'
+                }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error('打开标签页失败:', chrome.runtime.lastError);
+                        showFloatingNotification('打开失败，请重试', 'error');
+                    } else {
+                        console.log('笔记管理器已在新标签页中打开');
+                        showFloatingNotification('已在新标签页中打开', 'success');
+                        // 可选：关闭浮动窗口
+                        const floatingManager = document.getElementById('tst-floating-note-manager');
+                        if (floatingManager) {
+                            floatingManager.style.display = 'none';
+                        }
+                    }
+                });
+            });
+        }
+
         console.log('[Floating] 事件绑定完成');
     }
 
@@ -2987,13 +3032,7 @@
         noteItem.innerHTML = `
             <input type="checkbox" class="note-checkbox" data-note-id="${note.id}">
             <div class="note-content">
-                <div class="note-header">
-                    <div class="note-title">${title}</div>
-                    <div class="note-actions">
-                        <button class="note-action-btn" data-action="edit" title="编辑">✏️</button>
-                        <button class="note-action-btn" data-action="delete" title="删除">🗑️</button>
-                    </div>
-                </div>
+                <div class="note-title">${title}</div>
                 <div class="note-preview">${content.substring(0, 100)}${content.length > 100 ? '...' : ''}</div>
                 <div class="note-meta">
                     <span class="note-date">${date}</span>
@@ -3011,50 +3050,14 @@
         }
         
         // 绑定点击事件
-        noteItem.addEventListener('click', async (e) => {
+        noteItem.addEventListener('click', (e) => {
             // 忽略复选框的点击
             if (e.target.classList.contains('note-checkbox')) {
                 return;
             }
             
-            const actionBtn = e.target.closest('.note-action-btn');
             const container = noteItem.closest('.floating-content-container');
-            
-            if (actionBtn) {
-                const action = actionBtn.dataset.action;
-                if (action === 'edit') {
-                    loadFloatingNoteContent(container, note);
-                } else if (action === 'delete') {
-                    if (confirm('确定要删除这条笔记吗？')) {
-                        try {
-                            await deleteFloatingNote(note.id);
-                            
-                            // 更新本地数据
-                            const notes = window.floatingNotes || [];
-                            window.floatingNotes = notes.filter(n => n.id !== note.id);
-                            
-                            // 重新加载列表
-                            await loadFloatingNotesData(container);
-                            
-                            // 如果删除的是当前选中的笔记，清空编辑器
-                            if (floatingCurrentNote && floatingCurrentNote.id === note.id) {
-                                floatingCurrentNote = null;
-                                const titleInput = container.querySelector('#note-title');
-                                const editor = container.querySelector('#note-editor');
-                                if (titleInput) titleInput.value = '';
-                                if (editor) editor.value = '';
-                            }
-                            
-                            showFloatingNotification('笔记删除成功', 'success');
-                        } catch (error) {
-                            console.error('[Floating] 删除失败:', error);
-                            showFloatingNotification('删除失败: ' + error.message, 'error');
-                        }
-                    }
-                }
-            } else {
-                loadFloatingNoteContent(container, note);
-            }
+            loadFloatingNoteContent(container, note);
         });
         
         return noteItem;
