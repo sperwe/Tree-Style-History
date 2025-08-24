@@ -2768,6 +2768,60 @@
             });
         }
 
+        // 标签选择器按钮
+        const tagButton = container.querySelector('#tag-button');
+        if (tagButton) {
+            tagButton.addEventListener('click', () => {
+                console.log('[Floating] 打开标签选择器');
+                openFloatingTagSelector(container);
+            });
+        }
+
+        // 预览/编辑模式切换
+        const previewBtn = container.querySelector('#preview-mode');
+        const editBtn = container.querySelector('#edit-mode');
+        if (previewBtn && editBtn) {
+            previewBtn.addEventListener('click', () => {
+                console.log('[Floating] 切换到预览模式');
+                switchToFloatingPreview(container);
+            });
+            editBtn.addEventListener('click', () => {
+                console.log('[Floating] 切换到编辑模式');
+                switchToFloatingEdit(container);
+            });
+        }
+
+        // 复制按钮
+        const copyBtn = container.querySelector('#copy-note');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => {
+                console.log('[Floating] 复制笔记内容');
+                copyFloatingNote(container);
+            });
+        }
+
+        // 引用按钮
+        const referenceBtn = container.querySelector('#reference-note');
+        if (referenceBtn) {
+            referenceBtn.addEventListener('click', () => {
+                console.log('[Floating] 生成引用链接');
+                generateFloatingReference(container);
+            });
+        }
+
+        // 字数统计
+        const noteEditor = container.querySelector('#note-editor');
+        const noteTitle = container.querySelector('#note-title');
+        if (noteEditor) {
+            noteEditor.addEventListener('input', () => updateFloatingWordCount(container));
+        }
+        if (noteTitle) {
+            noteTitle.addEventListener('input', () => updateFloatingWordCount(container));
+        }
+
+        // 标签选择器模态框事件
+        bindFloatingTagSelectorEvents(container);
+
         console.log('[Floating] 事件绑定完成');
     }
 
@@ -2940,6 +2994,19 @@
         
         // 更新当前笔记变量
         floatingCurrentNote = note;
+        
+        // 更新标签显示
+        const currentTagEl = container.querySelector('#current-tag');
+        if (currentTagEl) {
+            if (note.tag) {
+                const tagInfo = getTagDisplayInfo(note.tag);
+                currentTagEl.textContent = `${tagInfo.icon} ${tagInfo.text}`;
+                currentTagEl.className = `current-tag ${tagInfo.className}`;
+            } else {
+                currentTagEl.textContent = '无标签';
+                currentTagEl.className = 'current-tag';
+            }
+        }
         
         // 更新笔记项的选中状态
         const noteItems = container.querySelectorAll('.note-item');
@@ -3359,6 +3426,273 @@
         }
         
         console.log('[Floating] 选择笔记:', noteId, note);
+    }
+
+    /**
+     * 打开标签选择器
+     */
+    function openFloatingTagSelector(container) {
+        const modal = container.querySelector('#tag-selector-modal');
+        if (!modal) return;
+        
+        modal.style.display = 'block';
+        
+        // 重置选择
+        const categoryInputs = modal.querySelectorAll('input[name="category"]');
+        const priorityInputs = modal.querySelectorAll('input[name="priority"]');
+        categoryInputs.forEach(input => input.checked = false);
+        priorityInputs.forEach(input => input.checked = false);
+        
+        // 如果当前笔记有标签，预选中
+        if (floatingCurrentNote && floatingCurrentNote.tag) {
+            const parts = floatingCurrentNote.tag.split('_');
+            if (parts.length === 2) {
+                const category = parts[0];
+                const priority = parts[1];
+                
+                const categoryInput = modal.querySelector(`input[name="category"][value="${category}"]`);
+                const priorityInput = modal.querySelector(`input[name="priority"][value="${priority}"]`);
+                
+                if (categoryInput) categoryInput.checked = true;
+                if (priorityInput) priorityInput.checked = true;
+                
+                updateFloatingTagPreview(container);
+            }
+        }
+    }
+
+    /**
+     * 绑定标签选择器事件
+     */
+    function bindFloatingTagSelectorEvents(container) {
+        const modal = container.querySelector('#tag-selector-modal');
+        if (!modal) return;
+        
+        // 关闭按钮
+        const closeBtn = modal.querySelector('.modal-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        }
+        
+        // 标签选项变化
+        const categoryInputs = modal.querySelectorAll('input[name="category"]');
+        const priorityInputs = modal.querySelectorAll('input[name="priority"]');
+        
+        categoryInputs.forEach(input => {
+            input.addEventListener('change', () => updateFloatingTagPreview(container));
+        });
+        
+        priorityInputs.forEach(input => {
+            input.addEventListener('change', () => updateFloatingTagPreview(container));
+        });
+        
+        // 确定按钮
+        const confirmBtn = modal.querySelector('#tag-confirm');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => saveFloatingTag(container));
+        }
+        
+        // 取消按钮
+        const cancelBtn = modal.querySelector('#tag-cancel');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        }
+    }
+
+    /**
+     * 更新标签预览
+     */
+    function updateFloatingTagPreview(container) {
+        const modal = container.querySelector('#tag-selector-modal');
+        const preview = modal.querySelector('#tag-preview-display');
+        
+        const selectedCategory = modal.querySelector('input[name="category"]:checked');
+        const selectedPriority = modal.querySelector('input[name="priority"]:checked');
+        
+        if (selectedCategory && selectedPriority) {
+            const tag = `${selectedCategory.value}_${selectedPriority.value}`;
+            const tagInfo = getTagDisplayInfo(tag);
+            preview.textContent = `${tagInfo.icon} ${tagInfo.text}`;
+            preview.className = `tag-badge ${tagInfo.className}`;
+        } else {
+            preview.textContent = '请选择标签';
+            preview.className = 'tag-badge';
+        }
+    }
+
+    /**
+     * 保存标签
+     */
+    function saveFloatingTag(container) {
+        const modal = container.querySelector('#tag-selector-modal');
+        const selectedCategory = modal.querySelector('input[name="category"]:checked');
+        const selectedPriority = modal.querySelector('input[name="priority"]:checked');
+        
+        if (selectedCategory && selectedPriority && floatingCurrentNote) {
+            floatingCurrentNote.tag = `${selectedCategory.value}_${selectedPriority.value}`;
+            
+            // 更新显示
+            const currentTagEl = container.querySelector('#current-tag');
+            if (currentTagEl) {
+                const tagInfo = getTagDisplayInfo(floatingCurrentNote.tag);
+                currentTagEl.textContent = `${tagInfo.icon} ${tagInfo.text}`;
+                currentTagEl.className = `current-tag ${tagInfo.className}`;
+            }
+            
+            modal.style.display = 'none';
+            showFloatingNotification('标签已更新', 'success');
+        } else {
+            showFloatingNotification('请选择分类和程度', 'warning');
+        }
+    }
+
+    /**
+     * 获取标签显示信息
+     */
+    function getTagDisplayInfo(tag) {
+        const tagMap = {
+            'important_very': { icon: '🔥', text: '非常重要', className: 'tag-important-very' },
+            'important_somewhat': { icon: '🔥', text: '比较重要', className: 'tag-important-somewhat' },
+            'important_general': { icon: '🔥', text: '一般重要', className: 'tag-important-general' },
+            'interesting_very': { icon: '💡', text: '非常有趣', className: 'tag-interesting-very' },
+            'interesting_somewhat': { icon: '💡', text: '比较有趣', className: 'tag-interesting-somewhat' },
+            'interesting_general': { icon: '💡', text: '一般有趣', className: 'tag-interesting-general' },
+            'needed_very': { icon: '⚡', text: '非常需要', className: 'tag-needed-very' },
+            'needed_somewhat': { icon: '⚡', text: '比较需要', className: 'tag-needed-somewhat' },
+            'needed_general': { icon: '⚡', text: '一般需要', className: 'tag-needed-general' }
+        };
+        
+        return tagMap[tag] || { icon: '', text: '无标签', className: '' };
+    }
+
+    /**
+     * 切换到预览模式
+     */
+    function switchToFloatingPreview(container) {
+        const editMode = container.querySelector('#edit-mode');
+        const previewMode = container.querySelector('#preview-mode');
+        const noteEditor = container.querySelector('#note-editor');
+        const notePreview = container.querySelector('#note-preview');
+        
+        if (!noteEditor || !notePreview) return;
+        
+        const content = noteEditor.value;
+        
+        // 切换按钮状态
+        if (editMode) editMode.classList.remove('active');
+        if (previewMode) previewMode.classList.add('active');
+        
+        // 显示预览，隐藏编辑器
+        noteEditor.style.display = 'none';
+        notePreview.style.display = 'block';
+        
+        // 渲染Markdown内容
+        if (content) {
+            // 简单的Markdown渲染
+            let html = content
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\n\n/g, '<br><br>')
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                .replace(/^\- (.+)$/gm, '<li>$1</li>');
+            
+            notePreview.innerHTML = `<div class="markdown-content">${html}</div>`;
+        } else {
+            notePreview.innerHTML = '<div class="preview-placeholder"><p>暂无内容</p></div>';
+        }
+    }
+
+    /**
+     * 切换到编辑模式
+     */
+    function switchToFloatingEdit(container) {
+        const editMode = container.querySelector('#edit-mode');
+        const previewMode = container.querySelector('#preview-mode');
+        const noteEditor = container.querySelector('#note-editor');
+        const notePreview = container.querySelector('#note-preview');
+        
+        if (!noteEditor || !notePreview) return;
+        
+        // 切换按钮状态
+        if (editMode) editMode.classList.add('active');
+        if (previewMode) previewMode.classList.remove('active');
+        
+        // 显示编辑器，隐藏预览
+        noteEditor.style.display = 'block';
+        notePreview.style.display = 'none';
+    }
+
+    /**
+     * 复制笔记内容
+     */
+    function copyFloatingNote(container) {
+        if (!floatingCurrentNote) {
+            showFloatingNotification('请先选择一个笔记', 'warning');
+            return;
+        }
+        
+        const title = floatingCurrentNote.title || '';
+        const content = floatingCurrentNote.note || '';
+        const url = floatingCurrentNote.url || '';
+        
+        const text = `${title}\n\n${content}\n\n来源: ${url}`;
+        
+        navigator.clipboard.writeText(text).then(() => {
+            showFloatingNotification('笔记内容已复制到剪贴板', 'success');
+        }).catch(err => {
+            console.error('[Floating] 复制失败:', err);
+            showFloatingNotification('复制失败，请重试', 'error');
+        });
+    }
+
+    /**
+     * 生成引用链接
+     */
+    function generateFloatingReference(container) {
+        if (!floatingCurrentNote) {
+            showFloatingNotification('请先选择一个笔记', 'warning');
+            return;
+        }
+        
+        const title = floatingCurrentNote.title || '未命名笔记';
+        const url = floatingCurrentNote.url || window.location.href;
+        const noteId = floatingCurrentNote.id;
+        
+        const reference = `[${title}](${url}#note-${noteId})`;
+        
+        navigator.clipboard.writeText(reference).then(() => {
+            showFloatingNotification('引用链接已复制到剪贴板', 'success');
+        }).catch(err => {
+            console.error('[Floating] 复制引用失败:', err);
+            showFloatingNotification('复制失败，请重试', 'error');
+        });
+    }
+
+    /**
+     * 更新字数统计
+     */
+    function updateFloatingWordCount(container) {
+        const titleInput = container.querySelector('#note-title');
+        const editor = container.querySelector('#note-editor');
+        const wordCountEl = container.querySelector('#word-count');
+        
+        if (!wordCountEl) return;
+        
+        const titleLength = titleInput ? titleInput.value.length : 0;
+        const contentLength = editor ? editor.value.length : 0;
+        const totalLength = titleLength + contentLength;
+        
+        wordCountEl.textContent = `${totalLength} 字符`;
     }
 
     /**
