@@ -595,11 +595,13 @@ document.addEvent('domready', function(){
 			if ($('date-select-month')) {
 				$('date-select-month').addEvent('change', function () {
 					updateDateFilter();
+					renderNotesCalendar();
 				});
 			}
 			if ($('date-select-year')) {
 				$('date-select-year').addEvent('change', function () {
 					updateDateFilter();
+					renderNotesCalendar();
 				});
 			}
 			
@@ -782,6 +784,151 @@ document.addEvent('domready', function(){
 	
 	// Export clear function globally for possible UI use
 	window.clearNotesFilters = clearFilters;
+	
+	// Custom calendar rendering for notes with date statistics
+	function renderNotesCalendar() {
+		if (!$('calendar-days')) return;
+		
+		// Get selected year and month
+		var year = parseInt($('date-select-year').getSelected().get('value'));
+		var month = parseInt($('date-select-month').getSelected().get('value')) - 1; // JavaScript month is 0-based
+		
+		// Calculate notes count by date
+		var notesCountByDate = {};
+		all.forEach(function(item) {
+			if (item.note && item.note.updatedAt) {
+				var noteDate = new Date(item.note.updatedAt);
+				if (noteDate.getFullYear() === year && noteDate.getMonth() === month) {
+					var day = noteDate.getDate();
+					notesCountByDate[day] = (notesCountByDate[day] || 0) + 1;
+				}
+			}
+		});
+		
+		// Clear existing calendar days
+		$('calendar-days').set('html', '');
+		
+		// Calculate days in month
+		var daysInMonth = new Date(year, month + 1, 0).getDate();
+		var firstDayOfWeek = new Date(year, month, 1).getDay();
+		var currentDate = new Date();
+		var currentDay = currentDate.getDate();
+		var isCurrentMonth = currentDate.getFullYear() === year && currentDate.getMonth() === month;
+		
+		// Add empty days for alignment
+		for (var i = 0; i < firstDayOfWeek; i++) {
+			new Element('span', { html: '&nbsp;', 'class': 'day' }).inject('calendar-days');
+		}
+		
+		// Add calendar days
+		for (var day = 1; day <= daysInMonth; day++) {
+			var dayEl = new Element('a', {
+				href: '#',
+				text: day,
+				'class': 'day',
+				rel: day + '|' + (month + 1) + '|' + year
+			});
+			
+			// Mark current day
+			if (isCurrentMonth && day === currentDay) {
+				dayEl.set('id', 'selected');
+			}
+			
+			// Add notes count indicator
+			if (notesCountByDate[day]) {
+				dayEl.addClass('has-notes');
+				dayEl.set('title', notesCountByDate[day] + ' 笔记');
+				// Add visual indicator style
+				dayEl.setStyle('position', 'relative');
+				dayEl.setStyle('font-weight', 'bold');
+				dayEl.setStyle('color', '#4CAF50');
+				
+				// Add small count text
+				var countText = new Element('span', {
+					text: '(' + notesCountByDate[day] + ')',
+					styles: {
+						'font-size': '10px',
+						'margin-left': '2px'
+					}
+				});
+				countText.inject(dayEl);
+			}
+			
+			// Add click handler
+			dayEl.addEvent('click', function(e) {
+				e.stop();
+				var rel = this.get('rel').split('|');
+				var selectedDay = parseInt(rel[0]);
+				var selectedMonth = parseInt(rel[1]);
+				var selectedYear = parseInt(rel[2]);
+				
+				// Update UI selected state
+				$$('#calendar-days a#selected').removeProperty('id');
+				this.set('id', 'selected');
+				
+				// Update date selectors
+				$('date-select-day').set('value', selectedDay);
+				$('date-select-month').set('value', selectedMonth);
+				$('date-select-year').set('value', selectedYear);
+				
+				// Trigger date filter update
+				updateDateFilter();
+			});
+			
+			dayEl.inject('calendar-days');
+		}
+		
+		// Add empty days at the end for alignment
+		var lastDayOfWeek = new Date(year, month, daysInMonth).getDay();
+		for (var i = lastDayOfWeek; i < 6; i++) {
+			new Element('span', { html: '&nbsp;', 'class': 'day' }).inject('calendar-days');
+		}
+	}
+	
+	// Setup date range filtering
+	function setupDateRangeFiltering() {
+		var rangeButton = $('delete-range-button');
+		if (rangeButton) {
+			rangeButton.set('value', '筛选日期');
+			rangeButton.removeEvents('click');
+			rangeButton.addEvent('click', function() {
+				var startInput = $('delete-range-one').get('value');
+				var endInput = $('delete-range-two').get('value');
+				
+				if (startInput && endInput) {
+					// Parse dates (assuming format: yyyy-mm-dd or dd/mm/yyyy)
+					var startDate, endDate;
+					if (startInput.indexOf('-') > -1) {
+						// yyyy-mm-dd format
+						startDate = new Date(startInput);
+						endDate = new Date(endInput);
+					} else if (startInput.indexOf('/') > -1) {
+						// dd/mm/yyyy format
+						var startParts = startInput.split('/');
+						var endParts = endInput.split('/');
+						startDate = new Date(startParts[2], startParts[1]-1, startParts[0]);
+						endDate = new Date(endParts[2], endParts[1]-1, endParts[0]);
+					}
+					
+					if (startDate && endDate && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+						selectedDateRange = {
+							start: new Date(startDate.setHours(0, 0, 0, 0)),
+							end: new Date(endDate.setHours(23, 59, 59, 999))
+						};
+						applyFilters();
+						// Clear selected day highlight
+						$$('#calendar-days a#selected').removeProperty('id');
+					} else {
+						alert('请输入有效的日期格式 (dd/mm/yyyy 或 yyyy-mm-dd)');
+					}
+				}
+			});
+		}
+		
+		// Add placeholders for date inputs
+		if ($('delete-range-one')) $('delete-range-one').set('placeholder', '开始日期');
+		if ($('delete-range-two')) $('delete-range-two').set('placeholder', '结束日期');
+	}
 	
 	load();
 });
