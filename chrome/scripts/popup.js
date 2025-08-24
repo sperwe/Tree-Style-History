@@ -64,7 +64,7 @@ document.addEvent('domready', function () {
     var rhporder = localStorage['rh-list-order'].split(',');
     
     // Ensure new items from default are included (for users with existing settings)
-    var defaultOrder = "rh-order,rct-order,rn-order,nm-order,rb-order,mv-order,rt-order".split(',');
+    var defaultOrder = "nm-order,rh-order,rct-order,rn-order,rb-order,mv-order,rt-order".split(',');
     for (var i in defaultOrder) {
         if (rhporder.indexOf(defaultOrder[i]) < 0) {
             rhporder.push(defaultOrder[i]);
