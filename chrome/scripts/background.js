@@ -323,14 +323,48 @@ defaultConfig(false);
 
 chrome.commands.onCommand.addListener(function (command) {
     console.log('Command:', command);
-    if (command == "open_history2") {
-        window.open("history2.html");
-    } else if (command == "open_history1") {
-        window.open("history.html");
-    } else if (command == "open_closed") {
-        window.open("closed.html");
-    } else if (command == "open_bookmark") {
-        window.open("bookmark.html");
+    
+    switch(command) {
+        case "open_history2":
+            chrome.tabs.create({ url: chrome.runtime.getURL("history2.html") });
+            break;
+            
+        case "open_closed":
+            chrome.tabs.create({ url: chrome.runtime.getURL("closed.html") });
+            break;
+            
+        case "open_floating_notes":
+            // 向当前活动标签发送消息，打开浮动笔记管理器
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                if (tabs[0]) {
+                    chrome.tabs.sendMessage(tabs[0].id, {
+                        action: "openFloatingNotesManager"
+                    });
+                }
+            });
+            break;
+            
+        case "save_selection_as_note":
+            // 向当前活动标签发送消息，获取选中文本
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                if (tabs[0]) {
+                    chrome.tabs.sendMessage(tabs[0].id, {
+                        action: "saveSelectedTextAsNote"
+                    });
+                }
+            });
+            break;
+            
+        case "new_quick_note":
+            // 向当前活动标签发送消息，打开快速笔记
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                if (tabs[0]) {
+                    chrome.tabs.sendMessage(tabs[0].id, {
+                        action: "openQuickNote"
+                    });
+                }
+            });
+            break;
     }
 });
 
