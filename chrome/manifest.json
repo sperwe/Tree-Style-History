@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.9.18",
-  "version_name": "4.9.18 - 修复浮动管理器功能和调整位置",
+  "version": "4.9.19",
+  "version_name": "4.9.19 - 改进浮动管理器错误处理",
 
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.9.18: Fixed floating manager button functionality and moved Note Manager to top of popup.",
+  "description": "v4.9.19: Improved floating manager error handling with fallback to new tab for special pages.",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
