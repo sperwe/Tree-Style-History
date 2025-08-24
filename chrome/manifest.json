@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.9.8",
-  "version_name": "4.9.8 by sperwe - Simplified Note List & Open Tab Feature",
+  "version": "4.9.9",
+  "version_name": "4.9.9 by sperwe - New Keyboard Shortcuts System",
 
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.9.8: Simplified note list UI - Removed header layer for cleaner look. Added open in tab button. Fixed notes.html modal styles for light theme.",
+  "description": "v4.9.9: New keyboard shortcuts - Alt+Shift+N for floating notes, Alt+Shift+S to save selection, Alt+Shift+Q for quick note. Fixed shortcuts system.",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
