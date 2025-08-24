@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.9.9",
-  "version_name": "4.9.9 by sperwe - New Keyboard Shortcuts System",
+  "version": "4.9.15",
+  "version_name": "4.9.15 - 修复日期筛选功能",
 
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.9.9: New keyboard shortcuts - Alt+Shift+N for floating notes, Alt+Shift+S to save selection, Alt+Shift+Q for quick note. Fixed shortcuts system.",
+  "description": "v4.9.15: Fixed date filtering functionality. Now properly handles date selection and mixed timestamp formats.",
   "options_page": "options.html",
   "background": {
     "page": "background.html"

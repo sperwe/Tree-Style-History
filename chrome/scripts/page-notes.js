@@ -32,6 +32,55 @@
     };
 
     /**
+     * 显示通知 - 全局函数
+     */
+    function showNotification(message, type = 'info') {
+        // 创建简单的通知提示
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 6px;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            font-size: 14px;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease;
+            ${type === 'success' ? 'background: #28a745;' : 
+              type === 'error' ? 'background: #dc3545;' : 'background: #17a2b8;'}
+        `;
+        notification.textContent = message;
+
+        // 添加滑入动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        document.body.appendChild(notification);
+
+        // 3秒后自动消失
+        setTimeout(() => {
+            notification.style.animation = 'slideIn 0.3s ease reverse';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+                if (style.parentNode) {
+                    style.parentNode.removeChild(style);
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    /**
      * 创建浮动按钮
      */
     function createFloatingButton() {
@@ -132,8 +181,55 @@
             }
         });
 
-        // 监听键盘事件（仅保留ESC关闭功能）
+        // 监听键盘事件
         document.addEventListener('keydown', (e) => {
+            // Ctrl+Shift+N 打开笔记管理器（浮动窗口）
+            if (e.ctrlKey && e.shiftKey && e.key === 'N') {
+                e.preventDefault();
+                openNoteManager('floating');
+            }
+            // Ctrl+Shift+S 保存选中文本为笔记
+            if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+                e.preventDefault();
+                const selectedText = window.getSelection().toString().trim();
+                if (selectedText) {
+                    // 格式化为 Markdown，包含页面标题和链接
+                    const pageUrl = window.location.href;
+                    const pageTitle = document.title;
+                    const timestamp = new Date().toLocaleString('zh-CN');
+                    const formattedText = `> ${selectedText}\n\n摘录时间：${timestamp}`;
+                    
+                    console.log('[TST Notes] Saving selected text with MD format:', formattedText.substring(0, 100) + '...');
+                    // 使用右键菜单相同的方式保存
+                    chrome.runtime.sendMessage({
+                        action: 'saveSelectionAsNote',
+                        pageUrl: pageUrl,
+                        pageTitle: pageTitle,
+                        selectedText: formattedText
+                    }, (response) => {
+                        if (chrome.runtime.lastError) {
+                            console.error('[TST Notes] Runtime error:', chrome.runtime.lastError);
+                            showNotification('保存失败：扩展连接错误', 'error');
+                            return;
+                        }
+                        console.log('[TST Notes] Save response:', response);
+                        // 显示保存成功通知
+                        showNotification('选中文本已保存为笔记', 'success');
+                    });
+                } else {
+                    showNotification('请先选中要保存的文本', 'info');
+                }
+            }
+            // Ctrl+Shift+T 打开笔记管理器（新标签页）
+            if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                e.preventDefault();
+                openNoteManager('tab');
+            }
+            // Ctrl+Shift+Q 快速新建笔记
+            if (e.ctrlKey && e.shiftKey && e.key === 'Q') {
+                e.preventDefault();
+                openQuickNoteModal();
+            }
             // ESC 关闭上下文菜单
             if (e.key === 'Escape' && contextMenuVisible) {
                 hideContextMenu();
@@ -999,54 +1095,7 @@
         });
     }
 
-    /**
-     * 显示通知
-     */
-    function showNotification(message, type = 'info') {
-        // 创建简单的通知提示
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 6px;
-            color: white;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            font-size: 14px;
-            z-index: 10000;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            animation: slideIn 0.3s ease;
-            ${type === 'success' ? 'background: #28a745;' : 
-              type === 'error' ? 'background: #dc3545;' : 'background: #17a2b8;'}
-        `;
-        notification.textContent = message;
 
-        // 添加滑入动画
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-        `;
-        document.head.appendChild(style);
-
-        document.body.appendChild(notification);
-
-        // 3秒后自动消失
-        setTimeout(() => {
-            notification.style.animation = 'slideIn 0.3s ease reverse';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-                if (style.parentNode) {
-                    style.parentNode.removeChild(style);
-                }
-            }, 300);
-        }, 3000);
-    }
 
     /**
      * HTML转义函数
@@ -4722,6 +4771,59 @@
             createFloatingButton();
         }, 1000);
     }
+
+    // 全局键盘快捷键监听器 - 立即绑定
+    console.log('[TST Notes] Setting up global keyboard shortcuts...');
+    document.addEventListener('keydown', (e) => {
+        console.log('[TST Notes] Key pressed:', e.key, 'Ctrl:', e.ctrlKey, 'Shift:', e.shiftKey, 'Alt:', e.altKey);
+        // Ctrl+Shift+N 打开笔记管理器（浮动窗口）
+        if (e.ctrlKey && e.shiftKey && e.key === 'N') {
+            e.preventDefault();
+            openNoteManager('floating');
+        }
+        // Ctrl+Shift+S 保存选中文本为笔记
+        if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+            e.preventDefault();
+            const selectedText = window.getSelection().toString().trim();
+            if (selectedText) {
+                // 格式化为 Markdown，包含页面标题和链接
+                const pageUrl = window.location.href;
+                const pageTitle = document.title;
+                const timestamp = new Date().toLocaleString('zh-CN');
+                const formattedText = `> ${selectedText}\n\n摘录时间：${timestamp}`;
+                
+                console.log('[TST Notes] Saving selected text with MD format:', formattedText.substring(0, 100) + '...');
+                // 使用右键菜单相同的方式保存
+                chrome.runtime.sendMessage({
+                    action: 'saveSelectionAsNote',
+                    pageUrl: pageUrl,
+                    pageTitle: pageTitle,
+                    selectedText: formattedText
+                }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error('[TST Notes] Runtime error:', chrome.runtime.lastError);
+                        showNotification('保存失败：扩展连接错误', 'error');
+                        return;
+                    }
+                    console.log('[TST Notes] Save response:', response);
+                    // 显示保存成功通知
+                    showNotification('选中文本已保存为笔记', 'success');
+                });
+            } else {
+                showNotification('请先选中要保存的文本', 'info');
+            }
+        }
+        // Ctrl+Shift+T 打开笔记管理器（新标签页）
+        if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+            e.preventDefault();
+            openNoteManager('tab');
+        }
+        // Ctrl+Shift+Q 快速笔记
+        if (e.ctrlKey && e.shiftKey && e.key === 'Q') {
+            e.preventDefault();
+            openQuickNoteModal();
+        }
+    });
 
     // 启动初始化
     initialize();
