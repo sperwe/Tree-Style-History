@@ -697,11 +697,22 @@ document.addEvent('domready', function(){
 			return;
 		}
 		
+		// Debug: log raw values
+		console.log('[updateDateFilter] Raw selector values:', {
+			year: yearSelect.value,
+			month: monthSelect.value,
+			day: daySelect.value
+		});
+		
 		var year = parseInt(yearSelect.value || (yearSelect.options && yearSelect.options[yearSelect.selectedIndex] && yearSelect.options[yearSelect.selectedIndex].value));
 		var month = parseInt(monthSelect.value || (monthSelect.options && monthSelect.options[monthSelect.selectedIndex] && monthSelect.options[monthSelect.selectedIndex].value)) - 1; // JavaScript months are 0-based
 		var day = parseInt(daySelect.value || (daySelect.options && daySelect.options[daySelect.selectedIndex] && daySelect.options[daySelect.selectedIndex].value));
 		
-		console.log('[updateDateFilter] Selected date:', year, month + 1, day);
+		console.log('[updateDateFilter] Parsed values:', {
+			year: year,
+			month: month + 1, // Display as 1-based for clarity
+			day: day
+		});
 		
 		// Check if values are valid
 		if (isNaN(year) || isNaN(month) || isNaN(day)) {
@@ -931,8 +942,12 @@ document.addEvent('domready', function(){
 				this.set('id', 'selected');
 				
 				// Update date selectors
-				$('date-select-day').set('value', selectedDay);
-				$('date-select-month').set('value', selectedMonth);
+				// Format day and month as two-digit strings
+				var dayStr = selectedDay < 10 ? '0' + selectedDay : '' + selectedDay;
+				var monthStr = selectedMonth < 10 ? '0' + selectedMonth : '' + selectedMonth;
+				
+				$('date-select-day').set('value', dayStr);
+				$('date-select-month').set('value', monthStr);
 				$('date-select-year').set('value', selectedYear);
 				
 				// Trigger date filter update
