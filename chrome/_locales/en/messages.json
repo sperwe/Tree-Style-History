@@ -596,6 +596,15 @@
     "recentNotes": {
         "message": "Recent Notes"
     },
+    "noteManager": {
+        "message": "Note Manager"
+    },
+    "floatingManager": {
+        "message": "Floating Manager"
+    },
+    "tabManager": {
+        "message": "New Tab"
+    },
     "exportNotesMd": {
         "message": "Export Notes (Markdown)"
     },
