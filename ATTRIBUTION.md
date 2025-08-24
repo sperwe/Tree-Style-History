@@ -22,8 +22,9 @@ This project is a continuation of excellent work by previous developers.
   - Improved performance
   - Fixed popup item limit and empty favicon handling
 
-#### Tree Style History · Notes v4+ (2024-2025)
+#### Tree Style History · Notes v4+ (August 2025-)
 - **Maintainer**: sperwe
+- **Fork Date**: August 2025
 - **Major Contributions**:
   - Complete note-taking system integration
   - Floating note manager with full CRUD operations
