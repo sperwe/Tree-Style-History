@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.9.4",
-  "version_name": "4.9.4 by sperwe - Fixed Element ID Mismatch in Floating Manager",
+  "version": "4.9.5",
+  "version_name": "4.9.5 by sperwe - Enhanced Floating Manager Functionality",
   "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.9.4: Critical Fix - Element ID mismatch between UI template and JavaScript functions resolved. Floating manager save/edit/new note functions now work correctly.",
+  "description": "v4.9.5: Enhanced Floating Manager - Fixed note selection, data sync, and delete functionality. Floating window now works like the standalone manager.",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
