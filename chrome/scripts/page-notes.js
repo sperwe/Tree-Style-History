@@ -4707,11 +4707,12 @@
             e.preventDefault();
             openNoteManager('floating');
         }
-        // Alt+Shift+S 保存选中文本为笔记
-        if (e.altKey && e.shiftKey && e.key === 'S') {
+        // Ctrl+Shift+F 保存选中文本为笔记
+        if (e.ctrlKey && e.shiftKey && e.key === 'F') {
             e.preventDefault();
             const selectedText = window.getSelection().toString().trim();
             if (selectedText) {
+                console.log('[TST Notes] Saving selected text:', selectedText.substring(0, 50) + '...');
                 // 使用右键菜单相同的方式保存
                 chrome.runtime.sendMessage({
                     action: 'saveSelectionAsNote',
@@ -4721,11 +4722,15 @@
                 }, (response) => {
                     if (chrome.runtime.lastError) {
                         console.error('[TST Notes] Runtime error:', chrome.runtime.lastError);
+                        showNotification('保存失败：扩展连接错误', 'error');
                         return;
                     }
+                    console.log('[TST Notes] Save response:', response);
                     // 显示保存成功通知
                     showNotification('选中文本已保存为笔记', 'success');
                 });
+            } else {
+                showNotification('请先选中要保存的文本', 'info');
             }
         }
         // Ctrl+Shift+T 打开笔记管理器（新标签页）
