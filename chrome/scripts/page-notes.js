@@ -144,6 +144,11 @@
                 e.preventDefault();
                 openNoteManager('window');
             }
+            // Ctrl+Shift+T 打开笔记管理器（新标签页）
+            if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                e.preventDefault();
+                openNoteManager('tab');
+            }
             // Ctrl+Shift+Q 快速新建笔记
             if (e.ctrlKey && e.shiftKey && e.key === 'Q') {
                 e.preventDefault();
@@ -1082,6 +1087,11 @@
                 shortcut: 'Ctrl+Shift+F'
             },
             {
+                text: '📑 笔记管理器 (新标签页)',
+                action: () => openNoteManager('tab'),
+                shortcut: 'Ctrl+Shift+T'
+            },
+            {
                 text: '🔍 搜索笔记',
                 action: () => openNoteManager('search'),
                 shortcut: ''
@@ -1213,6 +1223,9 @@
             if (mode === 'floating') {
                 // 创建页面内浮动窗口
                 await createFloatingNoteManager();
+            } else if (mode === 'tab') {
+                // 在新标签页中打开笔记管理器
+                openNoteManagerInTab();
             } else if (chrome && chrome.runtime) {
                 // 通过background script打开独立窗口
                 chrome.runtime.sendMessage({
@@ -1222,26 +1235,42 @@
                     if (chrome.runtime.lastError) {
                         console.error('打开笔记管理器失败:', chrome.runtime.lastError);
                         // 降级方案：直接打开页面
-                        fallbackOpenNoteManager();
+                        fallbackOpenNoteManager(mode);
                     } else if (response && response.success) {
                         console.log('笔记管理器已打开');
                     }
                 });
             } else {
-                fallbackOpenNoteManager();
+                fallbackOpenNoteManager(mode);
             }
         } catch (error) {
             console.error('打开笔记管理器出错:', error);
-            fallbackOpenNoteManager();
+            fallbackOpenNoteManager(mode);
         }
+    }
+
+    /**
+     * 在新标签页中打开笔记管理器
+     */
+    function openNoteManagerInTab() {
+        const url = chrome.runtime ? chrome.runtime.getURL('note-manager.html') : '/note-manager.html';
+        window.open(url, '_blank');
+        console.log('笔记管理器已在新标签页中打开');
     }
 
     /**
      * 降级方案：直接打开笔记管理器页面
      */
-    function fallbackOpenNoteManager() {
+    function fallbackOpenNoteManager(mode = 'window') {
         const url = chrome.runtime ? chrome.runtime.getURL('note-manager.html') : '/note-manager.html';
-        window.open(url, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+        if (mode === 'tab') {
+            // 新标签页模式
+            window.open(url, '_blank');
+        } else {
+            // 独立窗口模式
+            window.open(url, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+        }
+        console.log(`笔记管理器已以${mode}模式打开 (降级方案)`);
     }
 
     /**
@@ -2997,18 +3026,30 @@
     async function saveFloatingNoteToDatabase(note) {
         return new Promise((resolve, reject) => {
             if (chrome && chrome.runtime) {
-                chrome.runtime.sendMessage({
-                    action: 'saveNote',
-                    note: note
-                }, (response) => {
-                    if (response && response.success) {
-                        resolve(response);
-                    } else {
-                        reject(new Error('保存失败'));
-                    }
-                });
+                try {
+                    chrome.runtime.sendMessage({
+                        action: 'saveNote',
+                        note: note
+                    }, (response) => {
+                        if (chrome.runtime.lastError) {
+                            console.warn('[Floating] Extension context error during save, using localStorage:', chrome.runtime.lastError);
+                            saveToLocalStorage();
+                        } else if (response && response.success) {
+                            resolve(response);
+                        } else {
+                            console.warn('[Floating] Save failed via runtime, using localStorage');
+                            saveToLocalStorage();
+                        }
+                    });
+                } catch (error) {
+                    console.warn('[Floating] Runtime error during save, using localStorage:', error);
+                    saveToLocalStorage();
+                }
             } else {
-                // 备用方案：使用localStorage
+                saveToLocalStorage();
+            }
+            
+            function saveToLocalStorage() {
                 try {
                     const notes = JSON.parse(localStorage.getItem('tst_floating_notes') || '[]');
                     const existingIndex = notes.findIndex(n => n.id === note.id);
@@ -3018,8 +3059,10 @@
                         notes.push(note);
                     }
                     localStorage.setItem('tst_floating_notes', JSON.stringify(notes));
+                    console.log('[Floating] 笔记已保存到localStorage');
                     resolve({ success: true });
                 } catch (error) {
+                    console.error('[Floating] localStorage保存失败:', error);
                     reject(error);
                 }
             }
@@ -3032,22 +3075,36 @@
     async function loadFloatingNotesFromDatabase() {
         return new Promise((resolve) => {
             if (chrome && chrome.runtime) {
-                chrome.runtime.sendMessage({
-                    action: 'getAllNotes'
-                }, (response) => {
-                    if (response && response.notes) {
-                        resolve(response.notes);
-                    } else {
-                        resolve([]);
-                    }
-                });
+                try {
+                    chrome.runtime.sendMessage({
+                        action: 'getAllNotes'
+                    }, (response) => {
+                        if (chrome.runtime.lastError) {
+                            console.warn('[Floating] Extension context error, using localStorage:', chrome.runtime.lastError);
+                            // 降级到localStorage
+                            loadFromLocalStorage();
+                        } else if (response && response.notes) {
+                            resolve(response.notes);
+                        } else {
+                            console.warn('[Floating] No notes in response, using localStorage');
+                            loadFromLocalStorage();
+                        }
+                    });
+                } catch (error) {
+                    console.warn('[Floating] Runtime error, using localStorage:', error);
+                    loadFromLocalStorage();
+                }
             } else {
-                // 备用方案：使用localStorage
+                loadFromLocalStorage();
+            }
+            
+            function loadFromLocalStorage() {
                 try {
                     const notes = JSON.parse(localStorage.getItem('tst_floating_notes') || '[]');
+                    console.log('[Floating] 从localStorage加载到', notes.length, '条笔记');
                     resolve(notes);
                 } catch (error) {
-                    console.error('加载笔记失败:', error);
+                    console.error('[Floating] localStorage加载失败:', error);
                     resolve([]);
                 }
             }
