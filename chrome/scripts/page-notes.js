@@ -193,13 +193,19 @@
                 e.preventDefault();
                 const selectedText = window.getSelection().toString().trim();
                 if (selectedText) {
-                    console.log('[TST Notes] Saving selected text:', selectedText.substring(0, 50) + '...');
+                    // 格式化为 Markdown，包含页面标题和链接
+                    const pageUrl = window.location.href;
+                    const pageTitle = document.title;
+                    const timestamp = new Date().toLocaleString('zh-CN');
+                    const formattedText = `## [${pageTitle}](${pageUrl})\n\n> 摘录时间：${timestamp}\n\n${selectedText}`;
+                    
+                    console.log('[TST Notes] Saving selected text with MD format:', formattedText.substring(0, 100) + '...');
                     // 使用右键菜单相同的方式保存
                     chrome.runtime.sendMessage({
                         action: 'saveSelectionAsNote',
-                        pageUrl: window.location.href,
-                        pageTitle: document.title,
-                        selectedText: selectedText
+                        pageUrl: pageUrl,
+                        pageTitle: pageTitle,
+                        selectedText: formattedText
                     }, (response) => {
                         if (chrome.runtime.lastError) {
                             console.error('[TST Notes] Runtime error:', chrome.runtime.lastError);
@@ -4739,13 +4745,19 @@
             e.preventDefault();
             const selectedText = window.getSelection().toString().trim();
             if (selectedText) {
-                console.log('[TST Notes] Saving selected text:', selectedText.substring(0, 50) + '...');
+                // 格式化为 Markdown，包含页面标题和链接
+                const pageUrl = window.location.href;
+                const pageTitle = document.title;
+                const timestamp = new Date().toLocaleString('zh-CN');
+                const formattedText = `## [${pageTitle}](${pageUrl})\n\n> 摘录时间：${timestamp}\n\n${selectedText}`;
+                
+                console.log('[TST Notes] Saving selected text with MD format:', formattedText.substring(0, 100) + '...');
                 // 使用右键菜单相同的方式保存
                 chrome.runtime.sendMessage({
                     action: 'saveSelectionAsNote',
-                    pageUrl: window.location.href,
-                    pageTitle: document.title,
-                    selectedText: selectedText
+                    pageUrl: pageUrl,
+                    pageTitle: pageTitle,
+                    selectedText: formattedText
                 }, (response) => {
                     if (chrome.runtime.lastError) {
                         console.error('[TST Notes] Runtime error:', chrome.runtime.lastError);
