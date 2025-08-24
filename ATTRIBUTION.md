@@ -11,16 +11,18 @@ This project is a continuation of excellent work by previous developers.
 - **License**: CC BY-NC-ND 3.0
 - **Contribution**: Created the foundational browser history visualization concept
 
-#### Tree Style History v1-v3 (2021)
+#### Tree Style History v1-v3 (2021-2024)
 - **Developer**: Tumuyan (tumuyan@gmail.com)
+- **Last Update**: April 29, 2024
 - **License**: Modified with permission from original author
 - **Major Contributions**:
   - Transformed linear history into tree-style visualization
   - Enhanced UI design
   - Added Chinese localization
   - Improved performance
+  - Fixed popup item limit and empty favicon handling
 
-#### Tree Style History · Notes v4+ (2025)
+#### Tree Style History · Notes v4+ (2024-2025)
 - **Maintainer**: sperwe
 - **Major Contributions**:
   - Complete note-taking system integration
