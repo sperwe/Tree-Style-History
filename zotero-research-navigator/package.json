@@ -1,0 +1,51 @@
+{
+  "name": "zotero-research-navigator",
+  "version": "1.0.0",
+  "description": "A Zotero plugin for tracking research history and enhanced note navigation",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "webpack --env development",
+    "build-prod": "webpack --env production",
+    "watch": "webpack --env development --watch",
+    "serve": "webpack serve --env development",
+    "test": "jest",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_USERNAME/zotero-research-navigator.git"
+  },
+  "author": "YOUR_NAME",
+  "license": "AGPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/zotero-research-navigator/issues"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/zotero-research-navigator#readme",
+  "dependencies": {
+    "zotero-plugin-toolkit": "^2.3.32"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^5.0.0",
+    "webpack-dev-server": "^4.0.0",
+    "ts-loader": "^9.0.0",
+    "copy-webpack-plugin": "^12.0.0",
+    "replace-in-file-webpack-plugin": "^1.0.6"
+  },
+  "config": {
+    "addonName": "Research Navigator",
+    "addonID": "research-navigator@zotero.org",
+    "addonRef": "researchnavigator",
+    "addonInstance": "ResearchNavigator",
+    "prefsPrefix": "extensions.zotero.researchnavigator"
+  }
+}

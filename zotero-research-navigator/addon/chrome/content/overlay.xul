@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<overlay id="research-navigator-overlay"
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <!-- 工具栏按钮 -->
+  <toolbarpalette id="zotero-toolbar-palette">
+    <toolbarbutton id="research-navigator-toolbar-button"
+                   class="toolbarbutton-1"
+                   label="&research-navigator.button.label;"
+                   tooltiptext="&research-navigator.button.tooltip;"
+                   oncommand="ResearchNavigator.togglePanel();" />
+  </toolbarpalette>
+
+  <!-- 菜单项 -->
+  <menubar id="main-menubar">
+    <menu id="viewMenu">
+      <menupopup>
+        <menuitem id="research-navigator-menu-item"
+                  label="&research-navigator.menu.label;"
+                  type="checkbox"
+                  oncommand="ResearchNavigator.togglePanel();" />
+      </menupopup>
+    </menu>
+  </menubar>
+
+  <!-- 快捷键 -->
+  <keyset id="mainKeyset">
+    <key id="research-navigator-key"
+         key="H"
+         modifiers="accel,shift"
+         oncommand="ResearchNavigator.togglePanel();" />
+  </keyset>
+
+  <!-- 脚本 -->
+  <script type="application/javascript" src="chrome://research-navigator/content/index.js" />
+
+</overlay>

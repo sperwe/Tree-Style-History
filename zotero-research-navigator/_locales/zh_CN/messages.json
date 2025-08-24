@@ -1,0 +1,98 @@
+{
+  "addon_name": {
+    "message": "研究导航器",
+    "description": "插件名称"
+  },
+  "addon_description": {
+    "message": "Zotero 研究历史追踪和增强笔记导航插件",
+    "description": "插件描述"
+  },
+  "search_placeholder": {
+    "message": "搜索历史记录...",
+    "description": "搜索输入框占位符"
+  },
+  "access_history": {
+    "message": "访问历史",
+    "description": "访问历史面板标题"
+  },
+  "collapse_all": {
+    "message": "折叠全部",
+    "description": "折叠全部按钮提示"
+  },
+  "expand_all": {
+    "message": "展开全部",
+    "description": "展开全部按钮提示"
+  },
+  "item_preview": {
+    "message": "项目预览",
+    "description": "项目预览面板标题"
+  },
+  "open_item": {
+    "message": "打开项目",
+    "description": "打开项目按钮文本"
+  },
+  "view_details": {
+    "message": "查看详情",
+    "description": "查看详情按钮文本"
+  },
+  "no_history": {
+    "message": "暂无访问历史",
+    "description": "无历史记录时的空状态消息"
+  },
+  "no_matches": {
+    "message": "未找到匹配的记录",
+    "description": "搜索无结果时的空状态消息"
+  },
+  "type_label": {
+    "message": "类型：",
+    "description": "预览中项目类型的标签"
+  },
+  "access_count_label": {
+    "message": "访问次数：",
+    "description": "预览中访问次数的标签"
+  },
+  "last_accessed_label": {
+    "message": "最后访问：",
+    "description": "预览中最后访问时间的标签"
+  },
+  "time_today": {
+    "message": "今天",
+    "description": "今天的时间分组标签"
+  },
+  "time_yesterday": {
+    "message": "昨天",
+    "description": "昨天的时间分组标签"
+  },
+  "days_ago": {
+    "message": "{count}天前",
+    "description": "多天前的时间分组标签"
+  },
+  "item_type_literature": {
+    "message": "📖 文献条目",
+    "description": "文献条目的显示名称"
+  },
+  "item_type_note": {
+    "message": "📝 笔记",
+    "description": "笔记的显示名称"
+  },
+  "item_type_collection": {
+    "message": "📁 分类集合",
+    "description": "分类集合的显示名称"
+  },
+  "item_type_search": {
+    "message": "🔍 搜索结果",
+    "description": "搜索结果的显示名称"
+  },
+  "clear_history": {
+    "message": "清除历史",
+    "description": "清除所有历史的菜单项"
+  },
+  "clear_history_confirm": {
+    "message": "确定要清除所有研究导航器数据吗？",
+    "description": "清除历史的确认消息"
+  },
+  "toggle_panel": {
+    "message": "切换研究导航器面板",
+    "description": "工具栏按钮提示"
+  }
+}

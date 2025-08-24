@@ -1,0 +1,11 @@
+<!ENTITY research-navigator.button.label "Research Navigator">
+<!ENTITY research-navigator.button.tooltip "Toggle Research Navigator Panel">
+<!ENTITY research-navigator.menu.label "Research Navigator Panel">
+<!ENTITY research-navigator.panel.title "Research Navigator">
+<!ENTITY research-navigator.search.placeholder "Search history records...">
+<!ENTITY research-navigator.expand.all "Expand All">
+<!ENTITY research-navigator.collapse.all "Collapse All">
+<!ENTITY research-navigator.clear.history "Clear History">
+<!ENTITY research-navigator.open.item "Open Item">
+<!ENTITY research-navigator.no.history "No access history">
+<!ENTITY research-navigator.loading "Loading history records...">

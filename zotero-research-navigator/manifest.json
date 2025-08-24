@@ -1,0 +1,46 @@
+{
+  "manifest_version": 2,
+  "name": "__MSG_addon_name__",
+  "version": "1.0.0",
+  "description": "__MSG_addon_description__",
+  "homepage_url": "https://github.com/YOUR_USERNAME/zotero-research-navigator",
+  "author": "YOUR_NAME",
+  
+  "applications": {
+    "zotero": {
+      "id": "research-navigator@zotero.org",
+      "update_url": "https://github.com/YOUR_USERNAME/zotero-research-navigator/releases/latest/download/update.json",
+      "strict_min_version": "6.0.27",
+      "strict_max_version": "7.0.*"
+    }
+  },
+
+  "default_locale": "en",
+
+  "icons": {
+    "16": "chrome/content/icons/icon-16.png",
+    "32": "chrome/content/icons/icon-32.png",
+    "48": "chrome/content/icons/icon-48.png",
+    "96": "chrome/content/icons/icon-96.png"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["*://zotero.org/*"],
+      "js": ["chrome/content/scripts/content.js"]
+    }
+  ],
+
+  "background": {
+    "scripts": ["chrome/content/scripts/background.js"]
+  },
+
+  "options_ui": {
+    "page": "chrome/content/preferences.xhtml",
+    "open_in_tab": false
+  },
+
+  "permissions": [
+    "storage"
+  ]
+}
