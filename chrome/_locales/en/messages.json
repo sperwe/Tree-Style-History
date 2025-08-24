@@ -635,6 +635,12 @@
     "saveSelectionAsNote": {
         "message": "Save selection as note"
     },
+    "openFloatingNotes": {
+        "message": "Open floating notes manager"
+    },
+    "newQuickNote": {
+        "message": "Create quick note"
+    },
     "notesMergeMode": {
         "message": "Note merge mode"
     },
