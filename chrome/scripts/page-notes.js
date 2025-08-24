@@ -188,7 +188,32 @@
                 e.preventDefault();
                 openNoteManager('floating');
             }
-
+            // Ctrl+Shift+F 保存选中文本为笔记
+            if (e.ctrlKey && e.shiftKey && e.key === 'F') {
+                e.preventDefault();
+                const selectedText = window.getSelection().toString().trim();
+                if (selectedText) {
+                    console.log('[TST Notes] Saving selected text:', selectedText.substring(0, 50) + '...');
+                    // 使用右键菜单相同的方式保存
+                    chrome.runtime.sendMessage({
+                        action: 'saveSelectionAsNote',
+                        pageUrl: window.location.href,
+                        pageTitle: document.title,
+                        selectedText: selectedText
+                    }, (response) => {
+                        if (chrome.runtime.lastError) {
+                            console.error('[TST Notes] Runtime error:', chrome.runtime.lastError);
+                            showNotification('保存失败：扩展连接错误', 'error');
+                            return;
+                        }
+                        console.log('[TST Notes] Save response:', response);
+                        // 显示保存成功通知
+                        showNotification('选中文本已保存为笔记', 'success');
+                    });
+                } else {
+                    showNotification('请先选中要保存的文本', 'info');
+                }
+            }
             // Ctrl+Shift+T 打开笔记管理器（新标签页）
             if (e.ctrlKey && e.shiftKey && e.key === 'T') {
                 e.preventDefault();
@@ -4701,7 +4726,9 @@
     }
 
     // 全局键盘快捷键监听器 - 立即绑定
+    console.log('[TST Notes] Setting up global keyboard shortcuts...');
     document.addEventListener('keydown', (e) => {
+        console.log('[TST Notes] Key pressed:', e.key, 'Ctrl:', e.ctrlKey, 'Shift:', e.shiftKey, 'Alt:', e.altKey);
         // Ctrl+Shift+N 打开笔记管理器（浮动窗口）
         if (e.ctrlKey && e.shiftKey && e.key === 'N') {
             e.preventDefault();
