@@ -1250,12 +1250,30 @@
     }
 
     /**
-     * 在新标签页中打开笔记管理器
+     * 在新标签页中打开笔记管理器 - 通过background script
      */
     function openNoteManagerInTab() {
-        const url = chrome.runtime ? chrome.runtime.getURL('note-manager.html') : '/note-manager.html';
-        window.open(url, '_blank');
-        console.log('笔记管理器已在新标签页中打开');
+        if (chrome && chrome.runtime) {
+            // 通过background script创建新标签页（推荐方案）
+            chrome.runtime.sendMessage({
+                action: 'openNoteManager',
+                mode: 'tab'
+            }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error('通过background打开标签页失败:', chrome.runtime.lastError);
+                    showFloatingNotification('打开标签页失败，请重试', 'error');
+                } else if (response && response.success) {
+                    console.log('笔记管理器已在新标签页中打开');
+                    showFloatingNotification('笔记管理器已在新标签页中打开', 'success');
+                } else {
+                    console.error('Background响应错误:', response);
+                    showFloatingNotification('打开失败，请重试', 'error');
+                }
+            });
+        } else {
+            console.error('Chrome runtime不可用');
+            showFloatingNotification('浏览器环境不支持', 'error');
+        }
     }
 
     /**
