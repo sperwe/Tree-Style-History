@@ -2880,6 +2880,7 @@
         const editor = container.querySelector('#note-editor');
         const urlSpan = container.querySelector('#note-url');
         const datesSpan = container.querySelector('#note-dates');
+        const deleteBtn = container.querySelector('#delete-note');
         
         if (titleInput) titleInput.value = note.title || '';
         if (editor) editor.value = note.note || '';
@@ -2889,6 +2890,22 @@
             const updated = note.updatedAt ? new Date(note.updatedAt).toLocaleString() : '';
             datesSpan.textContent = `创建: ${created} | 更新: ${updated}`;
         }
+        
+        // 显示删除按钮
+        if (deleteBtn) deleteBtn.style.display = '';
+        
+        // 更新当前笔记变量
+        floatingCurrentNote = note;
+        
+        // 更新笔记项的选中状态
+        const noteItems = container.querySelectorAll('.note-item');
+        noteItems.forEach(item => {
+            if (item.dataset.noteId === note.id) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
         
         // 存储当前笔记ID用于保存
         container.dataset.currentNoteId = note.id || '';
