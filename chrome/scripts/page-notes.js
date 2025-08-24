@@ -2917,77 +2917,17 @@
         
         floatingCurrentNote = newNote;
         
-        // 显示编辑器区域
-        const editorHeader = container.querySelector('#floating-editor-header');
-        const editorContent = container.querySelector('#floating-editor-content');
+        // 清空并显示编辑器区域
+        const titleInput = container.querySelector('#note-title');
+        const editor = container.querySelector('#note-editor');
         
-        if (editorHeader) editorHeader.style.display = 'block';
-        if (editorContent) {
-            editorContent.innerHTML = `
-                <textarea id="floating-note-content" placeholder="开始编写笔记..." style="
-                    width: 100%;
-                    height: 100%;
-                    border: none;
-                    outline: none;
-                    resize: none;
-                    padding: 16px;
-                    font-family: inherit;
-                    font-size: 14px;
-                    line-height: 1.6;
-                "></textarea>
-                <div style="
-                    position: absolute;
-                    bottom: 16px;
-                    right: 16px;
-                    display: flex;
-                    gap: 8px;
-                ">
-                    <button id="save-current-note" style="
-                        padding: 8px 16px;
-                        background: #007bff;
-                        color: white;
-                        border: none;
-                        border-radius: 4px;
-                        cursor: pointer;
-                    ">💾 保存</button>
-                    <button id="cancel-new-note" style="
-                        padding: 8px 16px;
-                        background: #6c757d;
-                        color: white;
-                        border: none;
-                        border-radius: 4px;
-                        cursor: pointer;
-                    ">❌ 取消</button>
-                </div>
-            `;
-            
-            // 绑定事件
-            const saveBtn = editorContent.querySelector('#save-current-note');
-            const cancelBtn = editorContent.querySelector('#cancel-new-note');
-            
-            if (saveBtn) {
-                saveBtn.addEventListener('click', () => saveCurrentFloatingNote(container));
-            }
-            
-            if (cancelBtn) {
-                cancelBtn.addEventListener('click', () => {
-                    floatingCurrentNote = null;
-                    editorContent.innerHTML = `
-                        <div style="text-align: center; padding: 50px; color: #666;">
-                            <div style="font-size: 48px; margin-bottom: 16px;">📝</div>
-                            <div style="font-size: 18px; margin-bottom: 8px;">选择笔记开始编辑</div>
-                            <div style="font-size: 14px;">或点击"新建"创建新笔记</div>
-                        </div>
-                    `;
-                });
-            }
-            
-            // 聚焦到编辑器
-            const textarea = editorContent.querySelector('#floating-note-content');
-            if (textarea) {
-                textarea.focus();
-            }
+        if (titleInput) titleInput.value = '';
+        if (editor) {
+            editor.value = '';
+            editor.focus();
         }
+        
+        console.log('[Floating] 新建笔记准备完成');
         
         console.log('[Floating] 新笔记创建完成:', newNote.id);
     }
@@ -3047,8 +2987,8 @@
         }
         
         // 从编辑器获取数据
-        const titleInput = container.querySelector('#floating-note-title');
-        const textarea = container.querySelector('#floating-note-content');
+        const titleInput = container.querySelector('#note-title');
+        const textarea = container.querySelector('#note-editor');
         
         const title = titleInput ? titleInput.value.trim() : '';
         const content = textarea ? textarea.value.trim() : '';
@@ -3284,9 +3224,9 @@
         // 使用原有系统的数据结构
         floatingCurrentNote = note;
         
-        // 填充编辑器 - 确保使用正确的字段名
-        const titleInput = container.querySelector('#floating-note-title');
-        const textarea = container.querySelector('#floating-note-content');
+        // 填充编辑器 - 使用正确的元素ID
+        const titleInput = container.querySelector('#note-title');
+        const textarea = container.querySelector('#note-editor');
         
         if (titleInput) titleInput.value = note.title || '';
         if (textarea) textarea.value = note.note || note.content || '';
