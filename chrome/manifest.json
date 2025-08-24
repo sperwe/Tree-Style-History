@@ -50,35 +50,43 @@
   "commands": {
     "open_history2": {
       "suggested_key": {
-        "default": "Ctrl+Shift+H",
-        "windows": "Ctrl+Shift+H",
-        "mac": "Command+Shift+H"
+        "default": "Alt+Shift+H",
+        "windows": "Alt+Shift+H",
+        "mac": "Alt+Shift+H"
       },
       "description":"__MSG_treeOpen__"
     },
-    "open_history1": {
-        "suggested_key": {
-          "default": "Alt+Shift+H",
-          "windows": "Alt+Shift+H",
-          "mac": "Alt+Shift+H"
-        },
-        "description": "__MSG_showAllHistory__"
-      },
     "open_closed": {
-        "suggested_key": {
-          "default": "Alt+Shift+G",
-          "windows": "Alt+Shift+G",
-          "mac": "Alt+Shift+G"
-        },
-        "description": "__MSG_OpenClosedHistory__"
+      "suggested_key": {
+        "default": "Alt+Shift+G",
+        "windows": "Alt+Shift+G",
+        "mac": "Alt+Shift+G"
       },
-    "open_bookmark": {
-        "suggested_key": {
-          "default": "Alt+Shift+O",
-          "windows": "Alt+Shift+O",
-          "mac": "Alt+Shift+O"
-        },
-        "description": "__MSG_OpenBookMark__"
+      "description": "__MSG_OpenClosedHistory__"
+    },
+    "open_floating_notes": {
+      "suggested_key": {
+        "default": "Alt+Shift+N",
+        "windows": "Alt+Shift+N",
+        "mac": "Alt+Shift+N"
+      },
+      "description": "__MSG_openFloatingNotes__"
+    },
+    "save_selection_as_note": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "windows": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      },
+      "description": "__MSG_saveSelectionAsNote__"
+    },
+    "new_quick_note": {
+      "suggested_key": {
+        "default": "Alt+Shift+Q",
+        "windows": "Alt+Shift+Q",
+        "mac": "Alt+Shift+Q"
+      },
+      "description": "__MSG_newQuickNote__"
     }
   }
 }
