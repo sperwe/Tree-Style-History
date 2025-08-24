@@ -132,32 +132,53 @@
             }
         });
 
-        // 监听键盘事件
+        // 监听键盘事件（仅保留ESC关闭功能）
         document.addEventListener('keydown', (e) => {
-            // Ctrl+Shift+N 打开笔记管理器（浮动窗口）
-            if (e.ctrlKey && e.shiftKey && e.key === 'N') {
-                e.preventDefault();
-                openNoteManager('floating');
-            }
-            // Ctrl+Shift+F 打开笔记管理器（独立窗口）
-            if (e.ctrlKey && e.shiftKey && e.key === 'F') {
-                e.preventDefault();
-                openNoteManager('window');
-            }
-            // Ctrl+Shift+T 打开笔记管理器（新标签页）
-            if (e.ctrlKey && e.shiftKey && e.key === 'T') {
-                e.preventDefault();
-                openNoteManager('tab');
-            }
-            // Ctrl+Shift+Q 快速新建笔记
-            if (e.ctrlKey && e.shiftKey && e.key === 'Q') {
-                e.preventDefault();
-                openQuickNoteModal();
-            }
             // ESC 关闭上下文菜单
             if (e.key === 'Escape' && contextMenuVisible) {
                 hideContextMenu();
             }
+        });
+        
+        // 监听来自background的快捷键消息
+        chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+            console.log('[PageNotes] 收到快捷键消息:', request);
+            
+            switch(request.action) {
+                case "openFloatingNotesManager":
+                    openNoteManager('floating');
+                    sendResponse({success: true});
+                    break;
+                    
+                case "saveSelectedTextAsNote":
+                    const selectedText = window.getSelection().toString().trim();
+                    if (selectedText) {
+                        // 直接使用现有的saveSelectionAsNote函数
+                        chrome.runtime.sendMessage({
+                            action: 'saveSelectionAsNote',
+                            pageUrl: window.location.href,
+                            pageTitle: document.title,
+                            selectedText: selectedText
+                        }, (response) => {
+                            if (response && response.success) {
+                                showNotification('已保存选中文本为笔记', 'success');
+                            } else {
+                                showNotification('保存失败', 'error');
+                            }
+                        });
+                    } else {
+                        showNotification('请先选择一些文本', 'warning');
+                    }
+                    sendResponse({success: true});
+                    break;
+                    
+                case "openQuickNote":
+                    openQuickNoteModal();
+                    sendResponse({success: true});
+                    break;
+            }
+            
+            return true; // 保持消息通道开放
         });
 
         // 更新上下文菜单可见性状态的辅助函数
@@ -1074,22 +1095,22 @@
             {
                 text: '📝 新建笔记',
                 action: openQuickNoteModal,
-                shortcut: 'Ctrl+Shift+Q'
+                shortcut: 'Alt+Shift+Q'
             },
             {
                 text: '🎈 浮动笔记管理器',
                 action: () => openNoteManager('floating'),
-                shortcut: 'Ctrl+Shift+N'
+                shortcut: 'Alt+Shift+N'
             },
             {
                 text: '📚 笔记管理器 (独立窗口)',
                 action: () => openNoteManager('window'),
-                shortcut: 'Ctrl+Shift+F'
+                shortcut: ''
             },
             {
                 text: '📑 笔记管理器 (新标签页)',
                 action: () => openNoteManager('tab'),
-                shortcut: 'Ctrl+Shift+T'
+                shortcut: ''
             },
             {
                 text: '🔍 搜索笔记',
