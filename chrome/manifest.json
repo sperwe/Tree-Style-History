@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.9.0",
-  "version_name": "4.9.0 by sperwe - Floating Note Manager Complete Implementation",
+  "version": "4.9.1",
+  "version_name": "4.9.1 by sperwe - Enhanced Floating Manager + Tab Mode Support",
   "update_url": "https://edge.microsoft.com/extensionwebstorebase/v1/crx",
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.9.0: Complete Floating Note Manager - Full CRUD operations, search, tags, and database integration",
+  "description": "v4.9.1: Enhanced Floating Manager with Extension Context Recovery + Tab Mode for Independent Manager",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
