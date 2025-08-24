@@ -119,10 +119,9 @@ document.addEvent('domready', function () {
             // nm = note manager
             new Element('div', { 
                 id: 'nm-inject', 
-                html: '<div id="nm-inject-title" class="popup-title"><span>' + returnLang('noteManager') + '</span></div>' +
-                      '<div class="manager-buttons">' +
-                      '<button class="manager-btn icon-only" id="floating-manager-btn" title="' + returnLang('floatingManager') + '">📝</button>' +
-                      '<button class="manager-btn icon-only" id="tab-manager-btn" title="' + returnLang('tabManager') + '">📑</button>' +
+                html: '<div class="nm-container">' +
+                      '<button class="nm-btn floating" id="floating-manager-btn" title="' + returnLang('floatingManager') + '">📝</button>' +
+                      '<button class="nm-btn tab" id="tab-manager-btn" title="' + returnLang('tabManager') + '">📑</button>' +
                       '</div>'
             }).inject('popup-insert', 'bottom');
         }
@@ -179,8 +178,7 @@ document.addEvent('domready', function () {
                         chrome.tabs.sendMessage(tab.id, {action: 'openNoteManager', mode: 'floating'}, function(response) {
                             if (chrome.runtime.lastError) {
                                 console.error('Failed to send message:', chrome.runtime.lastError);
-                                // 如果content script未加载，在新标签页打开
-                                chrome.tabs.create({url: chrome.extension.getURL('note-manager.html')});
+                                // 不再自动降级到新标签页
                             }
                             window.close();
                         });

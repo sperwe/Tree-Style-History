@@ -325,51 +325,61 @@ input[type="text"] {
   color: #5C6166;
 }
 
-/* Note Manager Buttons */
-.manager-buttons {
-    display: flex;
-    gap: 6px;
-    padding: 6px 8px;
+/* Note Manager Container */
+#nm-inject {
+    margin-bottom: 8px;
 }
 
-.manager-btn {
-    flex: 1;
+.nm-container {
+    display: flex;
+    gap: 0;
+    padding: 0 8px 8px 8px;
+    justify-content: flex-start;
+}
+
+.nm-btn {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 20px;
+    transition: all 0.2s;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background: #f8f8f8;
-    cursor: pointer;
-    font-size: 13px;
-    font-family: inherit;
-    transition: all 0.2s;
+    opacity: 0.7;
 }
 
-.manager-btn.icon-only {
-    flex: 0 0 auto;
-    padding: 6px 10px;
-    font-size: 18px;
-    min-width: 36px;
+.nm-btn:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.05);
+    transform: scale(1.1);
 }
 
-.manager-btn:hover {
-    background: #e8e8e8;
-    border-color: #ccc;
+.nm-btn:active {
+    transform: scale(0.95);
 }
 
-.manager-btn:active {
-    background: #ddd;
+/* Add subtle animation */
+.nm-btn.floating:hover {
+    animation: float 0.3s ease-in-out;
 }
 
-.manager-btn .icon {
-    font-size: 16px;
+.nm-btn.tab:hover {
+    animation: slide 0.3s ease-in-out;
 }
 
-.manager-btn .text {
-    white-space: nowrap;
+@keyframes float {
+    0%, 100% { transform: translateY(0) scale(1.1); }
+    50% { transform: translateY(-2px) scale(1.1); }
+}
+
+@keyframes slide {
+    0%, 100% { transform: translateX(0) scale(1.1); }
+    50% { transform: translateX(2px) scale(1.1); }
 }
 
 
@@ -454,18 +464,12 @@ input[type="text"] {
     }
     
     /* Dark mode - Note Manager buttons */
-    .manager-btn {
-        background: #2a2a2a;
-        border-color: #444;
-        color: #e0e0e0;
+    .nm-btn {
+        opacity: 0.6;
     }
     
-    .manager-btn:hover {
-        background: #333;
-        border-color: #555;
-    }
-    
-    .manager-btn:active {
-        background: #3a3a3a;
+    .nm-btn:hover {
+        opacity: 1;
+        background: rgba(255, 255, 255, 0.1);
     }
 }
