@@ -153,8 +153,30 @@ document.addEvent('domready', function () {
     if ($('floating-manager-btn') != undefined)
         $('floating-manager-btn').addEvent('click', function () {
             chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-                chrome.tabs.sendMessage(tabs[0].id, {action: 'openNoteManager', mode: 'floating'});
-                window.close();
+                if (tabs && tabs.length > 0) {
+                    // 某些特殊页面（如chrome://或edge://）不能注入content script
+                    const tab = tabs[0];
+                    if (tab.url && (tab.url.startsWith('chrome://') || tab.url.startsWith('edge://') || 
+                        tab.url.startsWith('about:') || tab.url.startsWith('chrome-extension://'))) {
+                        // 特殊页面，直接在新标签页打开
+                        chrome.tabs.create({url: chrome.extension.getURL('note-manager.html')});
+                        window.close();
+                    } else {
+                        // 尝试发送消息到content script
+                        chrome.tabs.sendMessage(tab.id, {action: 'openNoteManager', mode: 'floating'}, function(response) {
+                            if (chrome.runtime.lastError) {
+                                console.error('Failed to send message:', chrome.runtime.lastError);
+                                // 如果content script未加载，在新标签页打开
+                                chrome.tabs.create({url: chrome.extension.getURL('note-manager.html')});
+                            }
+                            window.close();
+                        });
+                    }
+                } else {
+                    // 没有活动标签页，在新标签页打开
+                    chrome.tabs.create({url: chrome.extension.getURL('note-manager.html')});
+                    window.close();
+                }
             });
         });
 
