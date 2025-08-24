@@ -2822,6 +2822,34 @@
         // 标签选择器模态框事件
         bindFloatingTagSelectorEvents(container);
 
+        // 全选复选框
+        const selectAllCheckbox = container.querySelector('#select-all-notes');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', (e) => {
+                console.log('[Floating] 全选状态:', e.target.checked);
+                handleFloatingSelectAll(container, e.target.checked);
+            });
+        }
+
+        // 批量导出按钮
+        const batchExportBtn = container.querySelector('#batch-export');
+        if (batchExportBtn) {
+            batchExportBtn.addEventListener('click', () => {
+                console.log('[Floating] 批量导出');
+                handleFloatingBatchExport(container);
+            });
+        }
+
+        // 排序下拉框
+        const sortBy = container.querySelector('#sort-by');
+        if (sortBy) {
+            sortBy.addEventListener('change', (e) => {
+                console.log('[Floating] 排序方式:', e.target.value);
+                floatingFilters.sortBy = e.target.value;
+                applyFloatingFilters(container);
+            });
+        }
+
         console.log('[Floating] 事件绑定完成');
     }
 
@@ -2885,11 +2913,17 @@
         // 清除现有内容
         noteListEl.innerHTML = '';
         
+        // 清空选中状态
+        floatingSelectedNotes.clear();
+        
         // 渲染每个笔记项
         notes.forEach((note, index) => {
             const noteItem = createFloatingNoteItem(note, index);
             noteListEl.appendChild(noteItem);
         });
+        
+        // 更新选择UI
+        updateFloatingSelectionUI(container);
         
         console.log('[Floating] 笔记列表渲染完成');
     }
@@ -2909,22 +2943,38 @@
         const hostname = url ? new URL(url).hostname : '';
         
         noteItem.innerHTML = `
-            <div class="note-header">
-                <div class="note-title">${title}</div>
-                <div class="note-actions">
-                    <button class="note-action-btn" data-action="edit" title="编辑">✏️</button>
-                    <button class="note-action-btn" data-action="delete" title="删除">🗑️</button>
+            <input type="checkbox" class="note-checkbox" data-note-id="${note.id}">
+            <div class="note-content">
+                <div class="note-header">
+                    <div class="note-title">${title}</div>
+                    <div class="note-actions">
+                        <button class="note-action-btn" data-action="edit" title="编辑">✏️</button>
+                        <button class="note-action-btn" data-action="delete" title="删除">🗑️</button>
+                    </div>
                 </div>
-            </div>
-            <div class="note-preview">${content.substring(0, 100)}${content.length > 100 ? '...' : ''}</div>
-            <div class="note-meta">
-                <span class="note-date">${date}</span>
-                <span class="note-site">${hostname}</span>
+                <div class="note-preview">${content.substring(0, 100)}${content.length > 100 ? '...' : ''}</div>
+                <div class="note-meta">
+                    <span class="note-date">${date}</span>
+                    <span class="note-site">${hostname}</span>
+                </div>
             </div>
         `;
         
+        // 绑定复选框事件
+        const checkbox = noteItem.querySelector('.note-checkbox');
+        if (checkbox) {
+            checkbox.addEventListener('change', (e) => {
+                handleFloatingNoteSelection(container, note.id, e.target.checked);
+            });
+        }
+        
         // 绑定点击事件
         noteItem.addEventListener('click', async (e) => {
+            // 忽略复选框的点击
+            if (e.target.classList.contains('note-checkbox')) {
+                return;
+            }
+            
             const actionBtn = e.target.closest('.note-action-btn');
             const container = noteItem.closest('.floating-content-container');
             
@@ -3025,7 +3075,8 @@
     // 浮动管理器核心功能实现（复刻自独立管理器）
     let floatingNotes = [];
     let floatingCurrentNote = null;
-    let floatingFilters = { search: '', tag: '', date: '', site: '' };
+    let floatingFilters = { search: '', tag: '', date: '', site: '', sortBy: 'updated' };
+    let floatingSelectedNotes = new Set();  // 添加选中笔记集合
 
     /**
      * 创建新笔记 - 修复版本，与原有系统兼容
@@ -3693,6 +3744,113 @@
         const totalLength = titleLength + contentLength;
         
         wordCountEl.textContent = `${totalLength} 字符`;
+    }
+
+    /**
+     * 处理笔记选择
+     */
+    function handleFloatingNoteSelection(container, noteId, selected) {
+        if (selected) {
+            floatingSelectedNotes.add(noteId);
+        } else {
+            floatingSelectedNotes.delete(noteId);
+        }
+        
+        updateFloatingSelectionUI(container);
+    }
+
+    /**
+     * 处理全选
+     */
+    function handleFloatingSelectAll(container, selectAll) {
+        floatingSelectedNotes.clear();
+        
+        if (selectAll) {
+            // 将所有当前显示的笔记加入选中集合
+            const noteItems = container.querySelectorAll('.note-item');
+            noteItems.forEach(item => {
+                const noteId = item.dataset.noteId;
+                if (noteId) {
+                    floatingSelectedNotes.add(noteId);
+                }
+            });
+        }
+        
+        // 更新所有复选框状态
+        const checkboxes = container.querySelectorAll('.note-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAll;
+        });
+        
+        updateFloatingSelectionUI(container);
+    }
+
+    /**
+     * 更新选择UI
+     */
+    function updateFloatingSelectionUI(container) {
+        const selectedCount = container.querySelector('#selected-count');
+        const selectedNumber = container.querySelector('#selected-number');
+        const selectAllCheckbox = container.querySelector('#select-all-notes');
+        
+        if (selectedCount && selectedNumber) {
+            if (floatingSelectedNotes.size > 0) {
+                selectedCount.style.display = 'inline';
+                selectedNumber.textContent = floatingSelectedNotes.size;
+            } else {
+                selectedCount.style.display = 'none';
+            }
+        }
+        
+        // 更新全选复选框状态
+        if (selectAllCheckbox) {
+            const totalCheckboxes = container.querySelectorAll('.note-checkbox').length;
+            selectAllCheckbox.indeterminate = floatingSelectedNotes.size > 0 && 
+                                             floatingSelectedNotes.size < totalCheckboxes;
+            selectAllCheckbox.checked = floatingSelectedNotes.size === totalCheckboxes && 
+                                       totalCheckboxes > 0;
+        }
+    }
+
+    /**
+     * 处理批量导出
+     */
+    async function handleFloatingBatchExport(container) {
+        if (floatingSelectedNotes.size === 0) {
+            showFloatingNotification('请先选择要导出的笔记', 'warning');
+            return;
+        }
+        
+        // 获取选中的笔记
+        const selectedNotesArray = Array.from(floatingSelectedNotes);
+        const notesToExport = floatingNotes.filter(note => selectedNotesArray.includes(note.id));
+        
+        if (notesToExport.length === 0) {
+            showFloatingNotification('没有可导出的笔记', 'warning');
+            return;
+        }
+        
+        // 生成导出数据
+        const exportData = {
+            version: '1.0',
+            exportDate: new Date().toISOString(),
+            notes: notesToExport
+        };
+        
+        // 创建下载
+        const jsonStr = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `notes_export_${new Date().getTime()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showFloatingNotification(`已导出 ${notesToExport.length} 条笔记`, 'success');
     }
 
     /**
