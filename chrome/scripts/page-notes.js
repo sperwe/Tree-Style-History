@@ -2618,7 +2618,7 @@
             margin-right: 90px; /* 平衡左侧按钮的空间 */
             font-weight: 600;
             font-size: 14px;
-            color: #1d1d1f;
+            color: ${isDarkMode ? '#e8eaed' : '#1d1d1f'};
         `;
         titleBar.appendChild(titleText);
 
