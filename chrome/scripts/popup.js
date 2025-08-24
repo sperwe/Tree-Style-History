@@ -131,10 +131,8 @@ document.addEvent('domready', function () {
 
     if ($('show-all-history') != undefined)
         $('show-all-history').addEvent('click', function () {
-            if (localStorage['rm-click'] == 'this')
-                chromeURL('/history2.html');
-            else
-                chromeURL('chrome://history/');
+            // 总是打开树状历史页面
+            chromeURL('/history2.html');
         });
 
     if ($('show-all-bookmark') != undefined)
