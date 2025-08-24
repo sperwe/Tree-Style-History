@@ -354,7 +354,7 @@ var defaultValues = {
 	"load-range4": 150,
 	"less-item": "no",
 	"rh-search": "yes",
-	"rh-list-order": "rh-order,rct-order,rb-order,mv-order,rt-order,rn-order",
+	"rh-list-order": "rh-order,rct-order,rn-order,nm-order,rb-order,mv-order,rt-order",
 	"rh-time": "yes",
 	"rh-group": "yes",
 	"rh-orderby": "date",
@@ -436,6 +436,8 @@ function loadOptions(full) {
             new Element('li', { 'id': rhilo[lo], 'html': returnLang('recentTabs') }).inject('rhlistorder');
         } else if (rhilo[lo] == 'rn-order') {
             new Element('li', { 'id': rhilo[lo], 'html': returnLang('recentNotes') }).inject('rhlistorder');
+        } else if (rhilo[lo] == 'nm-order') {
+            new Element('li', { 'id': rhilo[lo], 'html': returnLang('noteManager') }).inject('rhlistorder');
         }
     }
 
