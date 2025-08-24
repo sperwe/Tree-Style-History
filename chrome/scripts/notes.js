@@ -936,10 +936,8 @@ document.addEvent('domready', function(){
 			});
 		}
 		
-		// Add placeholders for date inputs
-		if ($('delete-range-one')) $('delete-range-one').set('placeholder', '开始日期');
-		if ($('delete-range-two')) $('delete-range-two').set('placeholder', '结束日期');
-	}
-	
-	load();
+			// Add placeholders for date inputs
+	if ($('delete-range-one')) $('delete-range-one').set('placeholder', '开始日期');
+	if ($('delete-range-two')) $('delete-range-two').set('placeholder', '结束日期');
+}
 });
