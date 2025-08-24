@@ -354,7 +354,7 @@ var defaultValues = {
 	"load-range4": 150,
 	"less-item": "no",
 	"rh-search": "yes",
-	"rh-list-order": "rh-order,rct-order,rn-order,nm-order,rb-order,mv-order,rt-order",
+	"rh-list-order": "nm-order,rh-order,rct-order,rn-order,rb-order,mv-order,rt-order",
 	"rh-time": "yes",
 	"rh-group": "yes",
 	"rh-orderby": "date",

@@ -4784,6 +4784,20 @@
         }
     });
 
+    // 监听来自popup的消息
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        console.log('[TST Notes] Received message from popup:', request);
+        if (request.action === 'openNoteManager') {
+            if (request.mode === 'floating') {
+                openNoteManager('floating');
+            } else if (request.mode === 'tab') {
+                openNoteManager('tab');
+            }
+            sendResponse({success: true});
+        }
+        return true; // 保持消息通道开放
+    });
+
     // 启动初始化
     initialize();
 
