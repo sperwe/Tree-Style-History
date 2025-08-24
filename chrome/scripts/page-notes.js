@@ -2882,7 +2882,7 @@
     let floatingFilters = { search: '', tag: '', date: '', site: '' };
 
     /**
-     * 创建新笔记
+     * 创建新笔记 - 修复版本，与原有系统兼容
      */
     function createNewFloatingNote(container) {
         console.log('[Floating] 创建新笔记');
@@ -2899,18 +2899,77 @@
         
         floatingCurrentNote = newNote;
         
-        // 清空编辑器
-        const titleInput = container.querySelector('#floating-note-title');
-        const textarea = container.querySelector('#floating-note-content');
+        // 显示编辑器区域
+        const editorHeader = container.querySelector('#floating-editor-header');
+        const editorContent = container.querySelector('#floating-editor-content');
         
-        if (titleInput) titleInput.value = '';
-        if (textarea) textarea.value = '';
-        
-        // 显示保存和删除按钮
-        const saveBtn = container.querySelector('#save-note');
-        const deleteBtn = container.querySelector('#delete-note');
-        if (saveBtn) saveBtn.style.display = 'inline-block';
-        if (deleteBtn) deleteBtn.style.display = 'inline-block';
+        if (editorHeader) editorHeader.style.display = 'block';
+        if (editorContent) {
+            editorContent.innerHTML = `
+                <textarea id="floating-note-content" placeholder="开始编写笔记..." style="
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                    outline: none;
+                    resize: none;
+                    padding: 16px;
+                    font-family: inherit;
+                    font-size: 14px;
+                    line-height: 1.6;
+                "></textarea>
+                <div style="
+                    position: absolute;
+                    bottom: 16px;
+                    right: 16px;
+                    display: flex;
+                    gap: 8px;
+                ">
+                    <button id="save-current-note" style="
+                        padding: 8px 16px;
+                        background: #007bff;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    ">💾 保存</button>
+                    <button id="cancel-new-note" style="
+                        padding: 8px 16px;
+                        background: #6c757d;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    ">❌ 取消</button>
+                </div>
+            `;
+            
+            // 绑定事件
+            const saveBtn = editorContent.querySelector('#save-current-note');
+            const cancelBtn = editorContent.querySelector('#cancel-new-note');
+            
+            if (saveBtn) {
+                saveBtn.addEventListener('click', () => saveCurrentFloatingNote(container));
+            }
+            
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => {
+                    floatingCurrentNote = null;
+                    editorContent.innerHTML = `
+                        <div style="text-align: center; padding: 50px; color: #666;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">📝</div>
+                            <div style="font-size: 18px; margin-bottom: 8px;">选择笔记开始编辑</div>
+                            <div style="font-size: 14px;">或点击"新建"创建新笔记</div>
+                        </div>
+                    `;
+                });
+            }
+            
+            // 聚焦到编辑器
+            const textarea = editorContent.querySelector('#floating-note-content');
+            if (textarea) {
+                textarea.focus();
+            }
+        }
         
         console.log('[Floating] 新笔记创建完成:', newNote.id);
     }
@@ -2958,65 +3017,104 @@
     }
 
     /**
-     * 保存当前笔记
+     * 保存当前笔记 - 修复版本，与原有系统兼容
      */
     async function saveCurrentFloatingNote(container) {
         console.log('[Floating] 保存笔记');
         
         if (!floatingCurrentNote) {
             console.warn('[Floating] 没有要保存的笔记');
+            showFloatingNotification('请先选择一个笔记', 'warning');
             return;
         }
         
+        // 从编辑器获取数据
         const titleInput = container.querySelector('#floating-note-title');
         const textarea = container.querySelector('#floating-note-content');
-        const tagSelect = container.querySelector('input[name="category"]:checked');
-        const levelSelect = container.querySelector('input[name="level"]:checked');
         
-        // 收集数据
         const title = titleInput ? titleInput.value.trim() : '';
         const content = textarea ? textarea.value.trim() : '';
-        const category = tagSelect ? tagSelect.value : '';
-        const level = levelSelect ? levelSelect.value : '';
         
         if (!title && !content) {
             showFloatingNotification('请输入标题或内容', 'warning');
             return;
         }
         
-        // 构建标签
-        let tag = '';
-        if (category && level) {
-            tag = `${category}_${level}`;
-        }
-        
         // 更新笔记数据
-        floatingCurrentNote.title = title || '无标题';
-        floatingCurrentNote.note = content;
-        floatingCurrentNote.tag = tag;
-        floatingCurrentNote.updatedAt = new Date().toISOString();
+        const updatedNote = {
+            ...floatingCurrentNote,
+            title: title || generateNoteTitle('', content),
+            note: content,
+            updatedAt: new Date().toISOString()
+        };
         
         try {
-            // 保存到数据库
-            await saveFloatingNoteToDatabase(floatingCurrentNote);
+            // 使用增强错误处理的保存函数
+            await saveFloatingNoteToDatabase(updatedNote);
             
-            // 更新本地数据
-            const existingIndex = floatingNotes.findIndex(note => note.id === floatingCurrentNote.id);
+            // 更新原有系统的数据
+            const notes = window.floatingNotes || [];
+            const existingIndex = notes.findIndex(note => note.id === updatedNote.id);
             if (existingIndex >= 0) {
-                floatingNotes[existingIndex] = { ...floatingCurrentNote };
+                notes[existingIndex] = updatedNote;
             } else {
-                floatingNotes.push({ ...floatingCurrentNote });
+                notes.push(updatedNote);
             }
+            window.floatingNotes = notes;
             
-            // 重新渲染列表
-            renderFloatingNotesList(container, floatingNotes);
+            // 重新加载列表以保持数据一致性
+            await loadFloatingNotesList();
             
             showFloatingNotification('笔记保存成功', 'success');
-            console.log('[Floating] 笔记保存成功:', floatingCurrentNote.id);
+            console.log('[Floating] 笔记保存成功:', updatedNote.id);
             
         } catch (error) {
             console.error('[Floating] 保存失败:', error);
             showFloatingNotification('保存失败: ' + error.message, 'error');
+        }
+    }
+    
+    /**
+     * 删除当前笔记
+     */
+    async function deleteCurrentFloatingNote(container) {
+        if (!floatingCurrentNote) {
+            showFloatingNotification('请先选择一个笔记', 'warning');
+            return;
+        }
+        
+        if (!confirm('确定要删除这条笔记吗？')) {
+            return;
+        }
+        
+        try {
+            await deleteFloatingNote(floatingCurrentNote.id);
+            
+            // 更新原有系统的数据
+            const notes = window.floatingNotes || [];
+            window.floatingNotes = notes.filter(note => note.id !== floatingCurrentNote.id);
+            
+            // 重新加载列表
+            await loadFloatingNotesList();
+            
+            // 清空编辑器
+            const editorContent = container.querySelector('#floating-editor-content');
+            if (editorContent) {
+                editorContent.innerHTML = `
+                    <div style="text-align: center; padding: 50px; color: #666;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">📝</div>
+                        <div style="font-size: 18px; margin-bottom: 8px;">笔记已删除</div>
+                        <div style="font-size: 14px;">选择其他笔记或创建新笔记</div>
+                    </div>
+                `;
+            }
+            
+            floatingCurrentNote = null;
+            showFloatingNotification('笔记删除成功', 'success');
+            
+        } catch (error) {
+            console.error('[Floating] 删除失败:', error);
+            showFloatingNotification('删除失败: ' + error.message, 'error');
         }
     }
 
@@ -3141,76 +3239,7 @@
         });
     }
 
-    /**
-     * 渲染笔记列表
-     */
-    function renderFloatingNotesList(container, notes) {
-        const notesContainer = container.querySelector('#floating-notes-container');
-        if (!notesContainer) return;
 
-        if (notes.length === 0) {
-            notesContainer.innerHTML = '<div class="tst-floating-loading" style="text-align: center; padding: 20px; color: #666;">暂无笔记</div>';
-            return;
-        }
-
-        const notesList = notes.map(note => createFloatingNoteListItem(note)).join('');
-        notesContainer.innerHTML = notesList;
-        
-        // 绑定点击事件
-        notes.forEach(note => {
-            const noteElement = notesContainer.querySelector(`[data-note-id="${note.id}"]`);
-            if (noteElement) {
-                noteElement.addEventListener('click', () => selectFloatingNote(note.id, container));
-            }
-        });
-    }
-
-    /**
-     * 创建笔记列表项HTML
-     */
-    function createFloatingNoteListItem(note) {
-        const title = note.title || '无标题';
-        const preview = (note.note || '').substring(0, 100);
-        const time = new Date(note.updatedAt || note.createdAt).toLocaleString();
-        const tagIcon = getTagIcon(note.tag);
-        
-        return `
-            <div class="floating-note-item" data-note-id="${note.id}" style="
-                padding: 12px;
-                border-bottom: 1px solid #eee;
-                cursor: pointer;
-                transition: background-color 0.2s;
-            " onmouseover="this.style.backgroundColor='#f5f5f5'" onmouseout="this.style.backgroundColor='transparent'">
-                <div style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 4px;
-                ">
-                    <div style="
-                        font-weight: bold;
-                        font-size: 14px;
-                        color: #333;
-                        flex: 1;
-                        margin-right: 8px;
-                    ">${tagIcon} ${escapeHtml(title)}</div>
-                    <div style="
-                        font-size: 11px;
-                        color: #999;
-                        white-space: nowrap;
-                    ">${time.split(' ')[1] || time}</div>
-                </div>
-                <div style="
-                    font-size: 12px;
-                    color: #666;
-                    line-height: 1.4;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                ">${escapeHtml(preview)}</div>
-            </div>
-        `;
-    }
 
     /**
      * 获取标签图标
@@ -3224,22 +3253,27 @@
     }
 
     /**
-     * 选择笔记进行编辑
+     * 选择笔记进行编辑 - 修复版本，使用原有系统的数据
      */
     function selectFloatingNote(noteId, container) {
-        const note = floatingNotes.find(n => n.id === noteId);
-        if (!note) return;
+        const notes = window.floatingNotes || [];
+        const note = notes.find(n => n.id === noteId);
+        if (!note) {
+            console.warn('[Floating] 未找到笔记:', noteId);
+            return;
+        }
 
+        // 使用原有系统的数据结构
         floatingCurrentNote = note;
         
-        // 填充编辑器
+        // 填充编辑器 - 确保使用正确的字段名
         const titleInput = container.querySelector('#floating-note-title');
         const textarea = container.querySelector('#floating-note-content');
         
         if (titleInput) titleInput.value = note.title || '';
-        if (textarea) textarea.value = note.note || '';
+        if (textarea) textarea.value = note.note || note.content || '';
         
-        // 设置标签
+        // 设置标签（如果存在）
         if (note.tag) {
             const [category, level] = note.tag.split('_');
             const categoryRadio = container.querySelector(`input[name="category"][value="${category}"]`);
@@ -3248,13 +3282,64 @@
             if (levelRadio) levelRadio.checked = true;
         }
         
-        // 显示保存和删除按钮
-        const saveBtn = container.querySelector('#save-note');
-        const deleteBtn = container.querySelector('#delete-note');
-        if (saveBtn) saveBtn.style.display = 'inline-block';
-        if (deleteBtn) deleteBtn.style.display = 'inline-block';
+        // 显示编辑器区域
+        const editorHeader = container.querySelector('#floating-editor-header');
+        const editorContent = container.querySelector('#floating-editor-content');
         
-        console.log('[Floating] 选择笔记:', noteId);
+        if (editorHeader) editorHeader.style.display = 'block';
+        if (editorContent) {
+            editorContent.innerHTML = `
+                <textarea id="floating-note-content" placeholder="开始编写笔记..." style="
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                    outline: none;
+                    resize: none;
+                    padding: 16px;
+                    font-family: inherit;
+                    font-size: 14px;
+                    line-height: 1.6;
+                ">${note.note || note.content || ''}</textarea>
+                <div style="
+                    position: absolute;
+                    bottom: 16px;
+                    right: 16px;
+                    display: flex;
+                    gap: 8px;
+                ">
+                    <button id="save-current-note" style="
+                        padding: 8px 16px;
+                        background: #007bff;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    ">💾 保存</button>
+                    <button id="delete-current-note" style="
+                        padding: 8px 16px;
+                        background: #dc3545;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    ">🗑️ 删除</button>
+                </div>
+            `;
+            
+            // 绑定保存按钮事件
+            const saveBtn = editorContent.querySelector('#save-current-note');
+            const deleteBtn = editorContent.querySelector('#delete-current-note');
+            
+            if (saveBtn) {
+                saveBtn.addEventListener('click', () => saveCurrentFloatingNote(container));
+            }
+            
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', () => deleteCurrentFloatingNote(container));
+            }
+        }
+        
+        console.log('[Floating] 选择笔记:', noteId, note);
     }
 
     /**
@@ -3642,7 +3727,7 @@
         const newNoteBtn = container.querySelector('#floating-new-note');
         if (newNoteBtn) {
             newNoteBtn.addEventListener('click', () => {
-                createFloatingNewNote();
+                createNewFloatingNote(container);
             });
         }
 
@@ -3665,24 +3750,42 @@
 
             container.innerHTML = '<div class="tst-floating-loading" style="text-align: center; padding: 20px;">加载中...</div>';
 
-            // 从background获取笔记
+            // 从background获取笔记 - 增强错误处理版本
             const notes = await new Promise((resolve) => {
                 if (chrome && chrome.runtime) {
-                    chrome.runtime.sendMessage({
-                        action: 'getAllNotes'
-                    }, (response) => {
-                        if (chrome.runtime.lastError) {
-                            console.error('[TST Floating] Runtime错误:', chrome.runtime.lastError);
-                            resolve([]);
-                        } else if (response && response.success && response.notes) {
-                            resolve(response.notes);
-                        } else {
-                            console.warn('[TST Floating] 响应格式异常或无笔记:', response);
-                            resolve([]);
-                        }
-                    });
+                    try {
+                        chrome.runtime.sendMessage({
+                            action: 'getAllNotes'
+                        }, (response) => {
+                            if (chrome.runtime.lastError) {
+                                console.warn('[TST Floating] Extension context error, trying localStorage:', chrome.runtime.lastError);
+                                loadFromLocalStorage();
+                            } else if (response && response.success && response.notes) {
+                                console.log('[TST Floating] 从background加载到', response.notes.length, '条笔记');
+                                resolve(response.notes);
+                            } else {
+                                console.warn('[TST Floating] 响应格式异常，尝试localStorage:', response);
+                                loadFromLocalStorage();
+                            }
+                        });
+                    } catch (error) {
+                        console.warn('[TST Floating] Runtime调用异常，使用localStorage:', error);
+                        loadFromLocalStorage();
+                    }
                 } else {
-                    resolve([]);
+                    console.log('[TST Floating] Chrome runtime不可用，使用localStorage');
+                    loadFromLocalStorage();
+                }
+                
+                function loadFromLocalStorage() {
+                    try {
+                        const localNotes = JSON.parse(localStorage.getItem('tst_floating_notes') || '[]');
+                        console.log('[TST Floating] 从localStorage加载到', localNotes.length, '条笔记');
+                        resolve(localNotes);
+                    } catch (error) {
+                        console.error('[TST Floating] localStorage加载失败:', error);
+                        resolve([]);
+                    }
                 }
             });
 
