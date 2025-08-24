@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.9.13",
-  "version_name": "4.9.13 - 最近笔记页面添加笔记管理器按钮",
+  "version": "4.9.14",
+  "version_name": "4.9.14 - 最近笔记添加日期点击和范围筛选功能",
 
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.9.13: Added 'Notes Manager' button in Recent Notes page. Click to open notes manager in new tab.",
+  "description": "v4.9.14: Added date click filtering and date range filtering in Recent Notes. Click calendar days or use date range inputs.",
   "options_page": "options.html",
   "background": {
     "page": "background.html"
