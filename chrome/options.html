@@ -8,6 +8,7 @@
     <script type="text/javascript" src="scripts/options-rtl.js"></script>
     <script type="text/javascript" src="scripts/moo.js"></script>
     <script type="text/javascript" src="scripts/func.js"></script>
+    <script type="text/javascript" src="scripts/security/webdav-client.js"></script>
     <script type="text/javascript" src="scripts/options.js"></script>
 </head>
 
@@ -188,6 +189,52 @@
                         </td>
                     </tr>
                 </table>
+                
+                <!-- WebDAV 云备份设置 -->
+                <h3>云备份设置（坚果云 WebDAV）</h3>
+                <table>
+                    <tr>
+                        <td class="cell-left">
+                            <label for="webdav-username">账号（邮箱）</label>
+                        </td>
+                        <td class="cell-right">
+                            <input type="email" id="webdav-username" placeholder="your@email.com" style="width: 200px;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="cell-left">
+                            <label for="webdav-password">应用密码</label>
+                            <span class="help-tip" title="请使用坚果云的应用密码，而非登录密码">?</span>
+                        </td>
+                        <td class="cell-right">
+                            <input type="password" id="webdav-password" placeholder="应用密码" style="width: 200px;">
+                            <button type="button" id="webdav-test" class="button">测试连接</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="cell-left">
+                            <label for="webdav-auto-backup">自动备份</label>
+                        </td>
+                        <td class="cell-right">
+                            <input type="checkbox" id="webdav-auto-backup">
+                            <select id="webdav-backup-interval" style="margin-left: 10px;">
+                                <option value="daily">每日一次</option>
+                                <option value="weekly">每周一次</option>
+                                <option value="manual">仅手动备份</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="cell-left">
+                            <label>手动备份</label>
+                        </td>
+                        <td class="cell-right">
+                            <button type="button" id="webdav-backup-now" class="button">立即备份到云端</button>
+                            <span id="webdav-status" style="margin-left: 10px; color: #666;"></span>
+                        </td>
+                    </tr>
+                </table>
+                
                 <hr>
                 <h2 style="margin-top:0;" class="lang" data-lang-string="mainOptions"></h2>
                 <table>

@@ -256,3 +256,173 @@ function importNotesFromMarkdown(fileInput){
 		tx.onerror = function(){ alert(returnLang('importNotesFailed')); };
 	}
 }
+
+// WebDAV 云备份功能
+document.addEventListener('DOMContentLoaded', function() {
+	// 初始化 WebDAV 设置
+	initWebDAVSettings();
+	
+	// 测试连接按钮
+	const testBtn = document.getElementById('webdav-test');
+	if (testBtn) {
+		testBtn.addEventListener('click', testWebDAVConnection);
+	}
+	
+	// 立即备份按钮
+	const backupBtn = document.getElementById('webdav-backup-now');
+	if (backupBtn) {
+		backupBtn.addEventListener('click', backupToWebDAV);
+	}
+	
+	// 保存设置
+	const inputs = ['webdav-username', 'webdav-password', 'webdav-auto-backup', 'webdav-backup-interval'];
+	inputs.forEach(id => {
+		const element = document.getElementById(id);
+		if (element) {
+			element.addEventListener('change', saveWebDAVSettings);
+		}
+	});
+});
+
+// 初始化 WebDAV 设置
+function initWebDAVSettings() {
+	const settings = JSON.parse(localStorage.getItem('webdav-settings') || '{}');
+	
+	if (settings.username) {
+		document.getElementById('webdav-username').value = settings.username;
+	}
+	if (settings.password) {
+		document.getElementById('webdav-password').value = settings.password;
+	}
+	if (settings.autoBackup !== undefined) {
+		document.getElementById('webdav-auto-backup').checked = settings.autoBackup;
+	}
+	if (settings.interval) {
+		document.getElementById('webdav-backup-interval').value = settings.interval;
+	}
+}
+
+// 保存 WebDAV 设置
+function saveWebDAVSettings() {
+	const settings = {
+		username: document.getElementById('webdav-username').value,
+		password: document.getElementById('webdav-password').value,
+		autoBackup: document.getElementById('webdav-auto-backup').checked,
+		interval: document.getElementById('webdav-backup-interval').value
+	};
+	
+	localStorage.setItem('webdav-settings', JSON.stringify(settings));
+	
+	// 通知 background script 更新自动备份
+	if (chrome.runtime && chrome.runtime.sendMessage) {
+		chrome.runtime.sendMessage({
+			action: 'updateWebDAVSettings',
+			settings: settings
+		});
+	}
+}
+
+// 测试 WebDAV 连接
+async function testWebDAVConnection() {
+	const statusEl = document.getElementById('webdav-status');
+	const username = document.getElementById('webdav-username').value;
+	const password = document.getElementById('webdav-password').value;
+	
+	if (!username || !password) {
+		statusEl.textContent = '请填写账号和密码';
+		statusEl.style.color = '#f00';
+		return;
+	}
+	
+	statusEl.textContent = '测试中...';
+	statusEl.style.color = '#666';
+	
+	try {
+		const client = new WebDAVClient({
+			username: username,
+			password: password
+		});
+		
+		const success = await client.testConnection();
+		
+		if (success) {
+			statusEl.textContent = '✓ 连接成功';
+			statusEl.style.color = '#0a0';
+		} else {
+			statusEl.textContent = '✗ 连接失败，请检查账号密码';
+			statusEl.style.color = '#f00';
+		}
+	} catch (error) {
+		statusEl.textContent = '✗ 连接错误：' + error.message;
+		statusEl.style.color = '#f00';
+	}
+}
+
+// 备份到 WebDAV
+async function backupToWebDAV() {
+	const statusEl = document.getElementById('webdav-status');
+	const username = document.getElementById('webdav-username').value;
+	const password = document.getElementById('webdav-password').value;
+	
+	if (!username || !password) {
+		statusEl.textContent = '请先配置账号密码';
+		statusEl.style.color = '#f00';
+		return;
+	}
+	
+	statusEl.textContent = '备份中...';
+	statusEl.style.color = '#666';
+	
+	try {
+		// 获取所有笔记
+		const bg = chrome.extension.getBackgroundPage();
+		const db = bg && bg.db;
+		
+		if (!db) {
+			throw new Error('数据库未初始化');
+		}
+		
+		// 从数据库获取笔记
+		const tx = db.transaction(['VisitNote'], 'readonly');
+		const store = tx.objectStore('VisitNote');
+		const request = store.getAll();
+		
+		request.onsuccess = async function() {
+			const notes = request.result || [];
+			
+			// 准备备份数据
+			const backupData = {
+				version: '1.0',
+				timestamp: new Date().toISOString(),
+				notesCount: notes.length,
+				notes: notes
+			};
+			
+			// 创建 WebDAV 客户端
+			const client = new WebDAVClient({
+				username: username,
+				password: password
+			});
+			
+			// 执行备份
+			const result = await client.autoBackup(backupData);
+			
+			if (result.success) {
+				statusEl.textContent = `✓ 备份成功（${notes.length}条笔记）`;
+				statusEl.style.color = '#0a0';
+			} else {
+				statusEl.textContent = '✗ 备份失败：' + result.error;
+				statusEl.style.color = '#f00';
+			}
+		};
+		
+		request.onerror = function() {
+			statusEl.textContent = '✗ 读取笔记失败';
+			statusEl.style.color = '#f00';
+		};
+		
+	} catch (error) {
+		statusEl.textContent = '✗ 备份错误：' + error.message;
+		statusEl.style.color = '#f00';
+	}
+}
