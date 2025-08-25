@@ -1924,6 +1924,7 @@
                 flex: 1;
                 overflow: hidden;
                 background: #ffffff;
+                height: 100%;
             }
             
             /* 左侧笔记列表面板 - macOS侧边栏风格 */
@@ -1939,6 +1940,7 @@
                 flex-direction: column;
                 resize: horizontal;
                 overflow: hidden;
+                height: 100%;
             }
             
             #tst-floating-note-manager .list-header {
@@ -3114,8 +3116,8 @@
                 floatingNotes = response.notes;
                 // 填充网站过滤器
                 populateFloatingSiteFilter(container);
-                // 渲染笔记列表
-                renderFloatingNotesList(container, response.notes);
+                // 应用过滤器（包括默认排序）
+                applyFloatingFilters(container);
             } else {
                 // 显示空状态
                 if (emptyStateEl) emptyStateEl.style.display = 'block';

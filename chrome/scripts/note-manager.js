@@ -57,9 +57,6 @@ class NoteManager {
             // 绑定事件
             this.bindEvents();
             
-            // 渲染界面
-            this.render();
-            
             // 填充网站过滤器
             this.populateSiteFilter();
             
@@ -68,6 +65,9 @@ class NoteManager {
             if (sortBySelect) {
                 sortBySelect.value = this.sortBy;
             }
+            
+            // 应用过滤器（包括排序）
+            this.applyFilters();
             
             this.isInitialized = true;
             console.info('笔记管理器初始化完成', { notesCount: this.notes.length });
