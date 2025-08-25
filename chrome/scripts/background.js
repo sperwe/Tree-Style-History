@@ -971,6 +971,23 @@ chrome.contextMenus.removeAll(() => {
                 if (!selectedText) return;
                 saveSelectionAsNote(pageUrl, selectedText);
             }
+            // Handle search notes for this site
+            else if (info.menuItemId === 'tsh_search_site_notes') {
+                let url = info.linkUrl || info.pageUrl;
+                if (url) {
+                    // Extract the hostname from the URL
+                    try {
+                        const urlObj = new URL(url);
+                        const hostname = urlObj.hostname;
+                        // Open notes page with the hostname as a search parameter
+                        chrome.tabs.create({ 
+                            url: chrome.runtime.getURL('notes.html') + '?site=' + encodeURIComponent(hostname)
+                        });
+                    } catch (e) {
+                        console.error('Invalid URL:', url, e);
+                    }
+                }
+            }
         });
     }
 
@@ -982,6 +999,15 @@ chrome.contextMenus.removeAll(() => {
             contexts: ['selection']
         });
     } catch(e) { console.log('contextMenus create selection failed', e); }
+    
+    // Add: search notes for this site
+    try {
+        chrome.contextMenus.create({
+            id: 'tsh_search_site_notes',
+            title: returnLang('searchSiteNotes'),
+            contexts: ['link', 'page']
+        });
+    } catch(e) { console.log('contextMenus create search site notes failed', e); }
 });
 
 function saveSelectionAsNote(pageUrl, selectedText){
