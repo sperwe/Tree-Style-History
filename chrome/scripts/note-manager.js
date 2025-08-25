@@ -517,7 +517,18 @@ class NoteManager {
         }
 
         return notes.filter(note => {
-            const noteDate = new Date(note.updatedAt || note.createdAt);
+            // 处理不同的日期格式
+            let dateValue = note.updatedAt || note.createdAt;
+            if (!dateValue) return false;
+            
+            // 如果是数字（时间戳），直接使用；如果是字符串，转换为Date
+            const noteDate = typeof dateValue === 'number' 
+                ? new Date(dateValue) 
+                : new Date(dateValue);
+            
+            // 检查日期是否有效
+            if (isNaN(noteDate.getTime())) return false;
+            
             return noteDate >= startDate;
         });
     }
@@ -531,9 +542,15 @@ class NoteManager {
                 case 'priority':
                     return this.getTagPriority(b.tag) - this.getTagPriority(a.tag);
                 case 'updated':
-                    return new Date(b.updatedAt) - new Date(a.updatedAt);
+                    // 处理不同的日期格式
+                    const dateA_updated = a.updatedAt || a.createdAt || 0;
+                    const dateB_updated = b.updatedAt || b.createdAt || 0;
+                    return new Date(dateB_updated).getTime() - new Date(dateA_updated).getTime();
                 case 'created':
-                    return new Date(b.createdAt) - new Date(a.createdAt);
+                    // 处理不同的日期格式
+                    const dateA_created = a.createdAt || a.updatedAt || 0;
+                    const dateB_created = b.createdAt || b.updatedAt || 0;
+                    return new Date(dateB_created).getTime() - new Date(dateA_created).getTime();
                 case 'title':
                     return (a.title || '').localeCompare(b.title || '');
                 case 'site':
