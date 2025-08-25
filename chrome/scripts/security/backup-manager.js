@@ -17,7 +17,10 @@ class BackupManager {
         JSON: 'json',
         MARKDOWN: 'markdown',
         CSV: 'csv',
-        HTML: 'html'
+        HTML: 'html',
+        ZOTERO_RDF: 'zotero_rdf',    // Zotero RDF 格式
+        BIBTEX: 'bibtex',            // BibTeX 格式（Zotero也支持）
+        RIS: 'ris'                   // RIS 格式（Reference Manager）
     };
 
     /**
@@ -168,6 +171,24 @@ class BackupManager {
                     content = this.convertToHTML(backup);
                     mimeType = 'text/html';
                     filename = `notes-backup-${this.formatTimestamp(backup.timestamp)}.html`;
+                    break;
+
+                case this.EXPORT_FORMATS.ZOTERO_RDF:
+                    content = this.convertToZoteroRDF(backup);
+                    mimeType = 'application/rdf+xml';
+                    filename = `notes-zotero-${this.formatTimestamp(backup.timestamp)}.rdf`;
+                    break;
+
+                case this.EXPORT_FORMATS.BIBTEX:
+                    content = this.convertToBibTeX(backup);
+                    mimeType = 'application/x-bibtex';
+                    filename = `notes-bibtex-${this.formatTimestamp(backup.timestamp)}.bib`;
+                    break;
+
+                case this.EXPORT_FORMATS.RIS:
+                    content = this.convertToRIS(backup);
+                    mimeType = 'application/x-research-info-systems';
+                    filename = `notes-ris-${this.formatTimestamp(backup.timestamp)}.ris`;
                     break;
 
                 default:
@@ -608,23 +629,152 @@ class BackupManager {
     }
 
     /**
+     * 转换为 Zotero RDF 格式
+     * @param {Object} backup - 备份数据
+     * @returns {string} RDF 格式内容
+     */
+    static convertToZoteroRDF(backup) {
+        let rdf = `<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:z="http://www.zotero.org/namespaces/export#"
+         xmlns:dc="http://purl.org/dc/elements/1.1/"
+         xmlns:dcterms="http://purl.org/dc/terms/">`;
+
+        backup.notes.forEach((note, index) => {
+            const itemId = `item_${index + 1}`;
+            const noteDate = new Date(note.updatedAt || note.createdAt);
+            
+            rdf += `
+    <z:Item rdf:about="#${itemId}">
+        <z:itemType>webpage</z:itemType>
+        <dc:title>${this.escapeXML(note.title || '无标题笔记')}</dc:title>
+        <z:url>${this.escapeXML(note.url)}</z:url>
+        <dc:date>${noteDate.toISOString()}</dc:date>
+        <z:accessDate>${noteDate.toISOString()}</z:accessDate>
+        <dcterms:abstract>${this.escapeXML(note.note)}</dcterms:abstract>`;
+            
+            // 添加标签
+            const tagName = this.getTagDisplayName(note.tag);
+            if (tagName) {
+                rdf += `
+        <z:tags>
+            <rdf:Seq>
+                <rdf:li>${this.escapeXML(tagName)}</rdf:li>
+            </rdf:Seq>
+        </z:tags>`;
+            }
+            
+            rdf += `
+    </z:Item>`;
+        });
+        
+        rdf += `
+</rdf:RDF>`;
+        
+        return rdf;
+    }
+
+    /**
+     * 转换为 BibTeX 格式
+     * @param {Object} backup - 备份数据
+     * @returns {string} BibTeX 格式内容
+     */
+    static convertToBibTeX(backup) {
+        let bibtex = '';
+        
+        backup.notes.forEach((note, index) => {
+            const noteDate = new Date(note.updatedAt || note.createdAt);
+            const year = noteDate.getFullYear();
+            const month = noteDate.getMonth() + 1;
+            
+            // 生成引用键
+            const citeKey = `tsh_note_${year}_${index + 1}`;
+            
+            bibtex += `@misc{${citeKey},
+  title = {${this.escapeBibTeX(note.title || '无标题笔记')}},
+  author = {Tree Style History},
+  year = {${year}},
+  month = {${month}},
+  url = {${note.url}},
+  note = {${this.escapeBibTeX(note.note)}},
+  keywords = {${this.getTagDisplayName(note.tag) || 'web-note'}}
+}
+
+`;
+        });
+        
+        return bibtex;
+    }
+
+    /**
+     * 转换为 RIS 格式
+     * @param {Object} backup - 备份数据
+     * @returns {string} RIS 格式内容
+     */
+    static convertToRIS(backup) {
+        let ris = '';
+        
+        backup.notes.forEach(note => {
+            const noteDate = new Date(note.updatedAt || note.createdAt);
+            
+            ris += `TY  - ELEC
+T1  - ${note.title || '无标题笔记'}
+AU  - Tree Style History
+PY  - ${noteDate.getFullYear()}
+DA  - ${noteDate.toISOString().split('T')[0]}
+UR  - ${note.url}
+N1  - ${note.note.replace(/\n/g, ' ')}
+KW  - ${this.getTagDisplayName(note.tag) || 'web-note'}
+ER  - 
+
+`;
+        });
+        
+        return ris;
+    }
+
+    /**
+     * 转义 XML 特殊字符
+     */
+    static escapeXML(str) {
+        if (!str) return '';
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
+    }
+
+    /**
+     * 转义 BibTeX 特殊字符
+     */
+    static escapeBibTeX(str) {
+        if (!str) return '';
+        return str
+            .replace(/\\/g, '\\textbackslash{}')
+            .replace(/[{}]/g, m => '\\' + m)
+            .replace(/[#$%&_]/g, m => '\\' + m)
+            .replace(/\^/g, '\\textasciicircum{}')
+            .replace(/~/g, '\\textasciitilde{}');
+    }
+
+    /**
      * 获取标签显示名称
-     * @param {string} tag - 标签值
-     * @returns {string} 显示名称
      */
     static getTagDisplayName(tag) {
         const tagMap = {
-            'important_very': '🔥 非常重要',
-            'important_somewhat': '🔥 比较重要',
-            'important_general': '🔥 一般重要',
-            'interesting_very': '💡 非常有趣',
-            'interesting_somewhat': '💡 比较有趣',
-            'interesting_general': '💡 一般有趣',
-            'needed_very': '⚡ 非常需要',
-            'needed_somewhat': '⚡ 比较需要',
-            'needed_general': '⚡ 一般需要'
+            'important_very': '非常重要',
+            'important_somewhat': '比较重要',
+            'important_general': '一般重要',
+            'interesting_very': '非常有趣',
+            'interesting_somewhat': '比较有趣',
+            'interesting_general': '一般有趣',
+            'needed_very': '非常需要',
+            'needed_somewhat': '比较需要',
+            'needed_general': '一般需要'
         };
-        return tagMap[tag] || '无标签';
+        return tagMap[tag] || tag;
     }
 
     /**
