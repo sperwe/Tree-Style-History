@@ -359,6 +359,9 @@
     "searchSite": {
         "message": "Search history in this site"
     },
+    "searchSiteNotes": {
+        "message": "Search notes for this site"
+    },
     "plsInputUrl": {
         "message": "Please input right URL"
     },

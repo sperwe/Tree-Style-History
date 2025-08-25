@@ -374,6 +374,9 @@
     "searchSite": {
         "message": "搜索此网站的浏览记录"
     },
+    "searchSiteNotes": {
+        "message": "搜索此网站的笔记"
+    },
     "plsInputUrl": {
         "message": "请输入正确的域名"
     },

@@ -11,6 +11,17 @@ document.addEvent('domready', function(){
 	var currentSearchQuery = '';
 	var dataLoaded = false; // Flag to prevent rendering before data is loaded
 	
+	// Check for site parameter in URL
+	var urlParams = new URLSearchParams(window.location.search);
+	var siteFilter = urlParams.get('site');
+	if (siteFilter) {
+		// Set the initial search query to the site hostname
+		currentSearchQuery = siteFilter;
+		// Update search boxes with the site filter
+		if (searchEl) searchEl.set('value', siteFilter);
+		if ($('rh-search')) $('rh-search').set('value', siteFilter);
+	}
+	
 	// Initialize calendar and search functionality
 	initializeDateFilter();
 	initializeSearch();
@@ -452,8 +463,12 @@ document.addEvent('domready', function(){
 				dataLoaded = true;
 				// Update calendar with note counts
 				renderNotesCalendar();
-				// Show all notes initially (no filters)
-				render(all); 
+				// Show all notes initially (no filters) or apply filters if present
+				if (currentSearchQuery) {
+					applyFilters();
+				} else {
+					render(all);
+				} 
 				return; 
 			}
 			var n=list[i++];
