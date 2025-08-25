@@ -1726,6 +1726,7 @@
                 display: flex;
                 flex-direction: column;
                 height: 100%;
+                min-height: 0; /* 重要：允许flex子元素收缩 */
                 background: #ffffff;
                 font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Helvetica, Arial, sans-serif;
                 line-height: 1.47;
@@ -1922,9 +1923,9 @@
             #tst-floating-note-manager .main-content {
                 display: flex;
                 flex: 1;
+                min-height: 0; /* 重要：允许flex子元素收缩 */
                 overflow: hidden;
                 background: #ffffff;
-                height: 100%;
             }
             
             /* 左侧笔记列表面板 - macOS侧边栏风格 */
@@ -1940,7 +1941,7 @@
                 flex-direction: column;
                 resize: horizontal;
                 overflow: hidden;
-                height: 100%;
+                min-height: 0; /* 重要：允许flex子元素收缩 */
             }
             
             #tst-floating-note-manager .list-header {
@@ -1980,6 +1981,8 @@
                 flex: 1;
                 overflow-y: auto;
                 overflow-x: hidden;
+                min-height: 0; /* 重要：允许flex子元素收缩 */
+                -webkit-overflow-scrolling: touch; /* 改善移动端滚动 */
             }
             
             #tst-floating-note-manager .note-item {
