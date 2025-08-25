@@ -168,23 +168,28 @@ document.addEvent('domready', function(){
             var searchStr = location.search;
 
             if(searchStr.length>1){
-                //由于searchStr属性值包括“?”，所以除去该字符
-                console.log("searchStr"+searchStr);
-                let site=new URI(searchStr.substr(1)).get('host');
-                if(site != undefined ){
-                    searchStr = site.split('?')[0];
-                    if(searchStr.length>0){
-                           $('rh-what').set('value',"all");
-//                         $('rh-what').getSelected().get('value');
-//                             $jq('#rh-what').val("current");
-                                $("rh-search").set('value',searchStr);
-                                history('search', searchStr);
+                //由于searchStr属性值包括"?"，所以除去该字符
+                try {
+                    console.log("searchStr: " + searchStr);
+                    // 先解码URL参数
+                    let decodedUrl = decodeURIComponent(searchStr.substr(1));
+                    let site = new URI(decodedUrl).get('host');
+                    if(site != undefined ){
+                        searchStr = site.split('?')[0];
+                        if(searchStr.length>0){
+                            $('rh-what').set('value',"all");
+                            $("rh-search").set('value',searchStr);
+                            history('search', searchStr);
+                        }
+                    }else{
+                        searchStr='';
                     }
-                }else{
-                 searchStr='';
-                 }
+                } catch(e) {
+                    console.error('Error parsing URL:', e);
+                    searchStr='';
+                }
             }else{
-                searchStr-'';
+                searchStr='';
             }
 
             if(searchStr=='')

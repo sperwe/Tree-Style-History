@@ -2,13 +2,13 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.9.26",
-  "version_name": "4.9.26 - 修复深色模式标题文字颜色",
+  "version": "4.9.27",
+  "version_name": "4.9.27 - 修复右键菜单查询浏览历史跳转问题",
 
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
   "default_locale": "en",
-  "description": "v4.9.26: Fixed floating window title text color to be visible in dark mode (white text on dark background).",
+  "description": "v4.9.27: Fixed context menu browsing history navigation issue by using chrome.tabs.create API and proper URL encoding.",
   "options_page": "options.html",
   "background": {
     "page": "background.html"

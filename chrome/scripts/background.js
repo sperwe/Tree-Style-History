@@ -324,13 +324,13 @@ defaultConfig(false);
 chrome.commands.onCommand.addListener(function (command) {
     console.log('Command:', command);
     if (command == "open_history2") {
-        window.open("history2.html");
+        chrome.tabs.create({ url: chrome.runtime.getURL("history2.html") });
     } else if (command == "open_history1") {
-        window.open("history.html");
+        chrome.tabs.create({ url: chrome.runtime.getURL("history.html") });
     } else if (command == "open_closed") {
-        window.open("closed.html");
+        chrome.tabs.create({ url: chrome.runtime.getURL("closed.html") });
     } else if (command == "open_bookmark") {
-        window.open("bookmark.html");
+        chrome.tabs.create({ url: chrome.runtime.getURL("bookmark.html") });
     }
 });
 
@@ -952,11 +952,15 @@ chrome.contextMenus.removeAll(() => {
             if (info.menuItemId === options.id) {
                 let url = info.linkUrl;
                 if (url != undefined) {
-                    window.open('history.html?' + url);
+                    chrome.tabs.create({ 
+                        url: chrome.runtime.getURL('history.html') + '?' + encodeURIComponent(url)
+                    });
                 } else {
                     url = info.pageUrl;
                     if (url != undefined) {
-                        window.open('history.html?' + url);
+                        chrome.tabs.create({ 
+                            url: chrome.runtime.getURL('history.html') + '?' + encodeURIComponent(url)
+                        });
                     }
                 }
             }
