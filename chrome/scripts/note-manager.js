@@ -35,7 +35,7 @@ class NoteManager {
         };
 
         // 当前排序方式
-        this.sortBy = 'priority'; // priority, updated, created, title, site
+        this.sortBy = 'updated'; // priority, updated, created, title, site
 
         // 初始化
         this.init();
@@ -62,6 +62,12 @@ class NoteManager {
             
             // 填充网站过滤器
             this.populateSiteFilter();
+            
+            // 设置排序下拉框的默认值
+            const sortBySelect = document.getElementById('sort-by');
+            if (sortBySelect) {
+                sortBySelect.value = this.sortBy;
+            }
             
             this.isInitialized = true;
             console.info('笔记管理器初始化完成', { notesCount: this.notes.length });

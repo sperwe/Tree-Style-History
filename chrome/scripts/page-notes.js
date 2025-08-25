@@ -2861,6 +2861,12 @@
     function initializeNoteManagerCore(container) {
         console.log('[Floating] 开始初始化核心功能...');
         
+        // 设置排序下拉框的默认值
+        const sortBySelect = container.querySelector('#sort-by');
+        if (sortBySelect) {
+            sortBySelect.value = floatingFilters.sortBy; // 设置为 'updated'
+        }
+        
         // 绑定所有按钮事件
         bindFloatingWindowEvents(container);
         
