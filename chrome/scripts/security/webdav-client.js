@@ -21,7 +21,8 @@ class WebDAVClient {
      */
     async testConnection() {
         try {
-            const response = await fetch(this.server + this.basePath, {
+            // 测试根目录访问权限
+            const response = await fetch(this.server + '/', {
                 method: 'PROPFIND',
                 headers: {
                     'Authorization': this.authHeader,
@@ -32,9 +33,6 @@ class WebDAVClient {
             if (response.status === 207 || response.status === 200) {
                 console.log('[WebDAV] 连接测试成功');
                 return true;
-            } else if (response.status === 404) {
-                // 目录不存在，尝试创建
-                return await this.createDirectory(this.basePath);
             } else if (response.status === 401) {
                 console.error('[WebDAV] 认证失败，请检查用户名和密码');
                 return false;
@@ -55,7 +53,23 @@ class WebDAVClient {
      */
     async createDirectory(path) {
         try {
-            // 首先尝试创建目录
+            console.log('[WebDAV] 尝试创建目录:', path);
+            
+            // 首先检查目录是否已存在
+            const checkResponse = await fetch(this.server + path, {
+                method: 'PROPFIND',
+                headers: {
+                    'Authorization': this.authHeader,
+                    'Depth': '0'
+                }
+            });
+            
+            if (checkResponse.status === 207 || checkResponse.status === 200) {
+                console.log('[WebDAV] 目录已存在:', path);
+                return true;
+            }
+            
+            // 尝试创建目录
             const response = await fetch(this.server + path, {
                 method: 'MKCOL',
                 headers: {
@@ -64,11 +78,13 @@ class WebDAVClient {
             });
             
             if (response.status === 201 || response.status === 200) {
+                console.log('[WebDAV] 目录创建成功:', path);
                 return true;
             } else if (response.status === 409) {
                 // 409 表示父目录不存在，递归创建父目录
                 const parentPath = path.substring(0, path.lastIndexOf('/', path.length - 2) + 1);
                 if (parentPath && parentPath !== '/' && parentPath !== path) {
+                    console.log('[WebDAV] 先创建父目录:', parentPath);
                     await this.createDirectory(parentPath);
                     // 再次尝试创建当前目录
                     const retryResponse = await fetch(this.server + path, {
@@ -81,9 +97,10 @@ class WebDAVClient {
                 }
             }
             
+            console.error('[WebDAV] 创建目录失败，状态码:', response.status);
             return false;
         } catch (error) {
-            console.error('[WebDAV] 创建目录失败:', error);
+            console.error('[WebDAV] 创建目录异常:', error);
             return false;
         }
     }
@@ -252,13 +269,12 @@ class WebDAVClient {
         try {
             // 生成文件名
             const date = new Date();
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const dateStr = `${year}-${month}-${day}`;
+            const dateStr = date.toISOString().split('T')[0];
             const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '-');
             const folder = `auto-backups/${dateStr}/`;
             const filename = `backup_${dateStr}_${timeStr}.${format}`;
+            
+            console.log('[WebDAV] 准备备份到:', this.basePath + folder + filename);
             
             // 准备内容
             let content;
