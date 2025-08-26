@@ -781,5 +781,38 @@
     },
     "singleFormNote": {
         "message": "Single Form Note"
+    },
+    "cloudBackupSettings": {
+        "message": "Cloud Backup Settings (JianGuoYun WebDAV)"
+    },
+    "webdavUsername": {
+        "message": "Account (Email)"
+    },
+    "webdavPassword": {
+        "message": "App Password"
+    },
+    "webdavPasswordTip": {
+        "message": "Please use JianGuoYun app password, not login password"
+    },
+    "webdavTestConnection": {
+        "message": "Test Connection"
+    },
+    "webdavAutoBackup": {
+        "message": "Auto Backup"
+    },
+    "webdavBackupDaily": {
+        "message": "Daily"
+    },
+    "webdavBackupWeekly": {
+        "message": "Weekly"
+    },
+    "webdavBackupManual": {
+        "message": "Manual Only"
+    },
+    "webdavManualBackup": {
+        "message": "Manual Backup"
+    },
+    "webdavBackupNow": {
+        "message": "Backup to Cloud Now"
     }
 }

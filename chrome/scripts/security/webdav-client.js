@@ -5,13 +5,14 @@
 
 class WebDAVClient {
     constructor(config = {}) {
-        this.server = config.server || 'https://dav.jianguoyun.com/dav/';
+        this.server = config.server || 'https://dav.jianguoyun.com/dav';
         this.username = config.username || '';
         this.password = config.password || '';
         this.basePath = config.basePath || '/Tree-Style-History/';
         
-        // 创建认证头
-        this.authHeader = 'Basic ' + btoa(`${this.username}:${this.password}`);
+        // 创建认证头 - 确保正确编码
+        const authString = `${this.username}:${this.password}`;
+        this.authHeader = 'Basic ' + btoa(unescape(encodeURIComponent(authString)));
     }
 
     /**

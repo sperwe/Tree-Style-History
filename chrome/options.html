@@ -191,11 +191,11 @@
                 </table>
                 
                 <!-- WebDAV 云备份设置 -->
-                <h3>云备份设置（坚果云 WebDAV）</h3>
+                <h3 class="lang" data-lang-string="cloudBackupSettings"></h3>
                 <table>
                     <tr>
                         <td class="cell-left">
-                            <label for="webdav-username">账号（邮箱）</label>
+                            <label for="webdav-username" class="lang" data-lang-string="webdavUsername"></label>
                         </td>
                         <td class="cell-right">
                             <input type="email" id="webdav-username" placeholder="your@email.com" style="width: 200px;">
@@ -203,33 +203,33 @@
                     </tr>
                     <tr>
                         <td class="cell-left">
-                            <label for="webdav-password">应用密码</label>
-                            <span class="help-tip" title="请使用坚果云的应用密码，而非登录密码">?</span>
+                            <label for="webdav-password" class="lang" data-lang-string="webdavPassword"></label>
+                            <span class="help-tip lang" data-lang-string="webdavPasswordTip" title="">?</span>
                         </td>
                         <td class="cell-right">
-                            <input type="password" id="webdav-password" placeholder="应用密码" style="width: 200px;">
-                            <button type="button" id="webdav-test" class="button">测试连接</button>
+                            <input type="password" id="webdav-password" placeholder="" style="width: 200px;">
+                            <button type="button" id="webdav-test" class="button lang" data-lang-string="webdavTestConnection"></button>
                         </td>
                     </tr>
                     <tr>
                         <td class="cell-left">
-                            <label for="webdav-auto-backup">自动备份</label>
+                            <label for="webdav-auto-backup" class="lang" data-lang-string="webdavAutoBackup"></label>
                         </td>
                         <td class="cell-right">
                             <input type="checkbox" id="webdav-auto-backup">
                             <select id="webdav-backup-interval" style="margin-left: 10px;">
-                                <option value="daily">每日一次</option>
-                                <option value="weekly">每周一次</option>
-                                <option value="manual">仅手动备份</option>
+                                <option value="daily" class="lang" data-lang-string="webdavBackupDaily"></option>
+                                <option value="weekly" class="lang" data-lang-string="webdavBackupWeekly"></option>
+                                <option value="manual" class="lang" data-lang-string="webdavBackupManual"></option>
                             </select>
                         </td>
                     </tr>
                     <tr>
                         <td class="cell-left">
-                            <label>手动备份</label>
+                            <label class="lang" data-lang-string="webdavManualBackup"></label>
                         </td>
                         <td class="cell-right">
-                            <button type="button" id="webdav-backup-now" class="button">立即备份到云端</button>
+                            <button type="button" id="webdav-backup-now" class="button lang" data-lang-string="webdavBackupNow"></button>
                             <span id="webdav-status" style="margin-left: 10px; color: #666;"></span>
                         </td>
                     </tr>

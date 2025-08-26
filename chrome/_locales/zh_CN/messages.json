@@ -736,5 +736,38 @@
     },
     "pageNoteFailed": {
         "message": "保存失败"
+    },
+    "cloudBackupSettings": {
+        "message": "云备份设置（坚果云 WebDAV）"
+    },
+    "webdavUsername": {
+        "message": "账号（邮箱）"
+    },
+    "webdavPassword": {
+        "message": "应用密码"
+    },
+    "webdavPasswordTip": {
+        "message": "请使用坚果云的应用密码，而非登录密码"
+    },
+    "webdavTestConnection": {
+        "message": "测试连接"
+    },
+    "webdavAutoBackup": {
+        "message": "自动备份"
+    },
+    "webdavBackupDaily": {
+        "message": "每日一次"
+    },
+    "webdavBackupWeekly": {
+        "message": "每周一次"
+    },
+    "webdavBackupManual": {
+        "message": "仅手动备份"
+    },
+    "webdavManualBackup": {
+        "message": "手动备份"
+    },
+    "webdavBackupNow": {
+        "message": "立即备份到云端"
     }
 }
