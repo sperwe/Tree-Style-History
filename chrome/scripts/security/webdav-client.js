@@ -49,12 +49,13 @@ class WebDAVClient {
     }
 
     /**
-     * 创建目录
+     * 创建目录（支持递归创建）
      * @param {string} path - 目录路径
      * @returns {Promise<boolean>} 是否成功
      */
     async createDirectory(path) {
         try {
+            // 首先尝试创建目录
             const response = await fetch(this.server + path, {
                 method: 'MKCOL',
                 headers: {
@@ -62,7 +63,25 @@ class WebDAVClient {
                 }
             });
             
-            return response.status === 201 || response.status === 200;
+            if (response.status === 201 || response.status === 200) {
+                return true;
+            } else if (response.status === 409) {
+                // 409 表示父目录不存在，递归创建父目录
+                const parentPath = path.substring(0, path.lastIndexOf('/', path.length - 2) + 1);
+                if (parentPath && parentPath !== '/' && parentPath !== path) {
+                    await this.createDirectory(parentPath);
+                    // 再次尝试创建当前目录
+                    const retryResponse = await fetch(this.server + path, {
+                        method: 'MKCOL',
+                        headers: {
+                            'Authorization': this.authHeader
+                        }
+                    });
+                    return retryResponse.status === 201 || retryResponse.status === 200;
+                }
+            }
+            
+            return false;
         } catch (error) {
             console.error('[WebDAV] 创建目录失败:', error);
             return false;
@@ -80,7 +99,8 @@ class WebDAVClient {
         try {
             const fullPath = this.basePath + folder + filename;
             
-            // 确保文件夹存在
+            // 确保基础目录和文件夹存在
+            await this.createDirectory(this.basePath);
             if (folder) {
                 await this.createDirectory(this.basePath + folder);
             }
@@ -94,7 +114,7 @@ class WebDAVClient {
                 body: content
             });
             
-            if (response.status === 201 || response.status === 204) {
+            if (response.status === 201 || response.status === 204 || response.status === 200) {
                 console.log('[WebDAV] 文件上传成功:', filename);
                 return {
                     success: true,
@@ -232,7 +252,10 @@ class WebDAVClient {
         try {
             // 生成文件名
             const date = new Date();
-            const dateStr = date.toISOString().split('T')[0];
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const dateStr = `${year}-${month}-${day}`;
             const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '-');
             const folder = `auto-backups/${dateStr}/`;
             const filename = `backup_${dateStr}_${timeStr}.${format}`;
