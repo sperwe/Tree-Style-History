@@ -643,16 +643,17 @@ class BackupManager {
         const notes = backup.data || backup.notes || [];
         notes.forEach((note, index) => {
             const itemId = `item_${index + 1}`;
+            const noteId = `note_${index + 1}`;
             const noteDate = new Date(note.updatedAt || note.createdAt);
             
+            // 创建网页条目
             rdf += `
     <z:Item rdf:about="#${itemId}">
         <z:itemType>webpage</z:itemType>
         <dc:title>${this.escapeXML(note.title || '无标题笔记')}</dc:title>
         <z:url>${this.escapeXML(note.url)}</z:url>
         <dc:date>${noteDate.toISOString()}</dc:date>
-        <z:accessDate>${noteDate.toISOString()}</z:accessDate>
-        <dcterms:abstract>${this.escapeXML(note.note)}</dcterms:abstract>`;
+        <z:accessDate>${noteDate.toISOString()}</z:accessDate>`;
             
             // 添加标签
             const tagName = this.getTagDisplayName(note.tag);
@@ -667,6 +668,16 @@ class BackupManager {
             
             rdf += `
     </z:Item>`;
+            
+            // 创建笔记条目（如果有笔记内容）
+            if (note.note && note.note.trim()) {
+                rdf += `
+    <z:Item rdf:about="#${noteId}">
+        <z:itemType>note</z:itemType>
+        <rdf:value>${this.escapeXML(note.note)}</rdf:value>
+        <z:parentItem rdf:resource="#${itemId}"/>
+    </z:Item>`;
+            }
         });
         
         rdf += `
