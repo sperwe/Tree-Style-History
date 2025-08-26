@@ -1035,48 +1035,33 @@ function saveSelectionAsNote(pageUrl, selectedText, pageTitle = null){
         .then((isDuplicate) => {
             if (isDuplicate) {
                 console.log('Duplicate text not saved');
-                if (chrome.notifications && chrome.notifications.create) {
-                    const notificationId = 'note-duplicate-' + Date.now();
-                    chrome.notifications.create(notificationId, {
-                        type: 'basic',
-                        iconUrl: chrome.extension.getURL('images/tree-48.png'),
-                        title: 'Tree Style History',
-                        message: 'Selected text already exists in notes'
-                    }, function(id) {
-                        if (chrome.runtime.lastError) {
-                            console.error('通知创建失败:', chrome.runtime.lastError);
-                        } else {
-                            console.log('重复通知已创建:', id);
-                            setTimeout(() => {
-                                chrome.notifications.clear(id);
-                            }, 3000);
-                        }
-                    });
-                } else {
-                    console.warn('通知 API 不可用');
+                try {
+                    if (chrome.notifications) {
+                        chrome.notifications.create({
+                            type: 'basic',
+                            iconUrl: 'images/tree-48.png',
+                            title: 'Tree Style History',
+                            message: 'Selected text already exists in notes'
+                        });
+                    }
+                } catch (e) {
+                    console.error('通知发送失败:', e);
                 }
             } else {
                 console.log('Note saved successfully');
-                if (chrome.notifications && chrome.notifications.create) {
-                    const notificationId = 'note-saved-' + Date.now();
-                    chrome.notifications.create(notificationId, {
-                        type: 'basic',
-                        iconUrl: chrome.extension.getURL('images/tree-48.png'),
-                        title: 'Tree Style History',
-                        message: 'Selected text added to notes'
-                    }, function(id) {
-                        if (chrome.runtime.lastError) {
-                            console.error('通知创建失败:', chrome.runtime.lastError);
-                        } else {
-                            console.log('通知已创建:', id);
-                            // 3秒后自动清除通知
-                            setTimeout(() => {
-                                chrome.notifications.clear(id);
-                            }, 3000);
-                        }
-                    });
-                } else {
-                    console.warn('通知 API 不可用');
+                // 创建通知
+                try {
+                    if (chrome.notifications) {
+                        chrome.notifications.create({
+                            type: 'basic',
+                            iconUrl: 'images/tree-48.png',
+                            title: 'Tree Style History',
+                            message: 'Selected text added to notes'
+                        });
+                        console.log('通知已发送');
+                    }
+                } catch (e) {
+                    console.error('通知发送失败:', e);
                 }
             }
         })
