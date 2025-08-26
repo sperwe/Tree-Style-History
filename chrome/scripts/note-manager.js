@@ -628,6 +628,14 @@ class NoteManager {
         // 渲染笔记项
         let previousUrl = null;
         this.filteredNotes.forEach((note, index) => {
+            // 如果 URL 改变了，添加一个视觉分隔
+            if (index > 0 && note.url !== previousUrl) {
+                const separator = XSSProtection.createSafeElement('div', '', {
+                    'class': 'url-separator'
+                });
+                noteList.appendChild(separator);
+            }
+            
             const showSourceIcon = index === 0 || note.url !== previousUrl;
             const noteItem = this.createNoteItem(note, showSourceIcon);
             noteList.appendChild(noteItem);
@@ -714,10 +722,24 @@ class NoteManager {
             
             // 添加来源图标（如果有网页标题且需要显示）
             if (note.pageTitle && showSourceIcon) {
+                // 获取该 URL 的笔记总数
+                const urlCounts = this.countNotesByUrl();
+                const notesCount = urlCounts[note.url] || 1;
+                const countText = notesCount > 1 ? `\n\n本页共有 ${notesCount} 条笔记` : '';
+                
                 const sourceIcon = XSSProtection.createSafeElement('span', '🔗', {
                     'class': 'note-source-icon',
-                    'title': `来源: ${note.pageTitle}\n${note.url}`
+                    'title': `📍 来源网页\n${note.pageTitle}\n${note.url}${countText}`,
+                    'data-url': note.url,
+                    'style': 'cursor: pointer;'
                 });
+                
+                // 点击图标筛选该网页的所有笔记
+                XSSProtection.safeAddEventListener(sourceIcon, 'click', (e) => {
+                    e.stopPropagation();
+                    this.filterByUrl(note.url);
+                });
+                
                 meta.appendChild(sourceIcon);
             }
         }
@@ -1662,6 +1684,39 @@ class NoteManager {
         if (modal) {
             modal.style.display = 'none';
         }
+    }
+
+    /**
+     * 统计每个 URL 的笔记数量
+     */
+    countNotesByUrl() {
+        const urlCounts = {};
+        this.notes.forEach(note => {
+            if (note.url) {
+                urlCounts[note.url] = (urlCounts[note.url] || 0) + 1;
+            }
+        });
+        return urlCounts;
+    }
+
+    /**
+     * 按 URL 筛选笔记
+     */
+    filterByUrl(url) {
+        // 设置搜索框
+        const searchInput = document.getElementById('global-search');
+        if (searchInput) {
+            searchInput.value = url;
+        }
+        
+        // 执行筛选
+        this.filteredNotes = this.notes.filter(note => note.url === url);
+        this.renderNoteList();
+        this.updateNoteCount();
+        
+        // 显示提示
+        const hostname = this.extractHostname(url);
+        this.showNotification(`正在显示来自 ${hostname} 的所有笔记`, 'info');
     }
 }
 
