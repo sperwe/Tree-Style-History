@@ -5,10 +5,21 @@
 
 class WebDAVClient {
     constructor(config = {}) {
-        this.server = config.server || 'https://dav.jianguoyun.com/dav';
+        this.server = config.server || 'https://dav.jianguoyun.com/dav/';
         this.username = config.username || '';
         this.password = config.password || '';
-        this.basePath = config.basePath || '/Tree-Style-History/';
+        this.basePath = config.basePath || 'Tree-Style-History/';
+        
+        // 确保 server 以 / 结尾
+        if (!this.server.endsWith('/')) {
+            this.server += '/';
+        }
+        
+        // 确保 basePath 不以 / 开头，但以 / 结尾
+        this.basePath = this.basePath.replace(/^\/+/, '');
+        if (!this.basePath.endsWith('/')) {
+            this.basePath += '/';
+        }
         
         // 创建认证头 - 确保正确编码
         const authString = `${this.username}:${this.password}`;
@@ -21,8 +32,8 @@ class WebDAVClient {
      */
     async testConnection() {
         try {
-            // 测试根目录访问权限
-            const response = await fetch(this.server + '/', {
+            // 测试访问权限
+            const response = await fetch(this.server, {
                 method: 'PROPFIND',
                 headers: {
                     'Authorization': this.authHeader,
