@@ -969,14 +969,7 @@ chrome.contextMenus.removeAll(() => {
                 const selectedText = info.selectionText || '';
                 const pageUrl = info.pageUrl || '';
                 if (!selectedText) return;
-                
-                // 尝试从 tab 获取页面标题
-                if (tab && tab.title) {
-                    saveSelectionAsNote(pageUrl, selectedText, tab.title);
-                } else {
-                    // 降级处理，不传递标题
-                    saveSelectionAsNote(pageUrl, selectedText);
-                }
+                saveSelectionAsNote(pageUrl, selectedText);
             }
             // Handle search notes for this site
             else if (info.menuItemId === 'tsh_search_site_notes') {
@@ -1017,20 +1010,20 @@ chrome.contextMenus.removeAll(() => {
     } catch(e) { console.log('contextMenus create search site notes failed', e); }
 });
 
-function saveSelectionAsNote(pageUrl, selectedText, pageTitle = null){
+function saveSelectionAsNote(pageUrl, selectedText){
     if (!pageUrl || !selectedText) return;
     if (!db){ 
         console.log('DB not ready for saveSelectionAsNote'); 
         return; 
     }
     
-    console.log('Saving selection as note:', {pageUrl, selectedText: selectedText.substring(0, 50) + '...', pageTitle});
+    console.log('Saving selection as note:', {pageUrl, selectedText: selectedText.substring(0, 50) + '...'});
     
     // Step 1: Find latest visitId for the URL
     findLatestVisitId(pageUrl)
         .then(visitId => {
             console.log('Found visitId:', visitId);
-            return saveNoteToDatabase(visitId, pageUrl, selectedText, pageTitle);
+            return saveNoteToDatabase(visitId, pageUrl, selectedText, null);
         })
         .then((isDuplicate) => {
             if (isDuplicate) {
