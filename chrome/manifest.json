@@ -2,8 +2,8 @@
   "name": "__MSG_name__",
   "short_name": "__MSG_nameShort__",
   "author": "Original: Tumuyan; Maintainer: sperwe",
-  "version": "4.9.28",
-  "version_name": "4.9.28 - 修复浮动窗口滚动和笔记管理器排序问题",
+  "version": "4.9.29",
+  "version_name": "4.9.29 - 新增坚果云 WebDAV 备份功能和 Zotero 导出格式",
 
   "manifest_version": 2,
   "minimum_chrome_version": "22.0",
