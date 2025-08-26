@@ -970,15 +970,13 @@ chrome.contextMenus.removeAll(() => {
                 const pageUrl = info.pageUrl || '';
                 if (!selectedText) return;
                 
-                // 尝试获取页面标题
-                chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-                    if (tabs[0]) {
-                        const pageTitle = tabs[0].title || '';
-                        saveSelectionAsNote(pageUrl, selectedText, pageTitle);
-                    } else {
-                        saveSelectionAsNote(pageUrl, selectedText);
-                    }
-                });
+                // 尝试从 tab 获取页面标题
+                if (tab && tab.title) {
+                    saveSelectionAsNote(pageUrl, selectedText, tab.title);
+                } else {
+                    // 降级处理，不传递标题
+                    saveSelectionAsNote(pageUrl, selectedText);
+                }
             }
             // Handle search notes for this site
             else if (info.menuItemId === 'tsh_search_site_notes') {
