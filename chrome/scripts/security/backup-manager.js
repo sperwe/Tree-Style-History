@@ -640,7 +640,8 @@ class BackupManager {
          xmlns:dc="http://purl.org/dc/elements/1.1/"
          xmlns:dcterms="http://purl.org/dc/terms/">`;
 
-        backup.notes.forEach((note, index) => {
+        const notes = backup.data || backup.notes || [];
+        notes.forEach((note, index) => {
             const itemId = `item_${index + 1}`;
             const noteDate = new Date(note.updatedAt || note.createdAt);
             
@@ -682,7 +683,8 @@ class BackupManager {
     static convertToBibTeX(backup) {
         let bibtex = '';
         
-        backup.notes.forEach((note, index) => {
+        const notes = backup.data || backup.notes || [];
+        notes.forEach((note, index) => {
             const noteDate = new Date(note.updatedAt || note.createdAt);
             const year = noteDate.getFullYear();
             const month = noteDate.getMonth() + 1;
@@ -714,7 +716,8 @@ class BackupManager {
     static convertToRIS(backup) {
         let ris = '';
         
-        backup.notes.forEach(note => {
+        const notes = backup.data || backup.notes || [];
+        notes.forEach(note => {
             const noteDate = new Date(note.updatedAt || note.createdAt);
             
             ris += `TY  - ELEC
