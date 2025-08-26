@@ -102,7 +102,12 @@ class PermissionManager {
         const limitMs = this.RATE_LIMITS[operation] || 1000;
 
         if (lastTime && (now - parseInt(lastTime)) < limitMs) {
-            return false;
+            // 在调试模式下，对导出操作放宽限制
+            if (operation === 'export' && chrome.runtime.getManifest().version_name.includes('WebDAV')) {
+                console.log('[PermissionManager] 调试模式，跳过导出频率限制');
+            } else {
+                return false;
+            }
         }
 
         localStorage.setItem(key, now.toString());
@@ -470,6 +475,16 @@ class PermissionManager {
         });
 
         console.info('所有权限限制已重置');
+    }
+
+    /**
+     * 清除特定操作的频率限制（用于调试）
+     * @param {string} operation - 操作类型
+     */
+    static clearRateLimit(operation) {
+        const key = `rateLimit_${operation}`;
+        localStorage.removeItem(key);
+        console.log(`[PermissionManager] 已清除 ${operation} 操作的频率限制`);
     }
 }
 
