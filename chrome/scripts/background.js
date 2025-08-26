@@ -969,7 +969,16 @@ chrome.contextMenus.removeAll(() => {
                 const selectedText = info.selectionText || '';
                 const pageUrl = info.pageUrl || '';
                 if (!selectedText) return;
-                saveSelectionAsNote(pageUrl, selectedText);
+                
+                // 尝试获取页面标题
+                chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                    if (tabs[0]) {
+                        const pageTitle = tabs[0].title || '';
+                        saveSelectionAsNote(pageUrl, selectedText, pageTitle);
+                    } else {
+                        saveSelectionAsNote(pageUrl, selectedText);
+                    }
+                });
             }
             // Handle search notes for this site
             else if (info.menuItemId === 'tsh_search_site_notes') {
@@ -1832,6 +1841,7 @@ async function getAllNotesFromDatabase() {
                     note: note.note || '',
                     tag: note.tag || 'general_general',
                     url: note.url || '',
+                    pageTitle: note.pageTitle || '',
                     createdAt: note.createdAt || note.time,
                     updatedAt: note.updatedAt || note.time
                 };
