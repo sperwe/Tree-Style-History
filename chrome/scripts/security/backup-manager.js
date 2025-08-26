@@ -641,27 +641,54 @@ class BackupManager {
          xmlns:dcterms="http://purl.org/dc/terms/">`;
 
         const notes = backup.data || backup.notes || [];
-        notes.forEach((note, index) => {
-            const itemId = `item_${index + 1}`;
-            const noteId = `note_${index + 1}`;
-            const noteDate = new Date(note.updatedAt || note.createdAt);
+        
+        // 按 URL 分组笔记
+        const notesByUrl = {};
+        notes.forEach(note => {
+            if (!notesByUrl[note.url]) {
+                notesByUrl[note.url] = {
+                    pageTitle: note.pageTitle || note.title || note.url,
+                    url: note.url,
+                    firstDate: note.createdAt || note.updatedAt,
+                    tags: new Set(),
+                    notes: []
+                };
+            }
+            notesByUrl[note.url].notes.push(note);
+            if (note.tag) {
+                notesByUrl[note.url].tags.add(note.tag);
+            }
+        });
+        
+        // 为每个 URL 生成一个网页条目和相关的笔记条目
+        let webpageIndex = 0;
+        Object.entries(notesByUrl).forEach(([url, data]) => {
+            webpageIndex++;
+            const webpageId = `webpage_${webpageIndex}`;
+            const webpageDate = new Date(data.firstDate);
             
             // 创建网页条目
             rdf += `
-    <z:Item rdf:about="#${itemId}">
+    <z:Item rdf:about="#${webpageId}">
         <z:itemType>webpage</z:itemType>
-        <dc:title>${this.escapeXML(note.title || '无标题笔记')}</dc:title>
-        <z:url>${this.escapeXML(note.url)}</z:url>
-        <dc:date>${noteDate.toISOString()}</dc:date>
-        <z:accessDate>${noteDate.toISOString()}</z:accessDate>`;
+        <dc:title>${this.escapeXML(data.pageTitle)}</dc:title>
+        <z:url>${this.escapeXML(url)}</z:url>
+        <dc:date>${webpageDate.toISOString()}</dc:date>
+        <z:accessDate>${webpageDate.toISOString()}</z:accessDate>`;
             
-            // 添加标签
-            const tagName = this.getTagDisplayName(note.tag);
-            if (tagName) {
+            // 添加所有相关标签
+            if (data.tags.size > 0) {
                 rdf += `
         <z:tags>
-            <rdf:Seq>
-                <rdf:li>${this.escapeXML(tagName)}</rdf:li>
+            <rdf:Seq>`;
+                data.tags.forEach(tag => {
+                    const tagName = this.getTagDisplayName(tag);
+                    if (tagName) {
+                        rdf += `
+                <rdf:li>${this.escapeXML(tagName)}</rdf:li>`;
+                    }
+                });
+                rdf += `
             </rdf:Seq>
         </z:tags>`;
             }
@@ -669,15 +696,21 @@ class BackupManager {
             rdf += `
     </z:Item>`;
             
-            // 创建笔记条目（如果有笔记内容）
-            if (note.note && note.note.trim()) {
-                rdf += `
+            // 为该网页的每条笔记创建笔记条目
+            data.notes.forEach((note, noteIndex) => {
+                if (note.note && note.note.trim()) {
+                    const noteId = `note_${webpageIndex}_${noteIndex + 1}`;
+                    const noteDate = new Date(note.updatedAt || note.createdAt);
+                    
+                    rdf += `
     <z:Item rdf:about="#${noteId}">
         <z:itemType>note</z:itemType>
         <rdf:value>${this.escapeXML(note.note)}</rdf:value>
-        <z:parentItem rdf:resource="#${itemId}"/>
+        <dc:date>${noteDate.toISOString()}</dc:date>
+        <z:parentItem rdf:resource="#${webpageId}"/>
     </z:Item>`;
-            }
+                }
+            });
         });
         
         rdf += `

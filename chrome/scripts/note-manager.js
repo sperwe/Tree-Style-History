@@ -626,16 +626,19 @@ class NoteManager {
         if (emptyState) emptyState.style.display = 'none';
 
         // 渲染笔记项
-        this.filteredNotes.forEach(note => {
-            const noteItem = this.createNoteItem(note);
+        let previousUrl = null;
+        this.filteredNotes.forEach((note, index) => {
+            const showSourceIcon = index === 0 || note.url !== previousUrl;
+            const noteItem = this.createNoteItem(note, showSourceIcon);
             noteList.appendChild(noteItem);
+            previousUrl = note.url;
         });
     }
 
     /**
      * 创建笔记列表项
      */
-    createNoteItem(note) {
+    createNoteItem(note, showSourceIcon = true) {
         const item = XSSProtection.createSafeElement('div', '', {
             'class': 'note-item',
             'data-note-id': note.id
@@ -708,6 +711,15 @@ class NoteManager {
                 this.extractHostname(note.url)
             );
             meta.appendChild(siteSpan);
+            
+            // 添加来源图标（如果有网页标题且需要显示）
+            if (note.pageTitle && showSourceIcon) {
+                const sourceIcon = XSSProtection.createSafeElement('span', '🔗', {
+                    'class': 'note-source-icon',
+                    'title': `来源: ${note.pageTitle}\n${note.url}`
+                });
+                meta.appendChild(sourceIcon);
+            }
         }
 
         // 组装元素

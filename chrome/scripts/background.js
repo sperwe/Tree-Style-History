@@ -1010,20 +1010,20 @@ chrome.contextMenus.removeAll(() => {
     } catch(e) { console.log('contextMenus create search site notes failed', e); }
 });
 
-function saveSelectionAsNote(pageUrl, selectedText){
+function saveSelectionAsNote(pageUrl, selectedText, pageTitle = null){
     if (!pageUrl || !selectedText) return;
     if (!db){ 
         console.log('DB not ready for saveSelectionAsNote'); 
         return; 
     }
     
-    console.log('Saving selection as note:', {pageUrl, selectedText: selectedText.substring(0, 50) + '...'});
+    console.log('Saving selection as note:', {pageUrl, selectedText: selectedText.substring(0, 50) + '...', pageTitle});
     
     // Step 1: Find latest visitId for the URL
     findLatestVisitId(pageUrl)
         .then(visitId => {
             console.log('Found visitId:', visitId);
-            return saveNoteToDatabase(visitId, pageUrl, selectedText);
+            return saveNoteToDatabase(visitId, pageUrl, selectedText, pageTitle);
         })
         .then((isDuplicate) => {
             if (isDuplicate) {
@@ -1106,7 +1106,7 @@ function findLatestVisitId(pageUrl) {
     });
 }
 
-function saveNoteToDatabase(visitId, pageUrl, selectedText) {
+function saveNoteToDatabase(visitId, pageUrl, selectedText, pageTitle = null) {
     return new Promise((resolve, reject) => {
         try {
             var tx = db.transaction(["VisitNote"], "readwrite");
@@ -1152,7 +1152,8 @@ function saveNoteToDatabase(visitId, pageUrl, selectedText) {
                                     visitId: newVisitId,
                                     url: pageUrl,
                                     note: selectedText,
-                                    updatedAt: now
+                                    updatedAt: now,
+                                    pageTitle: pageTitle || existed?.pageTitle
                                 };
                                 break;
                                 
@@ -1162,7 +1163,8 @@ function saveNoteToDatabase(visitId, pageUrl, selectedText) {
                                     visitId: visitId,
                                     url: pageUrl,
                                     note: selectedText,
-                                    updatedAt: now
+                                    updatedAt: now,
+                                    pageTitle: pageTitle || existed?.pageTitle
                                 };
                                 break;
                                 
@@ -1174,7 +1176,8 @@ function saveNoteToDatabase(visitId, pageUrl, selectedText) {
                                     visitId: visitId,
                                     url: pageUrl,
                                     note: existingNote + separator + selectedText,
-                                    updatedAt: now
+                                    updatedAt: now,
+                                    pageTitle: pageTitle || existed?.pageTitle
                                 };
                         }
                     } else {
@@ -1183,7 +1186,8 @@ function saveNoteToDatabase(visitId, pageUrl, selectedText) {
                             visitId: visitId, 
                             url: pageUrl, 
                             note: selectedText, 
-                            updatedAt: now 
+                            updatedAt: now,
+                            pageTitle: pageTitle
                         };
                     }
                     
@@ -1240,7 +1244,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'saveSelectionAsNote') {
         const { pageUrl, pageTitle, selectedText } = request;
         if (pageUrl && selectedText) {
-            saveSelectionAsNote(pageUrl, selectedText);
+            saveSelectionAsNote(pageUrl, selectedText, pageTitle);
             sendResponse({ success: true });
         } else {
             sendResponse({ success: false, error: 'Missing required data' });
@@ -1427,7 +1431,7 @@ async function savePageNoteFromContentScript(pageData) {
         const visitId = await findLatestVisitId(pageData.url);
         
         // Save the note to database
-        const isDuplicate = await saveNoteToDatabase(visitId, pageData.url, pageData.note);
+        const isDuplicate = await saveNoteToDatabase(visitId, pageData.url, pageData.note, pageData.title);
         
         if (isDuplicate) {
             console.log('Duplicate note content, not saved');
